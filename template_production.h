@@ -57,7 +57,7 @@ public :
    UInt_t          event_fileuuid;
    Int_t           event_run;
    Int_t           event_lumi;
-   Int_t           event_number;
+   UInt_t          event_number;
    Float_t         event_luminormfactor;
    Float_t         event_Kfactor;
    Float_t         event_weight;
@@ -107,8 +107,6 @@ public :
    Int_t           photrail_Npfcandphotonincone;
    Int_t           photrail_Npfcandchargedincone;
    Int_t           photrail_Npfcandneutralincone;
-   Float_t         pholead_scareaSF;
-   Float_t         photrail_scareaSF;
    Float_t         pholead_photonpfcandenergies[30];
    Float_t         pholead_photonpfcandets[30];
    Float_t         pholead_photonpfcanddetas[30];
@@ -209,8 +207,6 @@ public :
    TBranch        *b_photrail_Npfcandphotonincone;
    TBranch        *b_photrail_Npfcandchargedincone;
    TBranch        *b_photrail_Npfcandneutralincone;
-   TBranch        *b_pholead_scareaSF;
-   TBranch        *b_photrail_scareaSF;
    TBranch        *b_pholead_photonpfcandets;
    TBranch        *b_pholead_photonpfcandenergies;
    TBranch        *b_pholead_photonpfcanddetas;
@@ -665,8 +661,6 @@ void template_production::Init()
    fChain->SetBranchAddress("photrail_Npfcandphotonincone",&photrail_Npfcandphotonincone, &b_photrail_Npfcandphotonincone);
    fChain->SetBranchAddress("photrail_Npfcandchargedincone",&photrail_Npfcandchargedincone, &b_photrail_Npfcandchargedincone);
    fChain->SetBranchAddress("photrail_Npfcandneutralincone",&photrail_Npfcandneutralincone, &b_photrail_Npfcandneutralincone);
-   fChain->SetBranchAddress("pholead_scareaSF",&pholead_scareaSF, &b_pholead_scareaSF);
-   fChain->SetBranchAddress("photrail_scareaSF",&photrail_scareaSF, &b_photrail_scareaSF);
    fChain->SetBranchAddress("pholead_photonpfcandenergies",&pholead_photonpfcandenergies, &b_pholead_photonpfcandenergies);
    fChain->SetBranchAddress("pholead_photonpfcandets",&pholead_photonpfcandets, &b_pholead_photonpfcandets);
    fChain->SetBranchAddress("pholead_photonpfcanddetas",&pholead_photonpfcanddetas, &b_pholead_photonpfcanddetas);

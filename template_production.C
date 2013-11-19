@@ -21,6 +21,7 @@ void template_production::Loop(int maxevents)
 
 
     TKDTreeID *kdtree[2];
+    std::vector<unsigned int> match_evt_number[2];
     std::vector<float> match_pho_pt[2];
     std::vector<float> match_pho_eta[2];
     std::vector<float> match_evt_rho[2];
@@ -30,23 +31,23 @@ void template_production::Loop(int maxevents)
     UInt_t matchingtree_event_fileuuid;
     Int_t matchingtree_event_run;
     Int_t matchingtree_event_lumi;
-    Int_t matchingtree_event_number;
-    Int_t matchingtree_index_1event_sigsig_1[nclosestmore];
-    Int_t matchingtree_index_1event_sigsig_2[nclosestmore];
-    Int_t matchingtree_index_1event_sigbkg_1[nclosestmore];
-    Int_t matchingtree_index_1event_sigbkg_2[nclosestmore];
-    Int_t matchingtree_index_1event_bkgsig_1[nclosestmore];
-    Int_t matchingtree_index_1event_bkgsig_2[nclosestmore];
-    Int_t matchingtree_index_1event_bkgbkg_1[nclosestmore];
-    Int_t matchingtree_index_1event_bkgbkg_2[nclosestmore];
-    Int_t matchingtree_index_2events_sigsig_1[nclosestmore];
-    Int_t matchingtree_index_2events_sigsig_2[nclosestmore];
-    Int_t matchingtree_index_2events_sigbkg_1[nclosestmore];
-    Int_t matchingtree_index_2events_sigbkg_2[nclosestmore];
-    Int_t matchingtree_index_2events_bkgsig_1[nclosestmore];
-    Int_t matchingtree_index_2events_bkgsig_2[nclosestmore];
-    Int_t matchingtree_index_2events_bkgbkg_1[nclosestmore];
-    Int_t matchingtree_index_2events_bkgbkg_2[nclosestmore];
+    UInt_t matchingtree_event_number;
+    UInt_t matchingtree_evt_1event_sigsig_1[nclosestmore];
+    UInt_t matchingtree_evt_1event_sigsig_2[nclosestmore];
+    UInt_t matchingtree_evt_1event_sigbkg_1[nclosestmore];
+    UInt_t matchingtree_evt_1event_sigbkg_2[nclosestmore];
+    UInt_t matchingtree_evt_1event_bkgsig_1[nclosestmore];
+    UInt_t matchingtree_evt_1event_bkgsig_2[nclosestmore];
+    UInt_t matchingtree_evt_1event_bkgbkg_1[nclosestmore];
+    UInt_t matchingtree_evt_1event_bkgbkg_2[nclosestmore];
+    UInt_t matchingtree_evt_2events_sigsig_1[nclosestmore];
+    UInt_t matchingtree_evt_2events_sigsig_2[nclosestmore];
+    UInt_t matchingtree_evt_2events_sigbkg_1[nclosestmore];
+    UInt_t matchingtree_evt_2events_sigbkg_2[nclosestmore];
+    UInt_t matchingtree_evt_2events_bkgsig_1[nclosestmore];
+    UInt_t matchingtree_evt_2events_bkgsig_2[nclosestmore];
+    UInt_t matchingtree_evt_2events_bkgbkg_1[nclosestmore];
+    UInt_t matchingtree_evt_2events_bkgbkg_2[nclosestmore];
     Float_t matchingtree_deta_1event_sigsig_1[nclosestmore];
     Float_t matchingtree_deta_1event_sigsig_2[nclosestmore];
     Float_t matchingtree_deta_1event_sigbkg_1[nclosestmore];
@@ -110,6 +111,7 @@ void template_production::Loop(int maxevents)
 
 	cout << mynentries << " entries found" << endl;
 
+	unsigned int evt_number;
 	float pho1_pt;
 	float pho1_eta;
 	float pho1_phi;
@@ -118,6 +120,7 @@ void template_production::Loop(int maxevents)
 	float pho2_phi;
 	float evt_rho;
 	int pass12whoissiglike;
+	TBranch *b_evt_number;
 	TBranch *b_pho1_pt;
 	TBranch *b_pho1_eta;
 	TBranch *b_pho1_phi;
@@ -132,6 +135,7 @@ void template_production::Loop(int maxevents)
 	Double_t *array_evt_rho = new Double_t[mynentries];
 	Double_t *array_otherpho_eta = new Double_t[mynentries];
 	mytree[i]->SetBranchStatus("*",0);
+	mytree[i]->SetBranchStatus("event_number",1);
 	mytree[i]->SetBranchStatus("pholead_pt",1);
 	mytree[i]->SetBranchStatus("pholead_SCeta",1);
 	mytree[i]->SetBranchStatus("pholead_SCphi",1);
@@ -140,6 +144,7 @@ void template_production::Loop(int maxevents)
 	mytree[i]->SetBranchStatus("photrail_SCphi",1);
 	mytree[i]->SetBranchStatus("event_rho",1);
 	mytree[i]->SetBranchStatus("event_pass12whoissiglike");
+	mytree[i]->SetBranchAddress("event_number",&evt_number,&b_evt_number);
 	mytree[i]->SetBranchAddress("pholead_pt",&pho1_pt,&b_pho1_pt);
 	mytree[i]->SetBranchAddress("pholead_SCeta",&pho1_eta,&b_pho1_eta);
 	mytree[i]->SetBranchAddress("pholead_SCphi",&pho1_phi,&b_pho1_phi);
@@ -165,6 +170,7 @@ void template_production::Loop(int maxevents)
 	  array_evt_rho[k] = evt_rho/1.5;
 	  array_pho_pt[k] = TMath::Log(pho_pt)/0.2;
 	  array_otherpho_eta[k] = (fabs(otherpho_eta)<1.4442) ? 0 : 1000;
+	  match_evt_number[i].push_back(evt_number);
 	  match_pho_eta[i].push_back(pho_eta); 
 	  match_evt_rho[i].push_back(evt_rho);
 	  match_pho_pt[i].push_back(pho_pt);
@@ -191,72 +197,73 @@ void template_production::Loop(int maxevents)
     matchingtree->Branch("matchingtree_event_fileuuid",&matchingtree_event_fileuuid,"matchingtree_event_fileuuid/i");
     matchingtree->Branch("matchingtree_event_run",&matchingtree_event_run,"matchingtree_event_run/I");
     matchingtree->Branch("matchingtree_event_lumi",&matchingtree_event_lumi,"matchingtree_event_lumi/I");
-    matchingtree->Branch("matchingtree_event_number",&matchingtree_event_number,"matchingtree_event_number/I");
-    matchingtree->Branch("matchingtree_index_1event_sigsig_1",&matchingtree_index_1event_sigsig_1,Form("matchingtree_index_1event_sigsig_1[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_1event_sigsig_2",&matchingtree_index_1event_sigsig_2,Form("matchingtree_index_1event_sigsig_2[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_1event_sigbkg_1",&matchingtree_index_1event_sigbkg_1,Form("matchingtree_index_1event_sigbkg_1[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_1event_sigbkg_2",&matchingtree_index_1event_sigbkg_2,Form("matchingtree_index_1event_sigbkg_2[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_1event_bkgsig_1",&matchingtree_index_1event_bkgsig_1,Form("matchingtree_index_1event_bkgsig_1[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_1event_bkgsig_2",&matchingtree_index_1event_bkgsig_2,Form("matchingtree_index_1event_bkgsig_2[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_1event_bkgbkg_1",&matchingtree_index_1event_bkgbkg_1,Form("matchingtree_index_1event_bkgbkg_1[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_1event_bkgbkg_2",&matchingtree_index_1event_bkgbkg_2,Form("matchingtree_index_1event_bkgbkg_2[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_2events_sigsig_1",&matchingtree_index_2events_sigsig_1,Form("matchingtree_index_2events_sigsig_1[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_2events_sigsig_2",&matchingtree_index_2events_sigsig_2,Form("matchingtree_index_2events_sigsig_2[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_2events_sigbkg_1",&matchingtree_index_2events_sigbkg_1,Form("matchingtree_index_2events_sigbkg_1[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_2events_sigbkg_2",&matchingtree_index_2events_sigbkg_2,Form("matchingtree_index_2events_sigbkg_2[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_2events_bkgsig_1",&matchingtree_index_2events_bkgsig_1,Form("matchingtree_index_2events_bkgsig_1[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_2events_bkgsig_2",&matchingtree_index_2events_bkgsig_2,Form("matchingtree_index_2events_bkgsig_2[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_2events_bkgbkg_1",&matchingtree_index_2events_bkgbkg_1,Form("matchingtree_index_2events_bkgbkg_1[%d]/I",nclosestmore));
-    matchingtree->Branch("matchingtree_index_2events_bkgbkg_2",&matchingtree_index_2events_bkgbkg_2,Form("matchingtree_index_2events_bkgbkg_2[%d]/I",nclosestmore));
+    matchingtree->Branch("matchingtree_event_number",&matchingtree_event_number,"matchingtree_event_number/i");
+    matchingtree->Branch("matchingtree_evt_1event_sigsig_1",&matchingtree_evt_1event_sigsig_1,Form("matchingtree_evt_1event_sigsig_1[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_1event_sigsig_2",&matchingtree_evt_1event_sigsig_2,Form("matchingtree_evt_1event_sigsig_2[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_1event_sigbkg_1",&matchingtree_evt_1event_sigbkg_1,Form("matchingtree_evt_1event_sigbkg_1[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_1event_sigbkg_2",&matchingtree_evt_1event_sigbkg_2,Form("matchingtree_evt_1event_sigbkg_2[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_1event_bkgsig_1",&matchingtree_evt_1event_bkgsig_1,Form("matchingtree_evt_1event_bkgsig_1[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_1event_bkgsig_2",&matchingtree_evt_1event_bkgsig_2,Form("matchingtree_evt_1event_bkgsig_2[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_1event_bkgbkg_1",&matchingtree_evt_1event_bkgbkg_1,Form("matchingtree_evt_1event_bkgbkg_1[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_1event_bkgbkg_2",&matchingtree_evt_1event_bkgbkg_2,Form("matchingtree_evt_1event_bkgbkg_2[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_2events_sigsig_1",&matchingtree_evt_2events_sigsig_1,Form("matchingtree_evt_2events_sigsig_1[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_2events_sigsig_2",&matchingtree_evt_2events_sigsig_2,Form("matchingtree_evt_2events_sigsig_2[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_2events_sigbkg_1",&matchingtree_evt_2events_sigbkg_1,Form("matchingtree_evt_2events_sigbkg_1[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_2events_sigbkg_2",&matchingtree_evt_2events_sigbkg_2,Form("matchingtree_evt_2events_sigbkg_2[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_2events_bkgsig_1",&matchingtree_evt_2events_bkgsig_1,Form("matchingtree_evt_2events_bkgsig_1[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_2events_bkgsig_2",&matchingtree_evt_2events_bkgsig_2,Form("matchingtree_evt_2events_bkgsig_2[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_2events_bkgbkg_1",&matchingtree_evt_2events_bkgbkg_1,Form("matchingtree_evt_2events_bkgbkg_1[%d]/i",nclosestmore));
+    matchingtree->Branch("matchingtree_evt_2events_bkgbkg_2",&matchingtree_evt_2events_bkgbkg_2,Form("matchingtree_evt_2events_bkgbkg_2[%d]/i",nclosestmore));
 
-    matchingtree->Branch("matchingtree_deta_1event_sigsig_1",&matchingtree_deta_1event_sigsig_1,Form("matchingtree_deta_1event_sigsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_1event_sigsig_2",&matchingtree_deta_1event_sigsig_2,Form("matchingtree_deta_1event_sigsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_1event_sigbkg_1",&matchingtree_deta_1event_sigbkg_1,Form("matchingtree_deta_1event_sigbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_1event_sigbkg_2",&matchingtree_deta_1event_sigbkg_2,Form("matchingtree_deta_1event_sigbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_1event_bkgsig_1",&matchingtree_deta_1event_bkgsig_1,Form("matchingtree_deta_1event_bkgsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_1event_bkgsig_2",&matchingtree_deta_1event_bkgsig_2,Form("matchingtree_deta_1event_bkgsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_1event_bkgbkg_1",&matchingtree_deta_1event_bkgbkg_1,Form("matchingtree_deta_1event_bkgbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_1event_bkgbkg_2",&matchingtree_deta_1event_bkgbkg_2,Form("matchingtree_deta_1event_bkgbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_2events_sigsig_1",&matchingtree_deta_2events_sigsig_1,Form("matchingtree_deta_2events_sigsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_2events_sigsig_2",&matchingtree_deta_2events_sigsig_2,Form("matchingtree_deta_2events_sigsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_2events_sigbkg_1",&matchingtree_deta_2events_sigbkg_1,Form("matchingtree_deta_2events_sigbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_2events_sigbkg_2",&matchingtree_deta_2events_sigbkg_2,Form("matchingtree_deta_2events_sigbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_2events_bkgsig_1",&matchingtree_deta_2events_bkgsig_1,Form("matchingtree_deta_2events_bkgsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_2events_bkgsig_2",&matchingtree_deta_2events_bkgsig_2,Form("matchingtree_deta_2events_bkgsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_2events_bkgbkg_1",&matchingtree_deta_2events_bkgbkg_1,Form("matchingtree_deta_2events_bkgbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_deta_2events_bkgbkg_2",&matchingtree_deta_2events_bkgbkg_2,Form("matchingtree_deta_2events_bkgbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_1event_sigsig_1",&matchingtree_drho_1event_sigsig_1,Form("matchingtree_drho_1event_sigsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_1event_sigsig_2",&matchingtree_drho_1event_sigsig_2,Form("matchingtree_drho_1event_sigsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_1event_sigbkg_1",&matchingtree_drho_1event_sigbkg_1,Form("matchingtree_drho_1event_sigbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_1event_sigbkg_2",&matchingtree_drho_1event_sigbkg_2,Form("matchingtree_drho_1event_sigbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_1event_bkgsig_1",&matchingtree_drho_1event_bkgsig_1,Form("matchingtree_drho_1event_bkgsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_1event_bkgsig_2",&matchingtree_drho_1event_bkgsig_2,Form("matchingtree_drho_1event_bkgsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_1event_bkgbkg_1",&matchingtree_drho_1event_bkgbkg_1,Form("matchingtree_drho_1event_bkgbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_1event_bkgbkg_2",&matchingtree_drho_1event_bkgbkg_2,Form("matchingtree_drho_1event_bkgbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_2events_sigsig_1",&matchingtree_drho_2events_sigsig_1,Form("matchingtree_drho_2events_sigsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_2events_sigsig_2",&matchingtree_drho_2events_sigsig_2,Form("matchingtree_drho_2events_sigsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_2events_sigbkg_1",&matchingtree_drho_2events_sigbkg_1,Form("matchingtree_drho_2events_sigbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_2events_sigbkg_2",&matchingtree_drho_2events_sigbkg_2,Form("matchingtree_drho_2events_sigbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_2events_bkgsig_1",&matchingtree_drho_2events_bkgsig_1,Form("matchingtree_drho_2events_bkgsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_2events_bkgsig_2",&matchingtree_drho_2events_bkgsig_2,Form("matchingtree_drho_2events_bkgsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_2events_bkgbkg_1",&matchingtree_drho_2events_bkgbkg_1,Form("matchingtree_drho_2events_bkgbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_drho_2events_bkgbkg_2",&matchingtree_drho_2events_bkgbkg_2,Form("matchingtree_drho_2events_bkgbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_1event_sigsig_1",&matchingtree_dpt_1event_sigsig_1,Form("matchingtree_dpt_1event_sigsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_1event_sigsig_2",&matchingtree_dpt_1event_sigsig_2,Form("matchingtree_dpt_1event_sigsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_1event_sigbkg_1",&matchingtree_dpt_1event_sigbkg_1,Form("matchingtree_dpt_1event_sigbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_1event_sigbkg_2",&matchingtree_dpt_1event_sigbkg_2,Form("matchingtree_dpt_1event_sigbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_1event_bkgsig_1",&matchingtree_dpt_1event_bkgsig_1,Form("matchingtree_dpt_1event_bkgsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_1event_bkgsig_2",&matchingtree_dpt_1event_bkgsig_2,Form("matchingtree_dpt_1event_bkgsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_1event_bkgbkg_1",&matchingtree_dpt_1event_bkgbkg_1,Form("matchingtree_dpt_1event_bkgbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_1event_bkgbkg_2",&matchingtree_dpt_1event_bkgbkg_2,Form("matchingtree_dpt_1event_bkgbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_2events_sigsig_1",&matchingtree_dpt_2events_sigsig_1,Form("matchingtree_dpt_2events_sigsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_2events_sigsig_2",&matchingtree_dpt_2events_sigsig_2,Form("matchingtree_dpt_2events_sigsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_2events_sigbkg_1",&matchingtree_dpt_2events_sigbkg_1,Form("matchingtree_dpt_2events_sigbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_2events_sigbkg_2",&matchingtree_dpt_2events_sigbkg_2,Form("matchingtree_dpt_2events_sigbkg_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_2events_bkgsig_1",&matchingtree_dpt_2events_bkgsig_1,Form("matchingtree_dpt_2events_bkgsig_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_2events_bkgsig_2",&matchingtree_dpt_2events_bkgsig_2,Form("matchingtree_dpt_2events_bkgsig_2[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_2events_bkgbkg_1",&matchingtree_dpt_2events_bkgbkg_1,Form("matchingtree_dpt_2events_bkgbkg_1[%d]/F",nclosestmore));
-    matchingtree->Branch("matchingtree_dpt_2events_bkgbkg_2",&matchingtree_dpt_2events_bkgbkg_2,Form("matchingtree_dpt_2events_bkgbkg_2[%d]/F",nclosestmore));
+//    // Additional quality info on matching
+//    matchingtree->Branch("matchingtree_deta_1event_sigsig_1",&matchingtree_deta_1event_sigsig_1,Form("matchingtree_deta_1event_sigsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_1event_sigsig_2",&matchingtree_deta_1event_sigsig_2,Form("matchingtree_deta_1event_sigsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_1event_sigbkg_1",&matchingtree_deta_1event_sigbkg_1,Form("matchingtree_deta_1event_sigbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_1event_sigbkg_2",&matchingtree_deta_1event_sigbkg_2,Form("matchingtree_deta_1event_sigbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_1event_bkgsig_1",&matchingtree_deta_1event_bkgsig_1,Form("matchingtree_deta_1event_bkgsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_1event_bkgsig_2",&matchingtree_deta_1event_bkgsig_2,Form("matchingtree_deta_1event_bkgsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_1event_bkgbkg_1",&matchingtree_deta_1event_bkgbkg_1,Form("matchingtree_deta_1event_bkgbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_1event_bkgbkg_2",&matchingtree_deta_1event_bkgbkg_2,Form("matchingtree_deta_1event_bkgbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_2events_sigsig_1",&matchingtree_deta_2events_sigsig_1,Form("matchingtree_deta_2events_sigsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_2events_sigsig_2",&matchingtree_deta_2events_sigsig_2,Form("matchingtree_deta_2events_sigsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_2events_sigbkg_1",&matchingtree_deta_2events_sigbkg_1,Form("matchingtree_deta_2events_sigbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_2events_sigbkg_2",&matchingtree_deta_2events_sigbkg_2,Form("matchingtree_deta_2events_sigbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_2events_bkgsig_1",&matchingtree_deta_2events_bkgsig_1,Form("matchingtree_deta_2events_bkgsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_2events_bkgsig_2",&matchingtree_deta_2events_bkgsig_2,Form("matchingtree_deta_2events_bkgsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_2events_bkgbkg_1",&matchingtree_deta_2events_bkgbkg_1,Form("matchingtree_deta_2events_bkgbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_deta_2events_bkgbkg_2",&matchingtree_deta_2events_bkgbkg_2,Form("matchingtree_deta_2events_bkgbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_1event_sigsig_1",&matchingtree_drho_1event_sigsig_1,Form("matchingtree_drho_1event_sigsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_1event_sigsig_2",&matchingtree_drho_1event_sigsig_2,Form("matchingtree_drho_1event_sigsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_1event_sigbkg_1",&matchingtree_drho_1event_sigbkg_1,Form("matchingtree_drho_1event_sigbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_1event_sigbkg_2",&matchingtree_drho_1event_sigbkg_2,Form("matchingtree_drho_1event_sigbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_1event_bkgsig_1",&matchingtree_drho_1event_bkgsig_1,Form("matchingtree_drho_1event_bkgsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_1event_bkgsig_2",&matchingtree_drho_1event_bkgsig_2,Form("matchingtree_drho_1event_bkgsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_1event_bkgbkg_1",&matchingtree_drho_1event_bkgbkg_1,Form("matchingtree_drho_1event_bkgbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_1event_bkgbkg_2",&matchingtree_drho_1event_bkgbkg_2,Form("matchingtree_drho_1event_bkgbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_2events_sigsig_1",&matchingtree_drho_2events_sigsig_1,Form("matchingtree_drho_2events_sigsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_2events_sigsig_2",&matchingtree_drho_2events_sigsig_2,Form("matchingtree_drho_2events_sigsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_2events_sigbkg_1",&matchingtree_drho_2events_sigbkg_1,Form("matchingtree_drho_2events_sigbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_2events_sigbkg_2",&matchingtree_drho_2events_sigbkg_2,Form("matchingtree_drho_2events_sigbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_2events_bkgsig_1",&matchingtree_drho_2events_bkgsig_1,Form("matchingtree_drho_2events_bkgsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_2events_bkgsig_2",&matchingtree_drho_2events_bkgsig_2,Form("matchingtree_drho_2events_bkgsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_2events_bkgbkg_1",&matchingtree_drho_2events_bkgbkg_1,Form("matchingtree_drho_2events_bkgbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_drho_2events_bkgbkg_2",&matchingtree_drho_2events_bkgbkg_2,Form("matchingtree_drho_2events_bkgbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_1event_sigsig_1",&matchingtree_dpt_1event_sigsig_1,Form("matchingtree_dpt_1event_sigsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_1event_sigsig_2",&matchingtree_dpt_1event_sigsig_2,Form("matchingtree_dpt_1event_sigsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_1event_sigbkg_1",&matchingtree_dpt_1event_sigbkg_1,Form("matchingtree_dpt_1event_sigbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_1event_sigbkg_2",&matchingtree_dpt_1event_sigbkg_2,Form("matchingtree_dpt_1event_sigbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_1event_bkgsig_1",&matchingtree_dpt_1event_bkgsig_1,Form("matchingtree_dpt_1event_bkgsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_1event_bkgsig_2",&matchingtree_dpt_1event_bkgsig_2,Form("matchingtree_dpt_1event_bkgsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_1event_bkgbkg_1",&matchingtree_dpt_1event_bkgbkg_1,Form("matchingtree_dpt_1event_bkgbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_1event_bkgbkg_2",&matchingtree_dpt_1event_bkgbkg_2,Form("matchingtree_dpt_1event_bkgbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_2events_sigsig_1",&matchingtree_dpt_2events_sigsig_1,Form("matchingtree_dpt_2events_sigsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_2events_sigsig_2",&matchingtree_dpt_2events_sigsig_2,Form("matchingtree_dpt_2events_sigsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_2events_sigbkg_1",&matchingtree_dpt_2events_sigbkg_1,Form("matchingtree_dpt_2events_sigbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_2events_sigbkg_2",&matchingtree_dpt_2events_sigbkg_2,Form("matchingtree_dpt_2events_sigbkg_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_2events_bkgsig_1",&matchingtree_dpt_2events_bkgsig_1,Form("matchingtree_dpt_2events_bkgsig_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_2events_bkgsig_2",&matchingtree_dpt_2events_bkgsig_2,Form("matchingtree_dpt_2events_bkgsig_2[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_2events_bkgbkg_1",&matchingtree_dpt_2events_bkgbkg_1,Form("matchingtree_dpt_2events_bkgbkg_1[%d]/F",nclosestmore));
+//    matchingtree->Branch("matchingtree_dpt_2events_bkgbkg_2",&matchingtree_dpt_2events_bkgbkg_2,Form("matchingtree_dpt_2events_bkgbkg_2[%d]/F",nclosestmore));
 
     }
 
@@ -900,8 +907,8 @@ void template_production::Loop(int maxevents)
 	      }
 
 	      if (n1==0 && n2==0){	      
-		matchingtree_index_1event_sigsig_1[l] = matches1[l];
-		matchingtree_index_1event_sigsig_2[l] = -999;
+		matchingtree_evt_1event_sigsig_1[l] = match_evt_number[n1].at(matches1[l]);
+		matchingtree_evt_1event_sigsig_2[l] = -999;
 		matchingtree_deta_1event_sigsig_1[l] = match_pho_eta[n1].at(matches1[l])-pholead_SCeta;
 		matchingtree_deta_1event_sigsig_2[l] = -999;
 		matchingtree_drho_1event_sigsig_1[l] = (match_evt_rho[n1].at(matches1[l])-event_rho)/event_sigma;
@@ -910,8 +917,8 @@ void template_production::Loop(int maxevents)
 		matchingtree_dpt_1event_sigsig_2[l] = -999;
 	      }
 	      if (n1==0 && n2==1){	      
-		matchingtree_index_1event_sigbkg_1[l] = -999;
-		matchingtree_index_1event_sigbkg_2[l] = matches2[l];
+		matchingtree_evt_1event_sigbkg_1[l] = -999;
+		matchingtree_evt_1event_sigbkg_2[l] = match_evt_number[n2].at(matches2[l]);
 		matchingtree_deta_1event_sigbkg_1[l] = -999;
 		matchingtree_deta_1event_sigbkg_2[l] = match_pho_eta[n2].at(matches2[l])-photrail_SCeta;
 		matchingtree_drho_1event_sigbkg_1[l] = -999;
@@ -920,8 +927,8 @@ void template_production::Loop(int maxevents)
 		matchingtree_dpt_1event_sigbkg_2[l] = match_pho_pt[n2].at(matches2[l])/photrail_pt;
 	      }
 	      if (n1==1 && n2==0){	      
-		matchingtree_index_1event_bkgsig_1[l] = matches1[l];
-		matchingtree_index_1event_bkgsig_2[l] = -999;
+		matchingtree_evt_1event_bkgsig_1[l] = match_evt_number[n1].at(matches1[l]);
+		matchingtree_evt_1event_bkgsig_2[l] = -999;
 		matchingtree_deta_1event_bkgsig_1[l] = match_pho_eta[n1].at(matches1[l])-pholead_SCeta;
 		matchingtree_deta_1event_bkgsig_2[l] = -999;
 		matchingtree_drho_1event_bkgsig_1[l] = (match_evt_rho[n1].at(matches1[l])-event_rho)/event_sigma;
@@ -930,8 +937,8 @@ void template_production::Loop(int maxevents)
 		matchingtree_dpt_1event_bkgsig_2[l] = -999;
 	      }
 	      if (n1==1 && n2==1){	      
-		matchingtree_index_1event_bkgbkg_1[l] = matches1[l];
-		matchingtree_index_1event_bkgbkg_2[l] = matches2[l];
+		matchingtree_evt_1event_bkgbkg_1[l] = match_evt_number[n1].at(matches1[l]);
+		matchingtree_evt_1event_bkgbkg_2[l] = match_evt_number[n2].at(matches2[l]);
 		matchingtree_deta_1event_bkgbkg_1[l] = match_pho_eta[n1].at(matches1[l])-pholead_SCeta;
 		matchingtree_deta_1event_bkgbkg_2[l] = match_pho_eta[n2].at(matches2[l])-photrail_SCeta;
 		matchingtree_drho_1event_bkgbkg_1[l] = (match_evt_rho[n1].at(matches1[l])-event_rho)/event_sigma;
@@ -960,8 +967,8 @@ void template_production::Loop(int maxevents)
 	      if (fabs(photrail_SCeta)>1.4442) if (fabs(match_pho_eta[n2].at(matches2[l]))<1.4442) cout << "MIGRATION ERROR" << endl;
 
 	      if (n1==0 && n2==0){	      
-		matchingtree_index_2events_sigsig_1[l] = matches1[l];
-		matchingtree_index_2events_sigsig_2[l] = matches2[l];
+		matchingtree_evt_2events_sigsig_1[l] = match_evt_number[n1].at(matches1[l]);
+		matchingtree_evt_2events_sigsig_2[l] = match_evt_number[n2].at(matches2[l]);
 		matchingtree_deta_2events_sigsig_1[l] = match_pho_eta[n1].at(matches1[l])-pholead_SCeta;
 		matchingtree_deta_2events_sigsig_2[l] = match_pho_eta[n2].at(matches2[l])-photrail_SCeta;
 		matchingtree_drho_2events_sigsig_1[l] = (match_evt_rho[n1].at(matches1[l])+match_evt_rho[n2].at(matches2[l])-event_rho)/event_sigma;
@@ -970,8 +977,8 @@ void template_production::Loop(int maxevents)
 		matchingtree_dpt_2events_sigsig_2[l] = -999;
 	      }
 	      if (n1==0 && n2==1){	      
-		matchingtree_index_2events_sigbkg_1[l] = matches1[l];
-		matchingtree_index_2events_sigbkg_2[l] = matches2[l];
+		matchingtree_evt_2events_sigbkg_1[l] = match_evt_number[n1].at(matches1[l]);
+		matchingtree_evt_2events_sigbkg_2[l] = match_evt_number[n2].at(matches2[l]);
 		matchingtree_deta_2events_sigbkg_1[l] = match_pho_eta[n1].at(matches1[l])-pholead_SCeta;
 		matchingtree_deta_2events_sigbkg_2[l] = match_pho_eta[n2].at(matches2[l])-photrail_SCeta;
 		matchingtree_drho_2events_sigbkg_1[l] = (match_evt_rho[n1].at(matches1[l])+match_evt_rho[n2].at(matches2[l])-event_rho)/event_sigma;
@@ -980,8 +987,8 @@ void template_production::Loop(int maxevents)
 		matchingtree_dpt_2events_sigbkg_2[l] = match_pho_pt[n2].at(matches2[l])/photrail_pt;
 	      }
 	      if (n1==1 && n2==0){	      
-		matchingtree_index_2events_bkgsig_1[l] = matches1[l];
-		matchingtree_index_2events_bkgsig_2[l] = matches2[l];
+		matchingtree_evt_2events_bkgsig_1[l] = match_evt_number[n1].at(matches1[l]);
+		matchingtree_evt_2events_bkgsig_2[l] = match_evt_number[n2].at(matches2[l]);
 		matchingtree_deta_2events_bkgsig_1[l] = match_pho_eta[n1].at(matches1[l])-pholead_SCeta;
 		matchingtree_deta_2events_bkgsig_2[l] = match_pho_eta[n2].at(matches2[l])-photrail_SCeta;
 		matchingtree_drho_2events_bkgsig_1[l] = (match_evt_rho[n1].at(matches1[l])+match_evt_rho[n2].at(matches2[l])-event_rho)/event_sigma;
@@ -990,8 +997,8 @@ void template_production::Loop(int maxevents)
 		matchingtree_dpt_2events_bkgsig_2[l] = -999;
 	      }
 	      if (n1==1 && n2==1){	      
-		matchingtree_index_2events_bkgbkg_1[l] = matches1[l];
-		matchingtree_index_2events_bkgbkg_2[l] = matches2[l];
+		matchingtree_evt_2events_bkgbkg_1[l] = match_evt_number[n1].at(matches1[l]);
+		matchingtree_evt_2events_bkgbkg_2[l] = match_evt_number[n2].at(matches2[l]);
 		matchingtree_deta_2events_bkgbkg_1[l] = match_pho_eta[n1].at(matches1[l])-pholead_SCeta;
 		matchingtree_deta_2events_bkgbkg_2[l] = match_pho_eta[n2].at(matches2[l])-photrail_SCeta;
 		matchingtree_drho_2events_bkgbkg_1[l] = (match_evt_rho[n1].at(matches1[l])+match_evt_rho[n2].at(matches2[l])-event_rho)/event_sigma;
