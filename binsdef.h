@@ -123,11 +123,17 @@ int n_eta1eta2_cats = n_eta_cats*n_eta_cats;
 float *etabins = binsdef_single_gamma_EB_eta+0;
 
 // FOR PHOTON COMPONENT
-// 020616 from data, no cleaning, no pf charged cut in presel
-float eff_areas_EB_data[n_bins] = {2.615381e-01,2.587228e-01,2.641340e-01,2.640072e-01,2.569331e-01,2.395977e-01,1.651901e-01};
-float eff_areas_EE_data[n_bins] = {5.848781e-02,8.411012e-02,1.189097e-01,1.446802e-01,1.148867e-01};
-float eff_areas_EB_mc[n_bins] = {2.719313e-01,2.748353e-01,2.746818e-01,2.704172e-01,2.662482e-01,2.427560e-01,1.708246e-01};
-float eff_areas_EE_mc[n_bins] = {5.107922e-02,8.485798e-02,1.354249e-01,1.671490e-01,1.454153e-01};
+// 030903p1
+float eff_areas_EB_data[n_bins] = {2.703034e-01,2.678859e-01,2.722684e-01,2.720999e-01,2.643882e-01,2.480913e-01,1.706292e-01};
+float eff_areas_EE_data[n_bins] = {5.329403e-02,7.733851e-02,1.091783e-01,1.339074e-01,1.068975e-01};
+float eff_areas_EB_mc[n_bins] = {2.840231e-01,2.859291e-01,2.825974e-01,2.930248e-01,2.766801e-01,2.567621e-01,1.797386e-01};
+float eff_areas_EE_mc[n_bins] = {5.101126e-02,7.539486e-02,1.088317e-01,1.385660e-01,1.077761e-01};
+
+//// 020616, no cleaning, no pf charged cut in presel
+//float eff_areas_EB_data[n_bins] = {2.615381e-01,2.587228e-01,2.641340e-01,2.640072e-01,2.569331e-01,2.395977e-01,1.651901e-01};
+//float eff_areas_EE_data[n_bins] = {5.848781e-02,8.411012e-02,1.189097e-01,1.446802e-01,1.148867e-01};
+//float eff_areas_EB_mc[n_bins] = {2.719313e-01,2.748353e-01,2.746818e-01,2.704172e-01,2.662482e-01,2.427560e-01,1.708246e-01};
+//float eff_areas_EE_mc[n_bins] = {5.107922e-02,8.485798e-02,1.354249e-01,1.671490e-01,1.454153e-01};
 
 
 

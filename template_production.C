@@ -274,10 +274,12 @@ void template_production::Loop(int maxevents)
   //int limit_entries = -1;
   const float thr = float(limit_entries)/float(nentries);
 
+  int split = (nentries>=20) ? nentries/20 : 1;
+
   Long64_t nbytes = 0, nb = 0;
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
 
-    if (jentry%100000==0) std::cout << "Processing entry " << jentry << std::endl;
+    if (jentry%split==0) std::cout << "Processing entry " << jentry << std::endl;
 
     if (limit_entries>0){
       if (randomgen->Uniform(0,1) > thr) continue;
@@ -808,9 +810,9 @@ void template_production::Loop(int maxevents)
 
 
 	    float a1 = (!doswap ? filleta1 : filleta2);
-	    float a2 = (!doswap ? fillpt1 : fillpt2);
+	    //	    float a2 = (!doswap ? fillpt1 : fillpt2);
 	    float b1 = (!doswap ? filleta2 : filleta1);
-	    float b2 = (!doswap ? fillpt2 : fillpt1);
+	    //	    float b2 = (!doswap ? fillpt2 : fillpt1);
 	    if (((fabs(a1)<1.4442)+(fabs(pholead_SCeta)<1.4442)==1) || ((fabs(b1)<1.4442)+(fabs(photrail_SCeta)<1.4442)==1)) {
 //	      cout << "<-------------------------------------------------";
 //	      cout << n1 << n2 << l << " " << doswap << " " ;
@@ -1177,7 +1179,7 @@ void get_eff_area(TString filename, bool doEB, TString comp){
   }
 
 
-  for (int i=0; i<n_bins; i++) gROOT->ProcessLine(Form(".! echo %s %s bin%d %e >> puscaling.txt",comp.Data(),(doEB) ? "EB" : "EE",i,f_iso[i]->GetParameter(1)/f_rho[i]->GetParameter(1)));
+  for (int i=0; i<n_bins; i++) gROOT->ProcessLine(Form(".! echo %s %s bin%d %e >> puscaling_%s.txt",comp.Data(),(doEB) ? "EB" : "EE",i,f_iso[i]->GetParameter(1)/f_rho[i]->GetParameter(1),(doEB) ? "EB" : "EE"));
 
   outF->cd();
 
@@ -1229,42 +1231,43 @@ std::vector<std::vector<TProfile*> > template_production::GetPUScaling(bool doEB
 
 
     float pholead_phoiso=-999;
-    { // recalc phoiso w/cleaning
-      float et_recalc = 0;
-      float e_recalc = 0;
-      int number_recalc = 0;
-
-
-      for (int i=0; i<pholead_Npfcandphotonincone; i++) {
-
-	float et=pholead_photonpfcandets[i];
-	float e=pholead_photonpfcandenergies[i];
-	//	float deta=pholead_photonpfcanddetas[i];
-	//	float dphi=pholead_photonpfcanddphis[i];
-	//	float dR=sqrt(deta*deta+dphi*dphi);
-	float eta=fabs(TMath::ACosH(e/et));
-
-	if (eta>1.4442 && eta<1.56) continue;
-	if (eta>2.5) continue;
-
-#include "cleaning.cc"
-
-	if (fabs(pholead_SCeta)<1.4442 && eta>1.4442) continue;
-	if (fabs(pholead_SCeta)>1.56 && eta<1.56) continue;
-	et_recalc+=et;
-	e_recalc+=e;
-	number_recalc++;
-
-      }
-
-
-      pholead_phoiso=et_recalc;
-    }
+//    { // recalc phoiso w/cleaning
+//      float et_recalc = 0;
+//      float e_recalc = 0;
+//      int number_recalc = 0;
+//
+//
+//      for (int i=0; i<pholead_Npfcandphotonincone; i++) {
+//
+//	float et=pholead_photonpfcandets[i];
+//	float e=pholead_photonpfcandenergies[i];
+//	//	float deta=pholead_photonpfcanddetas[i];
+//	//	float dphi=pholead_photonpfcanddphis[i];
+//	//	float dR=sqrt(deta*deta+dphi*dphi);
+//	float eta=fabs(TMath::ACosH(e/et));
+//
+//	if (eta>1.4442 && eta<1.56) continue;
+//	if (eta>2.5) continue;
+//
+//#include "cleaning.cc"
+//
+//	if (fabs(pholead_SCeta)<1.4442 && eta>1.4442) continue;
+//	if (fabs(pholead_SCeta)>1.56 && eta<1.56) continue;
+//	et_recalc+=et;
+//	e_recalc+=e;
+//	number_recalc++;
+//
+//      }
+//
+//
+//      pholead_phoiso=et_recalc;
+//    }
 
 
 
     if (diffvar=="photoniso"){
-      pholead_outvar=pholead_phoiso;
+      //      pholead_outvar=pholead_phoiso;
+      pholead_outvar=pholead_PhoSCRemovalPFIsoPhoton;
       assert (pholead_outvar>-100);
     }
     else if (diffvar=="combiso"){
