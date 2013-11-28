@@ -94,8 +94,6 @@ public :
    Float_t         photrail_PhoSCRemovalPFIsoCharged;
    Float_t         pholead_PhoSCRemovalPFIsoCombined;
    Float_t         photrail_PhoSCRemovalPFIsoCombined;
-   Int_t           pholead_PhoPassConvSafeElectronVeto;
-   Int_t           photrail_PhoPassConvSafeElectronVeto;
    Float_t         pholead_GenPhotonIsoDR04;
    Float_t         photrail_GenPhotonIsoDR04;
    Int_t           pholead_PhoMCmatchexitcode;
@@ -151,6 +149,12 @@ public :
    Float_t rewinfo_template_2events_sigbkg_2[nclosest*6];
    Float_t rewinfo_template_2events_bkgsig_2[nclosest*6];
    Float_t rewinfo_template_2events_bkgbkg_2[nclosest*6];
+
+   Int_t n_jets;
+   Float_t jet_pt[50];
+   Float_t jet_eta[50];
+   Float_t jet_phi[50];
+   Float_t jet_energy[50];
    
    // List of branches
    TBranch        *b_event_fileuuid;   //!
@@ -194,8 +198,6 @@ public :
    TBranch        *b_photrail_PhoSCRemovalPFIsoCharged;   //!
    TBranch        *b_pholead_PhoSCRemovalPFIsoCombined;   //!
    TBranch        *b_photrail_PhoSCRemovalPFIsoCombined;   //!
-   TBranch        *b_pholead_PhoPassConvSafeElectronVeto;   //!
-   TBranch        *b_photrail_PhoPassConvSafeElectronVeto;   //!
    TBranch        *b_pholead_GenPhotonIsoDR04;   //!
    TBranch        *b_photrail_GenPhotonIsoDR04;   //!
    TBranch        *b_pholead_PhoMCmatchexitcode;   //!
@@ -251,6 +253,12 @@ public :
    TBranch *b_rewinfo_template_2events_sigbkg_2;
    TBranch *b_rewinfo_template_2events_bkgsig_2;
    TBranch *b_rewinfo_template_2events_bkgbkg_2;
+
+   TBranch *b_n_jets;
+   TBranch *b_jet_pt;
+   TBranch *b_jet_eta;
+   TBranch *b_jet_phi;
+   TBranch *b_jet_energy;
 
 
    template_production(TTree *tree=0);
@@ -591,8 +599,6 @@ void template_production::Init()
    fChain->SetBranchAddress("photrail_PhoSCRemovalPFIsoCharged", &photrail_PhoSCRemovalPFIsoCharged, &b_photrail_PhoSCRemovalPFIsoCharged);
    fChain->SetBranchAddress("pholead_PhoSCRemovalPFIsoCombined", &pholead_PhoSCRemovalPFIsoCombined, &b_pholead_PhoSCRemovalPFIsoCombined);
    fChain->SetBranchAddress("photrail_PhoSCRemovalPFIsoCombined", &photrail_PhoSCRemovalPFIsoCombined, &b_photrail_PhoSCRemovalPFIsoCombined);
-   fChain->SetBranchAddress("pholead_PhoPassConvSafeElectronVeto", &pholead_PhoPassConvSafeElectronVeto, &b_pholead_PhoPassConvSafeElectronVeto);
-   fChain->SetBranchAddress("photrail_PhoPassConvSafeElectronVeto", &photrail_PhoPassConvSafeElectronVeto, &b_photrail_PhoPassConvSafeElectronVeto);
    fChain->SetBranchAddress("pholead_GenPhotonIsoDR04", &pholead_GenPhotonIsoDR04, &b_pholead_GenPhotonIsoDR04);
    fChain->SetBranchAddress("photrail_GenPhotonIsoDR04", &photrail_GenPhotonIsoDR04, &b_photrail_GenPhotonIsoDR04);
    fChain->SetBranchAddress("pholead_PhoMCmatchexitcode", &pholead_PhoMCmatchexitcode, &b_pholead_PhoMCmatchexitcode);
@@ -648,6 +654,12 @@ void template_production::Init()
    fChain->SetBranchAddress("rewinfo_template_2events_sigbkg_2",&rewinfo_template_2events_sigbkg_2,&b_rewinfo_template_2events_sigbkg_2);
    fChain->SetBranchAddress("rewinfo_template_2events_bkgsig_2",&rewinfo_template_2events_bkgsig_2,&b_rewinfo_template_2events_bkgsig_2);
    fChain->SetBranchAddress("rewinfo_template_2events_bkgbkg_2",&rewinfo_template_2events_bkgbkg_2,&b_rewinfo_template_2events_bkgbkg_2);
+
+   fChain->SetBranchAddress("n_jets",&n_jets,&b_n_jets);
+   fChain->SetBranchAddress("jet_pt",&jet_pt,&b_jet_pt);
+   fChain->SetBranchAddress("jet_eta",&jet_eta,&b_jet_eta);
+   fChain->SetBranchAddress("jet_phi",&jet_phi,&b_jet_phi);
+   fChain->SetBranchAddress("jet_energy",&jet_energy,&b_jet_energy);
 
 
    Notify();
@@ -967,7 +979,7 @@ float template_production::AbsDeltaPhi(double phi1, double phi2){
   return TMath::Abs(result);
 }
 
-void template_production::FillDiffVariables(){
+void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST ***NOT*** USE THE INFORMATION ABOUT WHICH PHOTON IS CALLED 1 AND 2
 
   roovardiff["invmass"]->setVal(dipho_mgg_photon);
   {
@@ -1025,6 +1037,55 @@ void template_production::FillDiffVariables(){
     float deta = pholead_eta-photrail_eta;
     float dR = sqrt(deta*deta+dphi*dphi);
     roovardiff["dR"]->setVal(dR);
+  }
+  {
+    roovardiff["njets"]->setVal(n_jets);
+  }
+  {
+    if (n_jets==1){
+      roovardiff["1jet_jpt"]->setVal(jet_pt[0]);
+      roovardiff["1jet_dR_lead_j"]->setVal(sqrt(pow(pholead_eta-jet_eta[0],2)+pow(AbsDeltaPhi(pholead_phi,jet_phi[0]),2)));
+      roovardiff["1jet_dR_trail_j"]->setVal(sqrt(pow(photrail_eta-jet_eta[0],2)+pow(AbsDeltaPhi(photrail_phi,jet_phi[0]),2)));
+      roovardiff["1jet_dR_close_j"]->setVal(std::min(roovardiff["1jet_dR_lead_j"]->getVal(),roovardiff["1jet_dR_trail_j"]->getVal()));
+      roovardiff["1jet_dR_far_j"]->setVal(std::max(roovardiff["1jet_dR_lead_j"]->getVal(),roovardiff["1jet_dR_trail_j"]->getVal()));
+    }
+    else{
+      roovardiff["1jet_jpt"]->setVal(9998);
+      roovardiff["1jet_dR_lead_j"]->setVal(9998);
+      roovardiff["1jet_dR_trail_j"]->setVal(9998);
+      roovardiff["1jet_dR_close_j"]->setVal(9998);
+      roovardiff["1jet_dR_far_j"]->setVal(9998);
+    }
+  }
+  {
+    if (n_jets==2){
+      roovardiff["2jet_j1pt"]->setVal(jet_pt[0]);
+      roovardiff["2jet_j2pt"]->setVal(jet_pt[1]);
+      roovardiff["2jet_deta_jj"]->setVal(fabs(jet_eta[0]-jet_eta[1]));
+      roovardiff["2jet_dphi_jj"]->setVal(AbsDeltaPhi(jet_phi[0],jet_phi[1]));
+      roovardiff["2jet_dR_jj"]->setVal(sqrt(pow(jet_eta[0]-jet_eta[1],2)+pow(AbsDeltaPhi(jet_phi[0],jet_phi[1]),2)));
+      TLorentzVector pho1;
+      pho1.SetPtEtaPhiE(pholead_pt,pholead_eta,pholead_phi,pholead_energy);
+      TLorentzVector pho2;
+      pho2.SetPtEtaPhiE(photrail_pt,photrail_eta,photrail_phi,photrail_energy);
+      TLorentzVector jet1;
+      jet1.SetPtEtaPhiE(jet_pt[0],jet_eta[0],jet_phi[0],jet_energy[0]);
+      TLorentzVector jet2;
+      jet2.SetPtEtaPhiE(jet_pt[1],jet_eta[1],jet_phi[1],jet_energy[1]);
+      roovardiff["2jet_mjj"]->setVal((jet1+jet2).M());
+      roovardiff["2jet_zeppen"]->setVal(fabs((pho1+pho2).Eta()-(jet1.Eta()+jet2.Eta())/2));
+      roovardiff["2jet_dphi_gg_jj"]->setVal(AbsDeltaPhi((pho1+pho2).Phi(),(jet1+jet2).Phi()));
+    }
+    else {
+      roovardiff["2jet_j1pt"]->setVal(9998);
+      roovardiff["2jet_j2pt"]->setVal(9998);
+      roovardiff["2jet_deta_jj"]->setVal(9998);
+      roovardiff["2jet_dphi_jj"]->setVal(9998);
+      roovardiff["2jet_dR_jj"]->setVal(9998);
+      roovardiff["2jet_mjj"]->setVal(9998);
+      roovardiff["2jet_zeppen"]->setVal(9998);
+      roovardiff["2jet_dphi_gg_jj"]->setVal(9998);
+    }
   }
   
   return;
