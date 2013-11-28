@@ -41,6 +41,8 @@
 #include <algorithm> 
 #include "TKDTree.h"
 
+bool do_scan_cone = false;
+
 using namespace std;
 using namespace RooFit;
 
@@ -844,6 +846,7 @@ void template_production::WriteOutput(const char* filename){
   for (int i=0; i<2; i++) for (int k=0; k<50; k++) if (scan_conewithcheck_histos[i][k]->Integral(0,n_histobins+1)>0) (scan_conewithcheck_histos[i][k])->Scale(1.0/scan_conewithcheck_histos[i][k]->Integral(0,n_histobins+1));
   for (int i=0; i<2; i++) for (int k=0; k<50; k++) (scan_conewithcheck_histos[i][k])->Write();
 
+  if (do_scan_cone){
   TCanvas *canv[2];
   for (int i=0; i<1; i++) {
     TString title = Form("canv_scan_cone_%d",i);
@@ -865,9 +868,8 @@ void template_production::WriteOutput(const char* filename){
     canv[i]->SetLogy(1);
     canv[i]->SaveAs(Form("%s.root",title.Data()));
     canv[i]->SaveAs(Form("%s.pdf",title.Data()));
-
   }
-
+  }
 
   }
 
