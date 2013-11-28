@@ -6,8 +6,6 @@
 
 using namespace std;
 
-bool do_scan_cone = false;
-
 void template_production::Loop(int maxevents)
 {
 
@@ -279,7 +277,7 @@ void template_production::Loop(int maxevents)
   Long64_t nbytes = 0, nb = 0;
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
 
-    if (jentry%split==0) std::cout << "Processing entry " << jentry << std::endl;
+    if (jentry%split==0) std::cout << "Processing entry " << jentry << " " << int(100*float(jentry)/(nentries-1)) <<"%" << std::endl;
 
     if (limit_entries>0){
       if (randomgen->Uniform(0,1) > thr) continue;
