@@ -643,29 +643,9 @@ void template_production::Loop(int maxevents)
 	 Int_t bin_couple = -999;
 	 float value_diffvariable;
 
-	if (*diffvariable==TString("invmass")) {
-	  value_diffvariable=roovar_invmass->getVal();
-	  bin_couple = Choose_bin_invmass(value_diffvariable,event_ok_for_dataset_local);
-	  //	  invmass_vector.push_back(value_diffvariable);
-	}
-	if (*diffvariable==TString("diphotonpt")){
-	  value_diffvariable=roovar_diphotonpt->getVal();
-	  bin_couple = Choose_bin_diphotonpt(value_diffvariable,event_ok_for_dataset_local);
-	  //	  diphotonpt_vector.push_back(value_diffvariable);
-	}
-	if (*diffvariable==TString("costhetastar")){
-	  value_diffvariable = roovar_costhetastar->getVal();
-	  bin_couple = Choose_bin_costhetastar(value_diffvariable,event_ok_for_dataset_local); 
-	}
-	if (*diffvariable==TString("dphi")){
-	  value_diffvariable=roovar_dphi->getVal();
-	  bin_couple = Choose_bin_dphi(value_diffvariable,event_ok_for_dataset_local);
-	}
-	if (*diffvariable==TString("dR")){
-	  value_diffvariable=roovar_dR->getVal();
-	  bin_couple = Choose_bin_dR(value_diffvariable,event_ok_for_dataset_local);
-	}
-      
+	 value_diffvariable = roovardiff[*diffvariable]->getVal();
+	 bin_couple = Choose_bin(*diffvariable,value_diffvariable);
+
 	if (bin_couple<0) continue;
 	
 	obs_roodset[get_name_obs_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple)]->add(args,weight);
@@ -1033,13 +1013,6 @@ void template_production::Loop(int maxevents)
     matchingtree->Write();
     matchingfile->Close();
   }
-
-//  if (invmass_vector.size()>0){
-//    std::sort(invmass_vector.begin(),invmass_vector.end());
-//    std::sort(diphotonpt_vector.begin(),diphotonpt_vector.end());
-//    for (int i=1; i<10; i++) std::cout << "invmass" << invmass_vector.at(invmass_vector.size()-i) << std::endl;
-//    for (int i=1; i<10; i++) std::cout << "diphotonpt" << diphotonpt_vector.at(diphotonpt_vector.size()-i) << std::endl;
-//  }
 
 };
 

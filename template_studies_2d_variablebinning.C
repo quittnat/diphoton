@@ -177,49 +177,8 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   else if (splitting=="EBEE") {s1="EB"; s2="EE";}
   bool sym  = (s1==s2);
 
-  int bins_to_run=-1; 
-  float *binsdef=NULL;
-
-  if (diffvariable=="invmass"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_invmass_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_invmass_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_invmass_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_invmass_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_invmass_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_invmass_EEEE;
-  }
-  if (diffvariable=="diphotonpt"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_diphotonpt_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_diphotonpt_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_diphotonpt_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_diphotonpt_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_diphotonpt_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_diphotonpt_EEEE;
-  }
-  if (diffvariable=="costhetastar"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_costhetastar_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_costhetastar_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_costhetastar_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_costhetastar_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_costhetastar_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_costhetastar_EEEE;
-  }
-  if (diffvariable=="dphi"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_dphi_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_dphi_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_dphi_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_dphi_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_dphi_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_dphi_EEEE;
-  }
-  if (diffvariable=="dR"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_dR_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_dR_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_dR_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_dR_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_dR_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_dR_EEEE;
-  }
+  int bins_to_run = diffvariables_nbins_list(diffvariable);
+  float *binsdef = diffvariables_binsdef_list(diffvariable);
 
   if (bins_to_run==bin) bins_to_run=-1;
 
@@ -2339,50 +2298,9 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
 
 void fit_dataset_allbins(TString diffvariable="", TString splitting="", TString do_syst_string=TString("")){
 
-  int bins_to_run=-1; 
-  float *binsdef=NULL;
+  int bins_to_run = diffvariables_nbins_list(diffvariable);
+  //float *binsdef = diffvariables_binsdef_list(diffvariable);
 
-  if (diffvariable=="invmass"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_invmass_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_invmass_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_invmass_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_invmass_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_invmass_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_invmass_EEEE;
-  }
-  if (diffvariable=="diphotonpt"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_diphotonpt_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_diphotonpt_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_diphotonpt_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_diphotonpt_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_diphotonpt_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_diphotonpt_EEEE;
-  }
-  if (diffvariable=="costhetastar"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_costhetastar_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_costhetastar_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_costhetastar_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_costhetastar_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_costhetastar_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_costhetastar_EEEE;
-  }
-  if (diffvariable=="dphi"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_dphi_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_dphi_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_dphi_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_dphi_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_dphi_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_dphi_EEEE;
-  }
-  if (diffvariable=="dR"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_dR_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_dR_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_dR_EEEE; 
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_dR_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_dR_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_dR_EEEE;
-  }
-  
   fit_output *fr[n_bins];
 
   for (int bin=0; bin<bins_to_run; bin++) {
@@ -2422,56 +2340,8 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
   TH1F *systplot_statistic=NULL;
 
-  int bins_to_run=-1;
-  float *binsdef=NULL;
-
-  if (diffvariable=="invmass"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_invmass_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_invmass_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_invmass_EEEE; 
-    else bins_to_run+=n_templates_invmass_EEEE;
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_invmass_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_invmass_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_invmass_EEEE;
-  }
-  if (diffvariable=="diphotonpt"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_diphotonpt_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_diphotonpt_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_diphotonpt_EEEE; 
-    else bins_to_run+=n_templates_diphotonpt_EEEE;
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_diphotonpt_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_diphotonpt_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_diphotonpt_EEEE;
-  }
-  if (diffvariable=="costhetastar"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_costhetastar_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_costhetastar_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_costhetastar_EEEE; 
-    else bins_to_run+=n_templates_costhetastar_EEEE;
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_costhetastar_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_costhetastar_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_costhetastar_EEEE;
-  }
-  if (diffvariable=="dphi"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_dphi_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_dphi_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_dphi_EEEE; 
-    else bins_to_run+=n_templates_dphi_EEEE;
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_dphi_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_dphi_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_dphi_EEEE;
-  }
-  if (diffvariable=="dR"){
-    if (splitting=="EBEB")      bins_to_run+=n_templates_dR_EBEB;
-    else if (splitting=="EBEE") bins_to_run+=n_templates_dR_EBEE;
-    else if (splitting=="EEEE") bins_to_run+=n_templates_dR_EEEE; 
-    else bins_to_run+=n_templates_dR_EEEE;
-    if (splitting=="EBEB")      binsdef=binsdef_diphoton_dR_EBEB;
-    else if (splitting=="EBEE") binsdef=binsdef_diphoton_dR_EBEE;
-    else if (splitting=="EEEE") binsdef=binsdef_diphoton_dR_EEEE;
-  }
-
-
+  int bins_to_run = diffvariables_nbins_list(diffvariable);
+  float *binsdef = diffvariables_binsdef_list(diffvariable);
 
   if (splitting=="inclusive"){
     TString sp[3]={"EBEB","EBEE","EEEE"};

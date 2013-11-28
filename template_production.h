@@ -52,9 +52,6 @@ public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
 
-//   vector<float> invmass_vector;
-//   vector<float> diphotonpt_vector;
-
    // Declaration of leaf types
    UInt_t          event_fileuuid;
    Int_t           event_run;
@@ -296,11 +293,7 @@ public :
   RooRealVar *roosigma;
   RooRealVar *rooweight;
 
-  RooRealVar *roovar_invmass;
-  RooRealVar *roovar_diphotonpt;
-  RooRealVar *roovar_costhetastar;
-  RooRealVar *roovar_dphi;
-  RooRealVar *roovar_dR;
+  std::map<TString,RooRealVar*> roovardiff;
 
   RooArgSet *rooargset_diffvariables;
 
@@ -349,11 +342,7 @@ public :
 
    int whichnewtemplate;
 
-   Int_t Choose_bin_invmass(float invmass, int region);
-   Int_t Choose_bin_diphotonpt(float diphotonpt, int region);
-   Int_t Choose_bin_costhetastar(float costhetastar, int region);
-   Int_t Choose_bin_dphi(float dphi, int region);
-   Int_t Choose_bin_dR(float dR, int region);
+   Int_t Choose_bin(TString diff_, float val_);
 
    Int_t Choose_bin_pt(float pt);
    Int_t Choose_bin_eta(float eta, int region);
@@ -428,13 +417,11 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
   roosigma = new RooRealVar("roosigma","roosigma",0,50);
   rooweight = new RooRealVar("rooweight","rooweight",0,5);
 
-  roovar_invmass = new RooRealVar("roovar_invmass","roovar_invmass",binsdef_diphoton_invmass_EBEB[0],binsdef_diphoton_invmass_EBEB[n_templates_invmass_EBEB]);
-  roovar_diphotonpt = new RooRealVar("roovar_diphotonpt","roovar_diphotonpt",binsdef_diphoton_diphotonpt_EBEB[0],binsdef_diphoton_diphotonpt_EBEB[n_templates_diphotonpt_EBEB]);
-  roovar_costhetastar = new RooRealVar("roovar_costhetastar","roovar_costhetastar",binsdef_diphoton_costhetastar_EBEB[0],binsdef_diphoton_costhetastar_EBEB[n_templates_costhetastar_EBEB]);
-  roovar_dphi = new RooRealVar("roovar_dphi","roovar_dphi",binsdef_diphoton_dphi_EBEB[0],binsdef_diphoton_dphi_EBEB[n_templates_dphi_EBEB]);
-  roovar_dR = new RooRealVar("roovar_dR","roovar_dR",binsdef_diphoton_dR_EBEB[0],binsdef_diphoton_dR_EBEB[n_templates_dR_EBEB]);
-
-  rooargset_diffvariables = new RooArgSet(*roovar_invmass,*roovar_diphotonpt,*roovar_costhetastar,*roovar_dphi,*roovar_dR);
+  for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
+    roovardiff[*diffvariable] = new RooRealVar(Form("roovar_%s",diffvariable->Data()),Form("roovar_%s",diffvariable->Data()),diffvariables_binsdef_list(*diffvariable)[0],diffvariables_binsdef_list(*diffvariable)[diffvariables_nbins_list(*diffvariable)]);
+  }
+  rooargset_diffvariables = new RooArgSet();
+  for (std::map<TString,RooRealVar*>::const_iterator it=roovardiff.begin(); it!=roovardiff.end(); it++) rooargset_diffvariables->add(*(it->second));
 
   for (int i=0; i<2; i++){
       TString name_signal="signal";
@@ -487,59 +474,12 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
 	}
       }
 
-      int bins_to_run=-1; 
-      float *binsdef=NULL;
-
-      TString splitting = reg;
-      if (splitting=="EEEB") splitting="EBEE";
-      if (*diffvariable=="invmass"){
-	if (splitting=="EBEB")      bins_to_run+=n_templates_invmass_EBEB;
-	else if (splitting=="EBEE") bins_to_run+=n_templates_invmass_EBEE;
-	else if (splitting=="EEEE") bins_to_run+=n_templates_invmass_EEEE; 
-	if (splitting=="EBEB")      binsdef=binsdef_diphoton_invmass_EBEB;
-	else if (splitting=="EBEE") binsdef=binsdef_diphoton_invmass_EBEE;
-	else if (splitting=="EEEE") binsdef=binsdef_diphoton_invmass_EEEE;
-      }
-      if (*diffvariable=="diphotonpt"){
-	if (splitting=="EBEB")      bins_to_run+=n_templates_diphotonpt_EBEB;
-	else if (splitting=="EBEE") bins_to_run+=n_templates_diphotonpt_EBEE;
-	else if (splitting=="EEEE") bins_to_run+=n_templates_diphotonpt_EEEE; 
-	if (splitting=="EBEB")      binsdef=binsdef_diphoton_diphotonpt_EBEB;
-	else if (splitting=="EBEE") binsdef=binsdef_diphoton_diphotonpt_EBEE;
-	else if (splitting=="EEEE") binsdef=binsdef_diphoton_diphotonpt_EEEE;
-      }
-      if (*diffvariable=="costhetastar"){
-	if (splitting=="EBEB")      bins_to_run+=n_templates_costhetastar_EBEB;
-	else if (splitting=="EBEE") bins_to_run+=n_templates_costhetastar_EBEE;
-	else if (splitting=="EEEE") bins_to_run+=n_templates_costhetastar_EEEE; 
-	if (splitting=="EBEB")      binsdef=binsdef_diphoton_costhetastar_EBEB;
-	else if (splitting=="EBEE") binsdef=binsdef_diphoton_costhetastar_EBEE;
-	else if (splitting=="EEEE") binsdef=binsdef_diphoton_costhetastar_EEEE;
-      }
-      if (*diffvariable=="dphi"){
-	if (splitting=="EBEB")      bins_to_run+=n_templates_dphi_EBEB;
-	else if (splitting=="EBEE") bins_to_run+=n_templates_dphi_EBEE;
-	else if (splitting=="EEEE") bins_to_run+=n_templates_dphi_EEEE; 
-	if (splitting=="EBEB")      binsdef=binsdef_diphoton_dphi_EBEB;
-	else if (splitting=="EBEE") binsdef=binsdef_diphoton_dphi_EBEE;
-	else if (splitting=="EEEE") binsdef=binsdef_diphoton_dphi_EEEE;
-      }
-      if (*diffvariable=="dR"){
-	if (splitting=="EBEB")      bins_to_run+=n_templates_dR_EBEB;
-	else if (splitting=="EBEE") bins_to_run+=n_templates_dR_EBEE;
-	else if (splitting=="EEEE") bins_to_run+=n_templates_dR_EEEE; 
-	if (splitting=="EBEB")      binsdef=binsdef_diphoton_dR_EBEB;
-	else if (splitting=="EBEE") binsdef=binsdef_diphoton_dR_EBEE;
-	else if (splitting=="EEEE") binsdef=binsdef_diphoton_dR_EEEE;
-      }
-
-
       TString t3=Form("true_purity_%s_%s",reg.Data(),diffvariable->Data());
-      true_purity[t3] = new TProfile(t3.Data(),t3.Data(),bins_to_run,binsdef);
+      true_purity[t3] = new TProfile(t3.Data(),t3.Data(),diffvariables_nbins_list(*diffvariable),diffvariables_binsdef_list(*diffvariable));
       TString t3_ispp=Form("ispp_true_purity_%s_%s",reg.Data(),diffvariable->Data());
-      true_purity_isppevent[t3_ispp] = new TH1F(t3_ispp.Data(),t3_ispp.Data(),bins_to_run,binsdef);
+      true_purity_isppevent[t3_ispp] = new TH1F(t3_ispp.Data(),t3_ispp.Data(),diffvariables_nbins_list(*diffvariable),diffvariables_binsdef_list(*diffvariable));
       TString t3_isnotpp=Form("isnotpp_true_purity_%s_%s",reg.Data(),diffvariable->Data());
-      true_purity_isnotppevent[t3_isnotpp] = new TH1F(t3_isnotpp.Data(),t3_isnotpp.Data(),bins_to_run,binsdef);
+      true_purity_isnotppevent[t3_isnotpp] = new TH1F(t3_isnotpp.Data(),t3_isnotpp.Data(),diffvariables_nbins_list(*diffvariable),diffvariables_binsdef_list(*diffvariable));
 
     }
 
@@ -758,12 +698,7 @@ void template_production::WriteOutput(const char* filename){
   roosigma->Write();
   rooweight->Write();
 
-  roovar_invmass->Write();
-  roovar_diphotonpt->Write();
-  roovar_costhetastar->Write();
-  roovar_dphi->Write();
-  roovar_dR->Write();
-  
+  for (std::map<TString,RooRealVar*>::const_iterator it=roovardiff.begin(); it!=roovardiff.end(); it++) it->second->Write();
 
   if (dosignaltemplate || dobackgroundtemplate) {
 
@@ -930,151 +865,24 @@ TString template_production::get_name_template2d_roodset(int region, TString sig
   return t;
 };
 
-Int_t template_production::Choose_bin_invmass(float invmass, int region){
+Int_t template_production::Choose_bin(TString diff_, float val_){
 
-  int index;
-
-  float *cuts=NULL;
-
-  if (region==0) {cuts=binsdef_diphoton_invmass_EBEB; index=n_templates_invmass_EBEB;}
-  if (region==2) {cuts=binsdef_diphoton_invmass_EEEE; index=n_templates_invmass_EEEE;}
-  if (region==3) {cuts=binsdef_diphoton_invmass_EBEE; index=n_templates_invmass_EBEE;}
-  if (region==4) {cuts=binsdef_diphoton_invmass_EBEE; index=n_templates_invmass_EBEE;}
-  if (region==1) {cuts=binsdef_diphoton_invmass_EBEE; index=n_templates_invmass_EBEE;}
+  int index = diffvariables_nbins_list(diff_);
+  float *cuts=diffvariables_binsdef_list(diff_);
 
   assert (cuts!=NULL);
   assert (index!=0);
 
   cuts[index]=9999;
 
-  if (invmass<cuts[0]){
-    std::cout << "WARNING: called bin choice for out-of-range value mass " << invmass << " cuts[0]= " << cuts[0] << std::endl;
+  if (val_<cuts[0]){
+    std::cout << "WARNING: called bin choice for out-of-range value " << diff_.Data() << " "  << val_ << " cuts[0]= " << cuts[0] << std::endl;
     return -999;
   }
 
-  for (int i=0; i<index; i++) if ((invmass>=cuts[i]) && (invmass<cuts[i+1])) return i;
+  for (int i=0; i<index; i++) if ((val_>=cuts[i]) && (val_<cuts[i+1])) return i;
   
-  std::cout << "WARNING: called bin choice for out-of-range value mass " << invmass << std::endl;
-  return -999;
-
-
-};
-
-Int_t template_production::Choose_bin_diphotonpt(float diphotonpt, int region){
-
-  int index;
-
-  float *cuts=NULL;
-
-  if (region==0) {cuts=binsdef_diphoton_diphotonpt_EBEB; index=n_templates_diphotonpt_EBEB;}
-  if (region==2) {cuts=binsdef_diphoton_diphotonpt_EEEE; index=n_templates_diphotonpt_EEEE;}
-  if (region==3) {cuts=binsdef_diphoton_diphotonpt_EBEE; index=n_templates_diphotonpt_EBEE;}
-  if (region==4) {cuts=binsdef_diphoton_diphotonpt_EBEE; index=n_templates_diphotonpt_EBEE;}
-  if (region==1) {cuts=binsdef_diphoton_diphotonpt_EBEE; index=n_templates_diphotonpt_EBEE;}
-
-  assert (cuts!=NULL);
-  assert (index!=0);
-
-  cuts[index]=9999;
-
-  if (diphotonpt<cuts[0]){
-    std::cout << "WARNING: called bin choice for out-of-range value diphotonpt " << diphotonpt << " cuts[0]= " << cuts[0] << std::endl;
-    return -999;
-  }
-
-  for (int i=0; i<index; i++) if ((diphotonpt>=cuts[i]) && (diphotonpt<cuts[i+1])) return i;
-  
-  std::cout << "WARNING: called bin choice for out-of-range value diphotonpt " << diphotonpt << std::endl;
-  return -999;
-
-
-};
-
-Int_t template_production::Choose_bin_costhetastar(float costhetastar, int region){
-
-  int index;
-
-  float *cuts=NULL;
-
-  if (region==0) {cuts=binsdef_diphoton_costhetastar_EBEB; index=n_templates_costhetastar_EBEB;}
-  if (region==2) {cuts=binsdef_diphoton_costhetastar_EEEE; index=n_templates_costhetastar_EEEE;}
-  if (region==3) {cuts=binsdef_diphoton_costhetastar_EBEE; index=n_templates_costhetastar_EBEE;}
-  if (region==4) {cuts=binsdef_diphoton_costhetastar_EBEE; index=n_templates_costhetastar_EBEE;}
-  if (region==1) {cuts=binsdef_diphoton_costhetastar_EBEE; index=n_templates_costhetastar_EBEE;}
-
-  assert (cuts!=NULL);
-  assert (index!=0);
-
-  cuts[index]=9999;
-
-  if (costhetastar<cuts[0]){
-    std::cout << "WARNING: called bin choice for out-of-range value " << costhetastar << " cuts[0]= " << cuts[0] << std::endl;
-    return -999;
-  }
-
-  for (int i=0; i<index; i++) if ((costhetastar>=cuts[i]) && (costhetastar<cuts[i+1])) return i;
-  
-  std::cout << "WARNING: called bin choice for out-of-range value " << costhetastar << std::endl;
-  return -999;
-
-
-};
-
-Int_t template_production::Choose_bin_dphi(float dphi, int region){
-
-  int index;
-
-  float *cuts=NULL;
-
-  if (region==0) {cuts=binsdef_diphoton_dphi_EBEB; index=n_templates_dphi_EBEB;}
-  if (region==2) {cuts=binsdef_diphoton_dphi_EEEE; index=n_templates_dphi_EEEE;}
-  if (region==3) {cuts=binsdef_diphoton_dphi_EBEE; index=n_templates_dphi_EBEE;}
-  if (region==4) {cuts=binsdef_diphoton_dphi_EBEE; index=n_templates_dphi_EBEE;}
-  if (region==1) {cuts=binsdef_diphoton_dphi_EBEE; index=n_templates_dphi_EBEE;}
-
-  assert (cuts!=NULL);
-  assert (index!=0);
-
-  cuts[index]=9999;
-
-  if (dphi<cuts[0]){
-    std::cout << "WARNING: called bin choice for out-of-range value " << dphi << " cuts[0]= " << cuts[0] << std::endl;
-    return -999;
-  }
-
-  for (int i=0; i<index; i++) if ((dphi>=cuts[i]) && (dphi<cuts[i+1])) return i;
-  
-  std::cout << "WARNING: called bin choice for out-of-range value " << dphi << std::endl;
-  return -999;
-
-
-};
-
-Int_t template_production::Choose_bin_dR(float dR, int region){
-
-  int index;
-
-  float *cuts=NULL;
-
-  if (region==0) {cuts=binsdef_diphoton_dR_EBEB; index=n_templates_dR_EBEB;}
-  if (region==2) {cuts=binsdef_diphoton_dR_EEEE; index=n_templates_dR_EEEE;}
-  if (region==3) {cuts=binsdef_diphoton_dR_EBEE; index=n_templates_dR_EBEE;}
-  if (region==4) {cuts=binsdef_diphoton_dR_EBEE; index=n_templates_dR_EBEE;}
-  if (region==1) {cuts=binsdef_diphoton_dR_EBEE; index=n_templates_dR_EBEE;}
-
-  assert (cuts!=NULL);
-  assert (index!=0);
-
-  cuts[index]=9999;
-
-  if (dR<cuts[0]){
-    std::cout << "WARNING: called bin choice for out-of-range value " << dR << " cuts[0]= " << cuts[0] << std::endl;
-    return -999;
-  }
-
-  for (int i=0; i<index; i++) if ((dR>=cuts[i]) && (dR<cuts[i+1])) return i;
-  
-  std::cout << "WARNING: called bin choice for out-of-range value " << dR << std::endl;
+  std::cout << "WARNING: called bin choice for out-of-range value " << diff_.Data() << " "  << val_ << std::endl;
   return -999;
 
 
@@ -1161,14 +969,14 @@ float template_production::AbsDeltaPhi(double phi1, double phi2){
 
 void template_production::FillDiffVariables(){
 
-  roovar_invmass->setVal(dipho_mgg_photon);
+  roovardiff["invmass"]->setVal(dipho_mgg_photon);
   {
     TLorentzVector pho1;
     pho1.SetPtEtaPhiE(pholead_pt,pholead_eta,pholead_phi,pholead_energy);
     TLorentzVector pho2;
     pho2.SetPtEtaPhiE(photrail_pt,photrail_eta,photrail_phi,photrail_energy);
     float pt = (pho1+pho2).Pt();
-    roovar_diphotonpt->setVal(pt);
+    roovardiff["diphotonpt"]->setVal(pt);
   }
   {
     TLorentzVector pho1;
@@ -1202,13 +1010,13 @@ void template_production::FillDiffVariables(){
     boostedb1.Boost(-boost);
     boostedb2.Boost(-boost);
     TVector3 direction_cs = (boostedb1.Vect().Unit()-boostedb2.Vect().Unit()).Unit();
-    roovar_costhetastar->setVal( fabs(TMath::Cos(direction_cs.Angle(boostedpho1.Vect()))) );
+    roovardiff["costhetastar"]->setVal( fabs(TMath::Cos(direction_cs.Angle(boostedpho1.Vect()))) );
   }
   {
     float phi1 = pholead_phi;
     float phi2 = photrail_phi;
     float dphi = AbsDeltaPhi(phi1,phi2);
-    roovar_dphi->setVal(dphi);
+    roovardiff["dphi"]->setVal(dphi);
   }
   {
     float phi1 = pholead_phi;
@@ -1216,7 +1024,7 @@ void template_production::FillDiffVariables(){
     float dphi = AbsDeltaPhi(phi1,phi2);
     float deta = pholead_eta-photrail_eta;
     float dR = sqrt(deta*deta+dphi*dphi);
-    roovar_dR->setVal(dR);
+    roovardiff["dR"]->setVal(dR);
   }
   
   return;
