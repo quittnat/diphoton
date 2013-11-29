@@ -81,40 +81,40 @@ int __nbins__[] = { // this should always be the effective length of mybinsdef_ 
 8,\
 14,\
 8,\
-1,\
-1,\
-1,\
-1,\
-1,\
-1,\
-1,\
-1,\
-1,\
-1,\
-1,\
-1,\
-1,\
-1\
+2,\
+2,\
+2,\
+2,\
+2,\
+2,\
+2,\
+2,\
+2,\
+2,\
+2,\
+2,\
+2,\
+2\
 };
 float mybinsdef_invmass[n_bins+1]={0,40,60,70,75,80,85,90,95,100,110,120,150,250,400,800,801};
 float mybinsdef_diphotonpt[n_bins+1]={0,6,10,12,14,16,18,20,22,24,28,34,40,50,60,70,80,90,100,120,200,201};
 float mybinsdef_costhetastar[n_bins+1]={0,0.20,0.28,0.36,0.44,0.60,0.90,1.00,1.01};
 float mybinsdef_dphi[n_bins+1]={0,0.2*Pi,0.4*Pi,0.6*Pi,0.7*Pi,0.8*Pi,0.84*Pi,0.88*Pi,0.90*Pi,0.92*Pi,0.94*Pi,0.96*Pi,0.98*Pi,1.0*Pi,1.01*Pi};
 float mybinsdef_dR[n_bins+1]={0.45,1.0,2.0,2.5,3.0,3.5,4.5,MaxDrExperiment,MaxDrExperiment+0.01};
-float mybinsdef_njets[n_bins+1]={0};
-float mybinsdef_1jet_jpt[n_bins+1]={0};
-float mybinsdef_1jet_dR_lead_j[n_bins+1]={0};
-float mybinsdef_1jet_dR_trail_j[n_bins+1]={0};
-float mybinsdef_1jet_dR_close_j[n_bins+1]={0};
-float mybinsdef_1jet_dR_far_j[n_bins+1]={0};
-float mybinsdef_2jet_j1pt[n_bins+1]={0};
-float mybinsdef_2jet_j2pt[n_bins+1]={0};
-float mybinsdef_2jet_deta_jj[n_bins+1]={0};
-float mybinsdef_2jet_dphi_jj[n_bins+1]={0};
-float mybinsdef_2jet_dR_jj[n_bins+1]={0};
-float mybinsdef_2jet_mjj[n_bins+1]={0};
-float mybinsdef_2jet_zeppen[n_bins+1]={0};
-float mybinsdef_2jet_dphi_gg_jj[n_bins+1]={0};
+float mybinsdef_njets[n_bins+1]={0,10,10.1};
+float mybinsdef_1jet_jpt[n_bins+1]={0,999,999.1};
+float mybinsdef_1jet_dR_lead_j[n_bins+1]={0,6,6.1};
+float mybinsdef_1jet_dR_trail_j[n_bins+1]={0,6,6.1};
+float mybinsdef_1jet_dR_close_j[n_bins+1]={0,6,6.1};
+float mybinsdef_1jet_dR_far_j[n_bins+1]={0,6,6.1};
+float mybinsdef_2jet_j1pt[n_bins+1]={0,999,999.1};
+float mybinsdef_2jet_j2pt[n_bins+1]={0,999,999.1};
+float mybinsdef_2jet_deta_jj[n_bins+1]={0,6,6.1};
+float mybinsdef_2jet_dphi_jj[n_bins+1]={0,6,6.1};
+float mybinsdef_2jet_dR_jj[n_bins+1]={0,6,6.1};
+float mybinsdef_2jet_mjj[n_bins+1]={0,999,999.1};
+float mybinsdef_2jet_zeppen[n_bins+1]={0,6,6.1};
+float mybinsdef_2jet_dphi_gg_jj[n_bins+1]={0,6,6.1};
 
 float*  __binsdef__[] = {
 mybinsdef_invmass,\

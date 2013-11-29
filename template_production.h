@@ -283,8 +283,6 @@ public :
 
    float AbsDeltaPhi(double phi1, double phi2);
 
-   static const int n_templates=n_bins;
-
    bool dosignal;
 
    TString inputfilename;
@@ -467,7 +465,7 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
     for (int i=0; i<3; i++) {
       TString reg;
       if (i==0) reg="EBEB"; else if (i==1) reg="EBEE"; else if (i==2) reg="EEEE"; else if (i==3) reg="EEEB";
-      for (int j=0; j<n_templates+1; j++) {
+      for (int j=0; j<n_bins+1; j++) {
 	TString t2=Form("obs_roodset_%s_%s_b%d",reg.Data(),diffvariable->Data(),j);
 	RooArgSet args(*roovar1,*roovar2,*roopt1,*roosieie1,*rooeta1,*roopt2,*roosieie2,*rooeta2);
 	args.add(RooArgSet(*roorho,*roosigma,*rooweight));
@@ -730,11 +728,11 @@ void template_production::WriteOutput(const char* filename){
 
     for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
       for (int i=0; i<3; i++)
-	for (int j=0; j<n_templates; j++) {
-	  obs_roodset[get_name_obs_roodset(i,*diffvariable,n_templates)]->append(*(obs_roodset[get_name_obs_roodset(i,*diffvariable,j)]));
+	for (int j=0; j<n_bins; j++) {
+	  obs_roodset[get_name_obs_roodset(i,*diffvariable,n_bins)]->append(*(obs_roodset[get_name_obs_roodset(i,*diffvariable,j)]));
 	  TString type_array[4] = {"sigsig","sigbkg","bkgsig","bkgbkg"};
 	  for (int l=0; l<4; l++){
-	    newtempl_roodset[get_name_newtempl_roodset(i,*diffvariable,n_templates,type_array[l])]->append(*(newtempl_roodset[get_name_newtempl_roodset(i,*diffvariable,j,type_array[l])]));
+	    newtempl_roodset[get_name_newtempl_roodset(i,*diffvariable,n_bins,type_array[l])]->append(*(newtempl_roodset[get_name_newtempl_roodset(i,*diffvariable,j,type_array[l])]));
 	  }
 	}
     }
@@ -769,21 +767,26 @@ void template_production::WriteOutput(const char* filename){
 	}
       }
       if (dodistribution && mode=="standard"){
+
 	RooArgList toplot;
 	toplot.add(*rooargset_diffvariables);
 	toplot.add(RooArgSet(*roovar1,*roovar2,*roopt1,*roosieie1,*rooeta1,*roopt2,*roosieie2,*rooeta2));
 	toplot.add(RooArgSet(*roorho,*roosigma));
 	for (int k=0; k<toplot.getSize(); k++){
-	  for (std::map<TString, RooDataSet*>::const_iterator it = obs_roodset.begin(); it!=obs_roodset.end(); it++) {
-	    RooRealVar *thisvar = (RooRealVar*)(toplot.at(k));
-	    RooPlot *thisplot = thisvar->frame(Name(Form("%s_%s",thisvar->GetName(),(it->second)->GetName())));
-	    (it->second)->plotOn(thisplot);
-	    thisplot->Write();
+	  for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
+	    for (int i=0; i<3; i++){
+	      RooRealVar *thisvar = (RooRealVar*)(toplot.at(k));
+	      RooPlot *thisplot = thisvar->frame(Name(Form("%s_%s",thisvar->GetName(),obs_roodset[get_name_obs_roodset(i,*diffvariable,n_bins)]->GetName())));
+	      obs_roodset[get_name_obs_roodset(i,*diffvariable,n_bins)]->plotOn(thisplot);
+	      thisplot->Write();
+	      
+	    }
 	  }
-	} 
+	}
       }
-  }
 
+  }
+  
   if (dosignaltemplate || dobackgroundtemplate){
   out->mkdir("scan_cone");
   out->cd("scan_cone");
