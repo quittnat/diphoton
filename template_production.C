@@ -9,6 +9,8 @@ using namespace std;
 void template_production::Loop(int maxevents)
 {
 
+  int counter_selection = 0;
+
   if (do_event_mixing) cout << "USING EVENT MIXING" << endl;
 
   if (fChain == 0) return;
@@ -638,6 +640,8 @@ void template_production::Loop(int maxevents)
 	 RooArgSet args2(*roovar1,*roovar2,*roopt1,*roopt2,*roosieie1,*roosieie2,*rooeta1,*rooeta2);
 	 args2.add(RooArgSet(*roorho,*roosigma));
 
+	 counter_selection++;
+
        for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
 
 	 Int_t bin_couple = -999;
@@ -888,7 +892,7 @@ void template_production::Loop(int maxevents)
 
 	      if (n1==0 && n2==0){	      
 		matchingtree_evt_1event_sigsig_1[l] = match_evt_number[n1].at(matches1[l]);
-		matchingtree_evt_1event_sigsig_2[l] = -999;
+		matchingtree_evt_1event_sigsig_2[l] = 0;
 		matchingtree_deta_1event_sigsig_1[l] = match_pho_eta[n1].at(matches1[l])-pholead_SCeta;
 		matchingtree_deta_1event_sigsig_2[l] = -999;
 		matchingtree_drho_1event_sigsig_1[l] = (match_evt_rho[n1].at(matches1[l])-event_rho)/event_sigma;
@@ -897,7 +901,7 @@ void template_production::Loop(int maxevents)
 		matchingtree_dpt_1event_sigsig_2[l] = -999;
 	      }
 	      if (n1==0 && n2==1){	      
-		matchingtree_evt_1event_sigbkg_1[l] = -999;
+		matchingtree_evt_1event_sigbkg_1[l] = 0;
 		matchingtree_evt_1event_sigbkg_2[l] = match_evt_number[n2].at(matches2[l]);
 		matchingtree_deta_1event_sigbkg_1[l] = -999;
 		matchingtree_deta_1event_sigbkg_2[l] = match_pho_eta[n2].at(matches2[l])-photrail_SCeta;
@@ -908,7 +912,7 @@ void template_production::Loop(int maxevents)
 	      }
 	      if (n1==1 && n2==0){	      
 		matchingtree_evt_1event_bkgsig_1[l] = match_evt_number[n1].at(matches1[l]);
-		matchingtree_evt_1event_bkgsig_2[l] = -999;
+		matchingtree_evt_1event_bkgsig_2[l] = 0;
 		matchingtree_deta_1event_bkgsig_1[l] = match_pho_eta[n1].at(matches1[l])-pholead_SCeta;
 		matchingtree_deta_1event_bkgsig_2[l] = -999;
 		matchingtree_drho_1event_bkgsig_1[l] = (match_evt_rho[n1].at(matches1[l])-event_rho)/event_sigma;
@@ -1007,7 +1011,7 @@ void template_production::Loop(int maxevents)
 
   } // end event loop
   std::cout << "Event loop finished" << std::endl;
-
+  if (counter_selection>0) std::cout << counter_selection << " events found passing selection" << std::endl;
   if (mode=="standard_domatching"){
     matchingfile->cd();
     matchingtree->Write();

@@ -129,8 +129,8 @@ void prepare_matchingfile_forstep2(TString matching, TString data, int jobnumber
    std::map<long, TTree*> newmatchingtree;
    std::map<long, TTree*> NewInputTree[2];
 
-   Int_t matchingtree_evt_1[2][2][2][nclosestmore];
-   Int_t matchingtree_evt_2[2][2][2][nclosestmore];
+   UInt_t matchingtree_evt_1[2][2][2][nclosestmore];
+   UInt_t matchingtree_evt_2[2][2][2][nclosestmore];
 
    UInt_t thisuuid=0;
    int index_uuid=0;
