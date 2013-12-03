@@ -272,7 +272,7 @@ public :
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
-   void     WriteOutput(const char* filename);
+   void     WriteOutput();
 
    void Setup(Bool_t _isdata, TString _mode, TString _differentialvariable, bool _do_event_mixing);
 
@@ -287,6 +287,7 @@ public :
    bool dosignal;
 
    TString inputfilename;
+   TString outputfilename;
 
   Float_t roovar1;
   Float_t roovar2;
@@ -302,7 +303,10 @@ public :
 
   std::map<TString,Float_t*> roovars_index1;
   std::map<TString,Float_t*> roovars_index2;
+  std::map<TString,Float_t*> roovars_common;
   std::map<TString,Float_t*> roovardiff;
+
+  void AddVariablesToTree(TTree *t, std::map<TString,Float_t*> &mymap);
 
   TTree *roodset_signal[2][2];
   TTree *roodset_background[2][2];
@@ -313,6 +317,7 @@ public :
    std::map<TString, TTree*> obs_roodset;
    std::map<TString, TTree*> newtempl_roodset;
    std::map<TString, TTree*> template2d_roodset;
+
 
    std::map<TString, TProfile*> true_purity;
    std::map<TString, TH1F*> true_purity_isppevent;
@@ -357,6 +362,8 @@ public :
 
    float getpuenergy(int reg, float eta);
    float geteffarea(int reg, float eta);
+
+   TFile *out;
 
 };
 
@@ -442,6 +449,8 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
   roovars_common["roosigma"] = &roosigma;
   roovars_common["rooweight"] = &rooweight;
 
+  out = TFile::Open(outputfilename.Data(),"update");
+
   for (int i=0; i<2; i++){
       TString name_signal="signal";
       TString reg;
@@ -451,7 +460,7 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
       AddVariablesToTree(roodset_signal[i][0],roovars_index1);
       AddVariablesToTree(roodset_signal[i][0],roovars_common);
       t2=Form("roodset_%s_%s_rv%d",name_signal.Data(),reg.Data(),2);
-      roodset_signal[i][1] = new TTree(t2.Data(),t2.Data())
+      roodset_signal[i][1] = new TTree(t2.Data(),t2.Data());
       AddVariablesToTree(roodset_signal[i][1],roovars_index2);
       AddVariablesToTree(roodset_signal[i][0],roovars_common);
   }
@@ -489,7 +498,6 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
       if (i==0) reg="EBEB"; else if (i==1) reg="EBEE"; else if (i==2) reg="EEEE"; else if (i==3) reg="EEEB";
       for (int j=0; j<n_bins+1; j++) {
 	TString t2=Form("obs_roodset_%s_%s_b%d",reg.Data(),diffvariable->Data(),j);
-	obs_roodset[t2] = new RooDataSet(t2.Data(),t2.Data(),args,WeightVar(*rooweight));
 	obs_roodset[t2] = new TTree(t2.Data(),t2.Data());
 	AddVariablesToTree(obs_roodset[t2],roovars_index1);
 	AddVariablesToTree(obs_roodset[t2],roovars_index2);
@@ -717,25 +725,11 @@ void template_production::Show(Long64_t entry)
 /*    return 1; */
 /* } */
 
-void template_production::WriteOutput(const char* filename){
-  TFile *out = TFile::Open(filename,"update");
+void template_production::WriteOutput(){
 
   out->mkdir("roofit");
   out->cd("roofit");
 
-  roovar1->Write();
-  roovar2->Write();
-  roopt1->Write();
-  roopt2->Write();
-  roosieie1->Write();
-  roosieie2->Write();
-  rooeta1->Write();
-  rooeta2->Write();
-  roorho->Write();
-  roosigma->Write();
-  rooweight->Write();
-
-  for (std::map<TString,RooRealVar*>::const_iterator it=roovardiff.begin(); it!=roovardiff.end(); it++) it->second->Write();
 
   if (dosignaltemplate || dobackgroundtemplate) {
 
@@ -747,7 +741,7 @@ void template_production::WriteOutput(const char* filename){
 
   if (do2dtemplate){ 
 
-    for (std::map<TString, RooDataSet*>::const_iterator it = template2d_roodset.begin(); it!=template2d_roodset.end(); it++) (it->second)->Write();
+    for (std::map<TString, TTree*>::const_iterator it = template2d_roodset.begin(); it!=template2d_roodset.end(); it++) (it->second)->Write();
 
   }
 
@@ -756,16 +750,16 @@ void template_production::WriteOutput(const char* filename){
     for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
       for (int i=0; i<3; i++)
 	for (int j=0; j<n_bins; j++) {
-	  obs_roodset[get_name_obs_roodset(i,*diffvariable,n_bins)]->append(*(obs_roodset[get_name_obs_roodset(i,*diffvariable,j)]));
+	  obs_roodset[get_name_obs_roodset(i,*diffvariable,n_bins)]->CopyEntries(obs_roodset[get_name_obs_roodset(i,*diffvariable,j)]);
 	  TString type_array[4] = {"sigsig","sigbkg","bkgsig","bkgbkg"};
 	  for (int l=0; l<4; l++){
-	    newtempl_roodset[get_name_newtempl_roodset(i,*diffvariable,n_bins,type_array[l])]->append(*(newtempl_roodset[get_name_newtempl_roodset(i,*diffvariable,j,type_array[l])]));
+	    newtempl_roodset[get_name_newtempl_roodset(i,*diffvariable,n_bins,type_array[l])]->CopyEntries(newtempl_roodset[get_name_newtempl_roodset(i,*diffvariable,j,type_array[l])]);
 	  }
 	}
     }
 
-    for (std::map<TString, RooDataSet*>::const_iterator it = obs_roodset.begin(); it!=obs_roodset.end(); it++) (it->second)->Write();
-    for (std::map<TString, RooDataSet*>::const_iterator it = newtempl_roodset.begin(); it!=newtempl_roodset.end(); it++) (it->second)->Write();
+    for (std::map<TString, TTree*>::const_iterator it = obs_roodset.begin(); it!=obs_roodset.end(); it++) (it->second)->Write();
+    for (std::map<TString, TTree*>::const_iterator it = newtempl_roodset.begin(); it!=newtempl_roodset.end(); it++) (it->second)->Write();
 
     out->mkdir("purity");
     out->cd("purity");
@@ -776,79 +770,79 @@ void template_production::WriteOutput(const char* filename){
 
   }
 
-  out->mkdir("plots");
-  out->cd("plots");
-
-  {  
-      if (do2dtemplate){
-	RooArgList toplot;
-	toplot.add(RooArgSet(*roovar1,*roovar2,*roopt1,*roosieie1,*rooeta1,*roopt2,*roosieie2,*rooeta2));
-	toplot.add(RooArgSet(*roorho,*roosigma));
-	for (int k=0; k<toplot.getSize(); k++){
-	  for (std::map<TString, RooDataSet*>::const_iterator it = template2d_roodset.begin(); it!=template2d_roodset.end(); it++) {
-	    RooRealVar *thisvar = (RooRealVar*)(toplot.at(k));
-	  RooPlot *thisplot = thisvar->frame(Name(Form("%s_%s",thisvar->GetName(),(it->second)->GetName())));
-	  (it->second)->plotOn(thisplot);
-	  thisplot->Write();
-	  }
-	}
-      }
-      if (dodistribution && mode=="standard"){
-
-	RooArgList toplot;
-	toplot.add(*rooargset_diffvariables);
-	toplot.add(RooArgSet(*roovar1,*roovar2,*roopt1,*roosieie1,*rooeta1,*roopt2,*roosieie2,*rooeta2));
-	toplot.add(RooArgSet(*roorho,*roosigma));
-	for (int k=0; k<toplot.getSize(); k++){
-	  for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
-	    for (int i=0; i<3; i++){
-	      RooRealVar *thisvar = (RooRealVar*)(toplot.at(k));
-	      RooPlot *thisplot = thisvar->frame(Name(Form("%s_%s",thisvar->GetName(),obs_roodset[get_name_obs_roodset(i,*diffvariable,n_bins)]->GetName())));
-	      obs_roodset[get_name_obs_roodset(i,*diffvariable,n_bins)]->plotOn(thisplot);
-	      thisplot->Write();
-	      
-	    }
-	  }
-	}
-      }
-
-  }
+//  out->mkdir("plots");
+//  out->cd("plots");
+//
+//  {  
+//      if (do2dtemplate){
+//	RooArgList toplot;
+//	toplot.add(RooArgSet(*roovar1,*roovar2,*roopt1,*roosieie1,*rooeta1,*roopt2,*roosieie2,*rooeta2));
+//	toplot.add(RooArgSet(*roorho,*roosigma));
+//	for (int k=0; k<toplot.getSize(); k++){
+//	  for (std::map<TString, RooDataSet*>::const_iterator it = template2d_roodset.begin(); it!=template2d_roodset.end(); it++) {
+//	    RooRealVar *thisvar = (RooRealVar*)(toplot.at(k));
+//	  RooPlot *thisplot = thisvar->frame(Name(Form("%s_%s",thisvar->GetName(),(it->second)->GetName())));
+//	  (it->second)->plotOn(thisplot);
+//	  thisplot->Write();
+//	  }
+//	}
+//      }
+//      if (dodistribution && mode=="standard"){
+//
+//	RooArgList toplot;
+//	toplot.add(*rooargset_diffvariables);
+//	toplot.add(RooArgSet(*roovar1,*roovar2,*roopt1,*roosieie1,*rooeta1,*roopt2,*roosieie2,*rooeta2));
+//	toplot.add(RooArgSet(*roorho,*roosigma));
+//	for (int k=0; k<toplot.getSize(); k++){
+//	  for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
+//	    for (int i=0; i<3; i++){
+//	      RooRealVar *thisvar = (RooRealVar*)(toplot.at(k));
+//	      RooPlot *thisplot = thisvar->frame(Name(Form("%s_%s",thisvar->GetName(),obs_roodset[get_name_obs_roodset(i,*diffvariable,n_bins)]->GetName())));
+//	      obs_roodset[get_name_obs_roodset(i,*diffvariable,n_bins)]->plotOn(thisplot);
+//	      thisplot->Write();
+//	      
+//	    }
+//	  }
+//	}
+//      }
+//
+//  }
   
-  if (dosignaltemplate || dobackgroundtemplate){
-  out->mkdir("scan_cone");
-  out->cd("scan_cone");
-
-  for (int i=0; i<2; i++) for (int k=0; k<50; k++) if (scan_cone_histos[i][k]->Integral(0,n_histobins+1)>0) (scan_cone_histos[i][k])->Scale(1.0/scan_cone_histos[i][k]->Integral(0,n_histobins+1));
-  for (int i=0; i<2; i++) for (int k=0; k<50; k++) (scan_cone_histos[i][k])->Write();
-  for (int i=0; i<2; i++) for (int k=0; k<50; k++) if (scan_conewithcheck_histos[i][k]->Integral(0,n_histobins+1)>0) (scan_conewithcheck_histos[i][k])->Scale(1.0/scan_conewithcheck_histos[i][k]->Integral(0,n_histobins+1));
-  for (int i=0; i<2; i++) for (int k=0; k<50; k++) (scan_conewithcheck_histos[i][k])->Write();
-
-  if (do_scan_cone){
-  TCanvas *canv[2];
-  for (int i=0; i<1; i++) {
-    TString title = Form("canv_scan_cone_%d",i);
-    canv[i] = new TCanvas(title.Data(),title.Data());
-    canv[i]->cd();
-    (scan_cone_histos[i][0])->Draw();
-    for (int k=1; k<50; k++) if (k%4==0 && k<=(int)(0.4/0.025)) (scan_cone_histos[i][k])->SetLineColor(kAzure+k/4); // interni
-    for (int k=1; k<50; k++) if (k%4==0 && k>(int)(0.4/0.025)) (scan_cone_histos[i][k])->SetLineColor(kPink-4+k/4); // esterni
-    for (int k=1; k<50; k++) if (k%4==0 && k<=(int)(0.4/0.025)) (scan_conewithcheck_histos[i][k])->SetLineColor(kAzure+k/4); // interni
-    for (int k=1; k<50; k++) if (k%4==0 && k>(int)(0.4/0.025)) (scan_conewithcheck_histos[i][k])->SetLineColor(kPink-4+k/4); // esterni
-    for (int k=1; k<50; k++) if (k%4==0) (scan_conewithcheck_histos[i][k])->Draw("same");
-    //    for (int k=0; k<50; k++) if (k%4==0) (scan_conewithcheck_histos[i][k])->SetLineWidth(2);
-    scan_cone_histos[i][0]->SetLineColor(kBlack);
-    scan_cone_histos[i][0]->SetLineWidth(kBlack);
-    scan_cone_histos[i][0]->Draw("same");
-    scan_conewithcheck_histos[i][(int)(0.45/0.025)]->SetLineColor(kRed);
-    scan_conewithcheck_histos[i][(int)(0.45/0.025)]->SetLineWidth(2);
-    scan_conewithcheck_histos[i][(int)(0.45/0.025)]->Draw("same");
-    canv[i]->SetLogy(1);
-    canv[i]->SaveAs(Form("%s.root",title.Data()));
-    canv[i]->SaveAs(Form("%s.pdf",title.Data()));
-  }
-  }
-
-  }
+//  if (dosignaltemplate || dobackgroundtemplate){
+//  out->mkdir("scan_cone");
+//  out->cd("scan_cone");
+//
+//  for (int i=0; i<2; i++) for (int k=0; k<50; k++) if (scan_cone_histos[i][k]->Integral(0,n_histobins+1)>0) (scan_cone_histos[i][k])->Scale(1.0/scan_cone_histos[i][k]->Integral(0,n_histobins+1));
+//  for (int i=0; i<2; i++) for (int k=0; k<50; k++) (scan_cone_histos[i][k])->Write();
+//  for (int i=0; i<2; i++) for (int k=0; k<50; k++) if (scan_conewithcheck_histos[i][k]->Integral(0,n_histobins+1)>0) (scan_conewithcheck_histos[i][k])->Scale(1.0/scan_conewithcheck_histos[i][k]->Integral(0,n_histobins+1));
+//  for (int i=0; i<2; i++) for (int k=0; k<50; k++) (scan_conewithcheck_histos[i][k])->Write();
+//
+//  if (do_scan_cone){
+//  TCanvas *canv[2];
+//  for (int i=0; i<1; i++) {
+//    TString title = Form("canv_scan_cone_%d",i);
+//    canv[i] = new TCanvas(title.Data(),title.Data());
+//    canv[i]->cd();
+//    (scan_cone_histos[i][0])->Draw();
+//    for (int k=1; k<50; k++) if (k%4==0 && k<=(int)(0.4/0.025)) (scan_cone_histos[i][k])->SetLineColor(kAzure+k/4); // interni
+//    for (int k=1; k<50; k++) if (k%4==0 && k>(int)(0.4/0.025)) (scan_cone_histos[i][k])->SetLineColor(kPink-4+k/4); // esterni
+//    for (int k=1; k<50; k++) if (k%4==0 && k<=(int)(0.4/0.025)) (scan_conewithcheck_histos[i][k])->SetLineColor(kAzure+k/4); // interni
+//    for (int k=1; k<50; k++) if (k%4==0 && k>(int)(0.4/0.025)) (scan_conewithcheck_histos[i][k])->SetLineColor(kPink-4+k/4); // esterni
+//    for (int k=1; k<50; k++) if (k%4==0) (scan_conewithcheck_histos[i][k])->Draw("same");
+//    //    for (int k=0; k<50; k++) if (k%4==0) (scan_conewithcheck_histos[i][k])->SetLineWidth(2);
+//    scan_cone_histos[i][0]->SetLineColor(kBlack);
+//    scan_cone_histos[i][0]->SetLineWidth(kBlack);
+//    scan_cone_histos[i][0]->Draw("same");
+//    scan_conewithcheck_histos[i][(int)(0.45/0.025)]->SetLineColor(kRed);
+//    scan_conewithcheck_histos[i][(int)(0.45/0.025)]->SetLineWidth(2);
+//    scan_conewithcheck_histos[i][(int)(0.45/0.025)]->Draw("same");
+//    canv[i]->SetLogy(1);
+//    canv[i]->SaveAs(Form("%s.root",title.Data()));
+//    canv[i]->SaveAs(Form("%s.pdf",title.Data()));
+//  }
+//  }
+//
+//  }
 
 
   std::cout << "Writing output..." << std::endl;
@@ -1011,14 +1005,14 @@ float template_production::AbsDeltaPhi(double phi1, double phi2){
 
 void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST ***NOT*** USE THE INFORMATION ABOUT WHICH PHOTON IS CALLED 1 AND 2
 
-  roovardiff["invmass"]->setVal(dipho_mgg_photon);
+  *(roovardiff["invmass"])=dipho_mgg_photon;
   {
     TLorentzVector pho1;
     pho1.SetPtEtaPhiE(pholead_pt,pholead_eta,pholead_phi,pholead_energy);
     TLorentzVector pho2;
     pho2.SetPtEtaPhiE(photrail_pt,photrail_eta,photrail_phi,photrail_energy);
     float pt = (pho1+pho2).Pt();
-    roovardiff["diphotonpt"]->setVal(pt);
+    *(roovardiff["diphotonpt"])=pt;
   }
   {
     TLorentzVector pho1;
@@ -1052,13 +1046,13 @@ void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST **
     boostedb1.Boost(-boost);
     boostedb2.Boost(-boost);
     TVector3 direction_cs = (boostedb1.Vect().Unit()-boostedb2.Vect().Unit()).Unit();
-    roovardiff["costhetastar"]->setVal( fabs(TMath::Cos(direction_cs.Angle(boostedpho1.Vect()))) );
+    *(roovardiff["costhetastar"])= fabs(TMath::Cos(direction_cs.Angle(boostedpho1.Vect())) );
   }
   {
     float phi1 = pholead_phi;
     float phi2 = photrail_phi;
     float dphi = AbsDeltaPhi(phi1,phi2);
-    roovardiff["dphi"]->setVal(dphi);
+    *(roovardiff["dphi"])=dphi;
   }
   {
     float phi1 = pholead_phi;
@@ -1066,34 +1060,34 @@ void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST **
     float dphi = AbsDeltaPhi(phi1,phi2);
     float deta = pholead_eta-photrail_eta;
     float dR = sqrt(deta*deta+dphi*dphi);
-    roovardiff["dR"]->setVal(dR);
+    *(roovardiff["dR"])=dR;
   }
   {
-    roovardiff["njets"]->setVal(n_jets);
+    *(roovardiff["njets"])=n_jets;
   }
   {
     if (n_jets==1){
-      roovardiff["1jet_jpt"]->setVal(jet_pt[0]);
-      roovardiff["1jet_dR_lead_j"]->setVal(sqrt(pow(pholead_eta-jet_eta[0],2)+pow(AbsDeltaPhi(pholead_phi,jet_phi[0]),2)));
-      roovardiff["1jet_dR_trail_j"]->setVal(sqrt(pow(photrail_eta-jet_eta[0],2)+pow(AbsDeltaPhi(photrail_phi,jet_phi[0]),2)));
-      roovardiff["1jet_dR_close_j"]->setVal(std::min(roovardiff["1jet_dR_lead_j"]->getVal(),roovardiff["1jet_dR_trail_j"]->getVal()));
-      roovardiff["1jet_dR_far_j"]->setVal(std::max(roovardiff["1jet_dR_lead_j"]->getVal(),roovardiff["1jet_dR_trail_j"]->getVal()));
+      *(roovardiff["1jet_jpt"])=jet_pt[0];
+      *(roovardiff["1jet_dR_lead_j"])=sqrt(pow(pholead_eta-jet_eta[0],2+pow(AbsDeltaPhi(pholead_phi,jet_phi[0]),2)));
+      *(roovardiff["1jet_dR_trail_j"])=sqrt(pow(photrail_eta-jet_eta[0],2+pow(AbsDeltaPhi(photrail_phi,jet_phi[0]),2)));
+      *(roovardiff["1jet_dR_close_j"])=std::min(*(roovardiff["1jet_dR_lead_j"]),*(roovardiff["1jet_dR_trail_j"]));
+      *(roovardiff["1jet_dR_far_j"])=std::max(*(roovardiff["1jet_dR_lead_j"]),*(roovardiff["1jet_dR_trail_j"]));
     }
     else{
-      roovardiff["1jet_jpt"]->setVal(9998);
-      roovardiff["1jet_dR_lead_j"]->setVal(9998);
-      roovardiff["1jet_dR_trail_j"]->setVal(9998);
-      roovardiff["1jet_dR_close_j"]->setVal(9998);
-      roovardiff["1jet_dR_far_j"]->setVal(9998);
+      *(roovardiff["1jet_jpt"])=9998;
+      *(roovardiff["1jet_dR_lead_j"])=9998;
+      *(roovardiff["1jet_dR_trail_j"])=9998;
+      *(roovardiff["1jet_dR_close_j"])=9998;
+      *(roovardiff["1jet_dR_far_j"])=9998;
     }
   }
   {
     if (n_jets==2){
-      roovardiff["2jet_j1pt"]->setVal(jet_pt[0]);
-      roovardiff["2jet_j2pt"]->setVal(jet_pt[1]);
-      roovardiff["2jet_deta_jj"]->setVal(fabs(jet_eta[0]-jet_eta[1]));
-      roovardiff["2jet_dphi_jj"]->setVal(AbsDeltaPhi(jet_phi[0],jet_phi[1]));
-      roovardiff["2jet_dR_jj"]->setVal(sqrt(pow(jet_eta[0]-jet_eta[1],2)+pow(AbsDeltaPhi(jet_phi[0],jet_phi[1]),2)));
+      *(roovardiff["2jet_j1pt"])=jet_pt[0];
+      *(roovardiff["2jet_j2pt"])=jet_pt[1];
+      *(roovardiff["2jet_deta_jj"])=fabs(jet_eta[0]-jet_eta[1]);
+      *(roovardiff["2jet_dphi_jj"])=AbsDeltaPhi(jet_phi[0],jet_phi[1]);
+      *(roovardiff["2jet_dR_jj"])=sqrt(pow(jet_eta[0]-jet_eta[1],2+pow(AbsDeltaPhi(jet_phi[0],jet_phi[1]),2)));
       TLorentzVector pho1;
       pho1.SetPtEtaPhiE(pholead_pt,pholead_eta,pholead_phi,pholead_energy);
       TLorentzVector pho2;
@@ -1102,19 +1096,19 @@ void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST **
       jet1.SetPtEtaPhiE(jet_pt[0],jet_eta[0],jet_phi[0],jet_energy[0]);
       TLorentzVector jet2;
       jet2.SetPtEtaPhiE(jet_pt[1],jet_eta[1],jet_phi[1],jet_energy[1]);
-      roovardiff["2jet_mjj"]->setVal((jet1+jet2).M());
-      roovardiff["2jet_zeppen"]->setVal(fabs((pho1+pho2).Eta()-(jet1.Eta()+jet2.Eta())/2));
-      roovardiff["2jet_dphi_gg_jj"]->setVal(AbsDeltaPhi((pho1+pho2).Phi(),(jet1+jet2).Phi()));
+      *(roovardiff["2jet_mjj"])=(jet1+jet2).M();
+      *(roovardiff["2jet_zeppen"])=fabs((pho1+pho2).Eta()-(jet1.Eta()+jet2.Eta())/2);
+      *(roovardiff["2jet_dphi_gg_jj"])=AbsDeltaPhi((pho1+pho2).Phi(),(jet1+jet2).Phi());
     }
     else {
-      roovardiff["2jet_j1pt"]->setVal(9998);
-      roovardiff["2jet_j2pt"]->setVal(9998);
-      roovardiff["2jet_deta_jj"]->setVal(9998);
-      roovardiff["2jet_dphi_jj"]->setVal(9998);
-      roovardiff["2jet_dR_jj"]->setVal(9998);
-      roovardiff["2jet_mjj"]->setVal(9998);
-      roovardiff["2jet_zeppen"]->setVal(9998);
-      roovardiff["2jet_dphi_gg_jj"]->setVal(9998);
+      *(roovardiff["2jet_j1pt"])=9998;
+      *(roovardiff["2jet_j2pt"])=9998;
+      *(roovardiff["2jet_deta_jj"])=9998;
+      *(roovardiff["2jet_dphi_jj"])=9998;
+      *(roovardiff["2jet_dR_jj"])=9998;
+      *(roovardiff["2jet_mjj"])=9998;
+      *(roovardiff["2jet_zeppen"])=9998;
+      *(roovardiff["2jet_dphi_gg_jj"])=9998;
     }
   }
   

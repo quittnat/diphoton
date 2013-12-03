@@ -467,8 +467,8 @@ void template_production::Loop(int maxevents)
 //    if (fabs(pholead_PhoSCRemovalPFIsoPhoton-pholead_outvar)>0) cout << pholead_PhoSCRemovalPFIsoPhoton << " " << pholead_outvar << endl;
 //    if (fabs(photrail_PhoSCRemovalPFIsoPhoton-photrail_outvar)>0) cout << photrail_PhoSCRemovalPFIsoPhoton << " " << photrail_outvar << endl;
 
-    roorho->setVal(event_rho);
-    roosigma->setVal(event_sigma);
+    roorho=event_rho;
+    roosigma=event_sigma;
 
     pholead_outvar-=getpuenergy(reg_lead,pholead_SCeta);
     if (dodistribution) photrail_outvar-=getpuenergy(reg_trail,photrail_SCeta);
@@ -505,35 +505,35 @@ void template_production::Loop(int maxevents)
     if (dosignaltemplate||dobackgroundtemplate){
 
       if (dosignaltemplate){
-	roovar1->setVal(pholead_outvar);
-	roovar2->setVal(pholead_outvar);
-	roopt1->setVal(pholead_pt);
-	roopt2->setVal(pholead_pt);
-	roosieie1->setVal(pholead_sieie);
-	roosieie2->setVal(pholead_sieie);
-	rooeta1->setVal(fabs(pholead_SCeta));
-	rooeta2->setVal(fabs(pholead_SCeta));
-	rooweight->setVal(weight);
-	roodset_signal[reg_lead][0]->add(RooArgList(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma),weight);
-	roodset_signal[reg_lead][1]->add(RooArgList(*roovar2,*roopt2,*roosieie2,*rooeta2,*roorho,*roosigma),weight);
+	roovar1=pholead_outvar;
+	roovar2=pholead_outvar;
+	roopt1=pholead_pt;
+	roopt2=pholead_pt;
+	roosieie1=pholead_sieie;
+	roosieie2=pholead_sieie;
+	rooeta1=fabs(pholead_SCeta);
+	rooeta2=fabs(pholead_SCeta);
+	rooweight=weight;
+	roodset_signal[reg_lead][0]->Fill();
+	roodset_signal[reg_lead][1]->Fill();
 	if (do_scan_cone) for (int k=0; k<50; k++) scan_cone_histos[reg_lead][k]->Fill(pholead_test_rotatedphotoniso[k]-getpuenergy(reg_lead,pholead_SCeta),weight);
 	if (do_scan_cone) for (int k=0; k<50; k++) if (pholead_test_rotatedwithcheckphotoniso[k]>-100) scan_conewithcheck_histos[reg_lead][k]->Fill(pholead_test_rotatedwithcheckphotoniso[k]-getpuenergy(reg_lead,pholead_SCeta),weight);
       }
       
       if (dobackgroundtemplate){
-	  roovar1->setVal(pholead_outvar);
-	  roovar2->setVal(pholead_outvar); 
-	  roopt1->setVal(pholead_pt);
-	  roopt2->setVal(pholead_pt);
-	  roosieie1->setVal(pholead_sieie);
-	  roosieie2->setVal(pholead_sieie);
-	  rooeta1->setVal(fabs(pholead_SCeta));
-	  rooeta2->setVal(fabs(pholead_SCeta));
-	  rooweight->setVal(weight);
-	  roodset_background[reg_lead][0]->add(RooArgList(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma),weight);
-	  roodset_background[reg_lead][1]->add(RooArgList(*roovar2,*roopt2,*roosieie2,*rooeta2,*roorho,*roosigma),weight);
-	  if (do_scan_cone) for (int k=0; k<50; k++) scan_cone_histos[reg_lead][k]->Fill(pholead_test_rotatedphotoniso[k]-getpuenergy(reg_lead,pholead_SCeta),weight);
-	  if (do_scan_cone) for (int k=0; k<50; k++) if (pholead_test_rotatedwithcheckphotoniso[k]>-100) scan_conewithcheck_histos[reg_lead][k]->Fill(pholead_test_rotatedwithcheckphotoniso[k]-getpuenergy(reg_lead,pholead_SCeta),weight);
+	roovar1=pholead_outvar;
+	roovar2=pholead_outvar; 
+	roopt1=pholead_pt;
+	roopt2=pholead_pt;
+	roosieie1=pholead_sieie;
+	roosieie2=pholead_sieie;
+	rooeta1=fabs(pholead_SCeta);
+	rooeta2=fabs(pholead_SCeta);
+	rooweight=weight;
+	roodset_background[reg_lead][0]->Fill();
+	roodset_background[reg_lead][1]->Fill();
+	if (do_scan_cone) for (int k=0; k<50; k++) scan_cone_histos[reg_lead][k]->Fill(pholead_test_rotatedphotoniso[k]-getpuenergy(reg_lead,pholead_SCeta),weight);
+	if (do_scan_cone) for (int k=0; k<50; k++) if (pholead_test_rotatedwithcheckphotoniso[k]>-100) scan_conewithcheck_histos[reg_lead][k]->Fill(pholead_test_rotatedwithcheckphotoniso[k]-getpuenergy(reg_lead,pholead_SCeta),weight);
       }
       
     }
@@ -571,19 +571,17 @@ void template_production::Loop(int maxevents)
 	if (do1p1ftemplate && event_pass12whoissiglike==0) sigorbkg=TString("sigbkg");
 	if (do1p1ftemplate && event_pass12whoissiglike==1) sigorbkg=TString("bkgsig");
 	
-	roovar1->setVal(in1);
-	roovar2->setVal(in2);
-	roopt1->setVal(ptin1);
-	roopt2->setVal(ptin2);
-	roosieie1->setVal(sieiein1);
-	roosieie2->setVal(sieiein2);
-	rooeta1->setVal(etain1);
-	rooeta2->setVal(etain2);
-	rooweight->setVal(weight);
-	RooArgSet args(*roovar1,*roovar2,*roopt1,*roopt2,*roosieie1,*roosieie2,*rooeta1,*rooeta2);
-	args.add(RooArgSet(*roorho,*roosigma));
+	roovar1=in1;
+	roovar2=in2;
+	roopt1=ptin1;
+	roopt2=ptin2;
+	roosieie1=sieiein1;
+	roosieie2=sieiein2;
+	rooeta1=etain1;
+	rooeta2=etain2;
+	rooweight=weight;
 	FillDiffVariables(); // WARNING: WORKS ONLY IF DIFF VARIABLES ARE NOT SENSITIVE TO SWAPPING 1 WITH 2
-	template2d_roodset[get_name_template2d_roodset(event_ok_for_dataset_local,sigorbkg)]->add(args,weight);
+	template2d_roodset[get_name_template2d_roodset(event_ok_for_dataset_local,sigorbkg)]->Fill();
 
     } // end if do2dtemplate
 
@@ -618,20 +616,15 @@ void template_production::Loop(int maxevents)
 	   temp=etain1; etain1=etain2; etain2=temp;
 	 }
 
-	 roovar1->setVal(in1);
-	 roovar2->setVal(in2);
-	 roopt1->setVal(ptin1);
-	 roopt2->setVal(ptin2);
-	 roosieie1->setVal(sieiein1);
-	 roosieie2->setVal(sieiein2);
-	 rooeta1->setVal(etain1);
-	 rooeta2->setVal(etain2);
-	 rooweight->setVal(weight);
-	 RooArgSet args(*roovar1,*roovar2,*roopt1,*roopt2,*roosieie1,*roosieie2,*rooeta1,*rooeta2);
-	 args.add(RooArgSet(*roorho,*roosigma));
-	 args.add(*rooargset_diffvariables);
-	 RooArgSet args2(*roovar1,*roovar2,*roopt1,*roopt2,*roosieie1,*roosieie2,*rooeta1,*rooeta2);
-	 args2.add(RooArgSet(*roorho,*roosigma));
+	 roovar1=in1;
+	 roovar2=in2;
+	 roopt1=ptin1;
+	 roopt2=ptin2;
+	 roosieie1=sieiein1;
+	 roosieie2=sieiein2;
+	 rooeta1=etain1;
+	 rooeta2=etain2;
+	 rooweight=weight;
 
 	 counter_selection++;
 
@@ -640,12 +633,12 @@ void template_production::Loop(int maxevents)
 	 Int_t bin_couple = -999;
 	 float value_diffvariable;
 
-	 value_diffvariable = roovardiff[*diffvariable]->getVal();
+	 value_diffvariable = *(roovardiff[*diffvariable]);
 	 bin_couple = Choose_bin(*diffvariable,value_diffvariable);
 
 	if (bin_couple<0) continue;
 	
-	obs_roodset[get_name_obs_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple)]->add(args,weight);
+	obs_roodset[get_name_obs_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple)]->Fill();
 
 	if (donewtemplates) {
 	  Float_t phoiso_1[2][2][nclosest];
@@ -799,18 +792,18 @@ void template_production::Loop(int maxevents)
 
 	    if (fill1<=leftrange || fill2<=leftrange) continue;
 	    if (fill1>=rightrange || fill2>=rightrange) continue;
-	    roovar1->setVal(fill1);
-	    roovar2->setVal(fill2);
-	    rooeta1->setVal(fabs(filleta1));
-	    rooeta2->setVal(fabs(filleta2));
-	    roopt1->setVal(fillpt1);
-	    roopt2->setVal(fillpt2);
-	    roorho->setVal(fillrho);
-	    roosigma->setVal(fillsigma);
-	    if (n1==0 && n2==0) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigsig")]->add(args2,weight);
-	    else if (n1==0 && n2==1) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigbkg")]->add(args2,weight);
-	    else if (n1==1 && n2==0) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"bkgsig")]->add(args2,weight);
-	    else if (n1==1 && n2==1) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"bkgbkg")]->add(args2,weight);
+	    roovar1=fill1;
+	    roovar2=fill2;
+	    rooeta1=fabs(filleta1);
+	    rooeta2=fabs(filleta2);
+	    roopt1=fillpt1;
+	    roopt2=fillpt2;
+	    roorho=fillrho;
+	    roosigma=fillsigma;
+	    if (n1==0 && n2==0) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigsig")]->Fill();
+	    else if (n1==0 && n2==1) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigbkg")]->Fill();
+	    else if (n1==1 && n2==0) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"bkgsig")]->Fill();
+	    else if (n1==1 && n2==1) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"bkgbkg")]->Fill();
 	  }
 	}
 
@@ -1092,10 +1085,11 @@ void gen_templates(TString filename="input.root", TString mode="", bool isdata=1
   template_production *temp = new template_production(t);
   temp->Setup(isdata,mode,differentialvariable,do_event_mixing);
   temp->inputfilename=filename;
+  temp->outputfilename=outfile;
 
   if (maxevents>0) temp->Loop(maxevents); else temp->Loop();
   std::cout << "Exited from event loop" << std::endl;
-  temp->WriteOutput(outfile);
+  temp->WriteOutput();
   std::cout << "Written output" << std::endl;
 
   file->Close();
@@ -1267,22 +1261,22 @@ std::vector<std::vector<TProfile*> > template_production::GetPUScaling(bool doEB
 
   }
 
-  std::vector<std::vector<TProfile*> > out;
+  std::vector<std::vector<TProfile*> > outprof;
 
-  out.resize(3);
-  out[0].resize(n_bins);
-  out[1].resize(n_bins);
-  out[2].resize(n_bins);
+  outprof.resize(3);
+  outprof[0].resize(n_bins);
+  outprof[1].resize(n_bins);
+  outprof[2].resize(n_bins);
 
-  for (int i=0; i<n_bins; i++) out[0][i]=prof_iso[i];
-  for (int i=0; i<n_bins; i++) out[1][i]=prof_rho[i];
-  for (int i=0; i<n_bins; i++) out[2][i]=prof_iso_pu[i];
+  for (int i=0; i<n_bins; i++) outprof[0][i]=prof_iso[i];
+  for (int i=0; i<n_bins; i++) outprof[1][i]=prof_rho[i];
+  for (int i=0; i<n_bins; i++) outprof[2][i]=prof_iso_pu[i];
 
 //  prof_iso->Print();
 //  prof_rho->Print();
 //  prof_iso_pu->Print();
 
-  return out;
+  return outprof;
 
 };
 
