@@ -40,6 +40,7 @@
 #include <vector>
 #include <algorithm> 
 #include "TKDTree.h"
+#include "TTree.h"
 
 bool do_scan_cone = false;
 
@@ -287,31 +288,31 @@ public :
 
    TString inputfilename;
 
-  RooRealVar *roovar1;
-  RooRealVar *roovar2;
-  RooRealVar *roopt1;
-  RooRealVar *roopt2;
-  RooRealVar *roosieie1;
-  RooRealVar *roosieie2;
-  RooRealVar *rooeta1;
-  RooRealVar *rooeta2;
-  RooRealVar *roorho;
-  RooRealVar *roosigma;
-  RooRealVar *rooweight;
+  Float_t roovar1;
+  Float_t roovar2;
+  Float_t roopt1;
+  Float_t roopt2;
+  Float_t roosieie1;
+  Float_t roosieie2;
+  Float_t rooeta1;
+  Float_t rooeta2;
+  Float_t roorho;
+  Float_t roosigma;
+  Float_t rooweight;
 
-  std::map<TString,RooRealVar*> roovardiff;
+  std::map<TString,Float_t*> roovars_index1;
+  std::map<TString,Float_t*> roovars_index2;
+  std::map<TString,Float_t*> roovardiff;
 
-  RooArgSet *rooargset_diffvariables;
-
-  RooDataSet *roodset_signal[2][2];
-  RooDataSet *roodset_background[2][2];
+  TTree *roodset_signal[2][2];
+  TTree *roodset_background[2][2];
 
   TH1F *scan_cone_histos[2][50];
   TH1F *scan_conewithcheck_histos[2][50];
 
-   std::map<TString, RooDataSet*> obs_roodset;
-   std::map<TString, RooDataSet*> newtempl_roodset;
-   std::map<TString, RooDataSet*> template2d_roodset;
+   std::map<TString, TTree*> obs_roodset;
+   std::map<TString, TTree*> newtempl_roodset;
+   std::map<TString, TTree*> template2d_roodset;
 
    std::map<TString, TProfile*> true_purity;
    std::map<TString, TH1F*> true_purity_isppevent;
@@ -411,41 +412,62 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
 
   randomgen = new TRandom3(0);
 
-  roovar1 = new RooRealVar("roovar1","roovar1",leftrange,rightrange);
-  roovar2 = new RooRealVar("roovar2","roovar2",leftrange,rightrange);
-  rooeta1 = new RooRealVar("rooeta1","rooeta1",0,2.5);
-  rooeta2 = new RooRealVar("rooeta2","rooeta2",0,2.5);
-  roopt1 = new RooRealVar("roopt1","roopt1",25,1000);
-  roopt2 = new RooRealVar("roopt2","roopt2",25,1000);
-  roosieie1 = new RooRealVar("roosieie1","roosieie1",0,0.045);
-  roosieie2 = new RooRealVar("roosieie2","roosieie2",0,0.045);
-  roorho = new RooRealVar("roorho","roorho",0,50);
-  roosigma = new RooRealVar("roosigma","roosigma",0,50);
-  rooweight = new RooRealVar("rooweight","rooweight",0,5);
+  roovar1 = -999;
+  roovar2 = -999;
+  rooeta1 = -999;
+  rooeta2 = -999;
+  roopt1 = -999;
+  roopt2 = -999;
+  roosieie1 = -999;
+  roosieie2 = -999;
+  roorho = -999;
+  roosigma = -999;
+  rooweight = -999;
 
   for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
-    roovardiff[*diffvariable] = new RooRealVar(Form("roovar_%s",diffvariable->Data()),Form("roovar_%s",diffvariable->Data()),diffvariables_binsdef_list(*diffvariable)[0],diffvariables_binsdef_list(*diffvariable)[diffvariables_nbins_list(*diffvariable)]);
+    roovardiff[*diffvariable] = new Float_t(-999);
   }
-  rooargset_diffvariables = new RooArgSet();
-  for (std::map<TString,RooRealVar*>::const_iterator it=roovardiff.begin(); it!=roovardiff.end(); it++) rooargset_diffvariables->add(*(it->second));
+
+  roovars_index1["roovar1"] = &roovar1;
+  roovars_index1["rooeta1"] = &rooeta1;
+  roovars_index1["roopt1"] = &roopt1;
+  roovars_index1["roosieie1"] = &roosieie1;
+
+  roovars_index2["roovar2"] = &roovar2;
+  roovars_index2["rooeta2"] = &rooeta2;
+  roovars_index2["roopt2"] = &roopt2;
+  roovars_index2["roosieie2"] = &roosieie2;
+
+  roovars_common["roorho"] = &roorho;
+  roovars_common["roosigma"] = &roosigma;
+  roovars_common["rooweight"] = &rooweight;
 
   for (int i=0; i<2; i++){
       TString name_signal="signal";
       TString reg;
       if (i==0) reg="EB"; else if (i==1) reg="EE";
       TString t2=Form("roodset_%s_%s_rv%d",name_signal.Data(),reg.Data(),1);
-      roodset_signal[i][0] = new RooDataSet(t2.Data(),t2.Data(),RooArgSet(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma,*rooweight),WeightVar(*rooweight));
+      roodset_signal[i][0] = new TTree(t2.Data(),t2.Data());
+      AddVariablesToTree(roodset_signal[i][0],roovars_index1);
+      AddVariablesToTree(roodset_signal[i][0],roovars_common);
       t2=Form("roodset_%s_%s_rv%d",name_signal.Data(),reg.Data(),2);
-      roodset_signal[i][1] = new RooDataSet(t2.Data(),t2.Data(),RooArgSet(*roovar2,*roopt2,*roosieie2,*rooeta2,*roorho,*roosigma,*rooweight),WeightVar(*rooweight));
-    }
+      roodset_signal[i][1] = new TTree(t2.Data(),t2.Data())
+      AddVariablesToTree(roodset_signal[i][1],roovars_index2);
+      AddVariablesToTree(roodset_signal[i][0],roovars_common);
+  }
+
   for (int i=0; i<2; i++){
       TString name_background="background";
       TString reg;
       if (i==0) reg="EB"; else if (i==1) reg="EE";
       TString t2=Form("roodset_%s_%s_rv%d",name_background.Data(),reg.Data(),1);
-      roodset_background[i][0] = new RooDataSet(t2.Data(),t2.Data(),RooArgSet(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma,*rooweight),WeightVar(*rooweight));
+      roodset_background[i][0] = new TTree(t2.Data(),t2.Data());
+      AddVariablesToTree(roodset_background[i][0],roovars_index1);
+      AddVariablesToTree(roodset_background[i][0],roovars_common);
       t2=Form("roodset_%s_%s_rv%d",name_background.Data(),reg.Data(),2);
-      roodset_background[i][1] = new RooDataSet(t2.Data(),t2.Data(),RooArgSet(*roovar2,*roopt2,*roosieie2,*rooeta2,*roorho,*roosigma,*rooweight),WeightVar(*rooweight));
+      roodset_background[i][1] = new TTree(t2.Data(),t2.Data());
+      AddVariablesToTree(roodset_background[i][1],roovars_index2);
+      AddVariablesToTree(roodset_background[i][1],roovars_common);
     }
 
   for (int i=0; i<2; i++){
@@ -467,16 +489,20 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
       if (i==0) reg="EBEB"; else if (i==1) reg="EBEE"; else if (i==2) reg="EEEE"; else if (i==3) reg="EEEB";
       for (int j=0; j<n_bins+1; j++) {
 	TString t2=Form("obs_roodset_%s_%s_b%d",reg.Data(),diffvariable->Data(),j);
-	RooArgSet args(*roovar1,*roovar2,*roopt1,*roosieie1,*rooeta1,*roopt2,*roosieie2,*rooeta2);
-	args.add(RooArgSet(*roorho,*roosigma,*rooweight));
-	args.add(*rooargset_diffvariables);
 	obs_roodset[t2] = new RooDataSet(t2.Data(),t2.Data(),args,WeightVar(*rooweight));
+	obs_roodset[t2] = new TTree(t2.Data(),t2.Data());
+	AddVariablesToTree(obs_roodset[t2],roovars_index1);
+	AddVariablesToTree(obs_roodset[t2],roovars_index2);
+	AddVariablesToTree(obs_roodset[t2],roovars_common);
+	AddVariablesToTree(obs_roodset[t2],roovardiff);
+
 	TString type_array[4] = {"sigsig","sigbkg","bkgsig","bkgbkg"};
 	for (int l=0; l<4; l++){
 	  TString t3 = get_name_newtempl_roodset(i,diffvariable->Data(),j,type_array[l]);
-	  RooArgSet args2(*roovar1,*roovar2,*roopt1,*roosieie1,*rooeta1,*roopt2,*roosieie2,*rooeta2);
-	  args2.add(RooArgSet(*roorho,*roosigma,*rooweight));
-	  newtempl_roodset[t3] = new RooDataSet(t3.Data(),t3.Data(),args2,WeightVar(*rooweight));
+	  newtempl_roodset[t3] = new TTree(t3.Data(),t3.Data());
+	  AddVariablesToTree(newtempl_roodset[t3],roovars_index1);
+	  AddVariablesToTree(newtempl_roodset[t3],roovars_index2);
+	  AddVariablesToTree(newtempl_roodset[t3],roovars_common);
 	}
       }
 
@@ -499,9 +525,10 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
   for (int i=0; i<3; i++)
     for (unsigned int j=0; j<tobuild.size(); j++) {
       TString t2 = get_name_template2d_roodset(i,tobuild[j]);
-      RooArgSet args(*roovar1,*roovar2,*roopt1,*roosieie1,*rooeta1,*roopt2,*roosieie2,*rooeta2);
-      args.add(RooArgSet(*roorho,*roosigma,*rooweight));
-      template2d_roodset[t2]= new RooDataSet(t2.Data(),t2.Data(),args,WeightVar(*rooweight));
+      template2d_roodset[t2]= new TTree(t2.Data(),t2.Data());
+      AddVariablesToTree(template2d_roodset[t2],roovars_index1);
+      AddVariablesToTree(template2d_roodset[t2],roovars_index2);
+      AddVariablesToTree(template2d_roodset[t2],roovars_common);
     }
   
 
@@ -1093,6 +1120,12 @@ void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST **
   
   return;
 
+};
+
+void template_production::AddVariablesToTree(TTree *t, std::map<TString,Float_t*> &mymap){
+  for (std::map<TString,Float_t*>::const_iterator it = mymap.begin(); it!=mymap.end(); it++){
+    t->Branch(it->first.Data(),it->second,Form("%s/F",it->first.Data()));
+  }
 };
 
 #endif // #ifdef template_production_cxx
