@@ -449,7 +449,7 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
   roovars_common["roosigma"] = &roosigma;
   roovars_common["rooweight"] = &rooweight;
 
-  out = TFile::Open(outputfilename.Data(),"update");
+  out = new TFile(outputfilename.Data(),"recreate");
 
   for (int i=0; i<2; i++){
       TString name_signal="signal";

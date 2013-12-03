@@ -1083,9 +1083,10 @@ void gen_templates(TString filename="input.root", TString mode="", bool isdata=1
   std::cout << "Processing selection " << treename_chosen.Data() << std::endl;
   
   template_production *temp = new template_production(t);
+  temp->outputfilename=outfile;
   temp->Setup(isdata,mode,differentialvariable,do_event_mixing);
   temp->inputfilename=filename;
-  temp->outputfilename=outfile;
+
 
   if (maxevents>0) temp->Loop(maxevents); else temp->Loop();
   std::cout << "Exited from event loop" << std::endl;
