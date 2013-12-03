@@ -1003,6 +1003,12 @@ float template_production::AbsDeltaPhi(double phi1, double phi2){
   return TMath::Abs(result);
 }
 
+void template_production::AddVariablesToTree(TTree *t, std::map<TString,Float_t*> &mymap){
+  for (std::map<TString,Float_t*>::const_iterator it = mymap.begin(); it!=mymap.end(); it++){
+    t->Branch(it->first.Data(),it->second,Form("%s/F",it->first.Data()));
+  }
+};
+
 void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST ***NOT*** USE THE INFORMATION ABOUT WHICH PHOTON IS CALLED 1 AND 2
 
   *(roovardiff["invmass"])=dipho_mgg_photon;
@@ -1068,8 +1074,8 @@ void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST **
   {
     if (n_jets==1){
       *(roovardiff["1jet_jpt"])=jet_pt[0];
-      *(roovardiff["1jet_dR_lead_j"])=sqrt(pow(pholead_eta-jet_eta[0],2+pow(AbsDeltaPhi(pholead_phi,jet_phi[0]),2)));
-      *(roovardiff["1jet_dR_trail_j"])=sqrt(pow(photrail_eta-jet_eta[0],2+pow(AbsDeltaPhi(photrail_phi,jet_phi[0]),2)));
+      *(roovardiff["1jet_dR_lead_j"])=sqrt(pow(pholead_eta-jet_eta[0],2)+pow(AbsDeltaPhi(pholead_phi,jet_phi[0]),2));
+      *(roovardiff["1jet_dR_trail_j"])=sqrt(pow(photrail_eta-jet_eta[0],2)+pow(AbsDeltaPhi(photrail_phi,jet_phi[0]),2));
       *(roovardiff["1jet_dR_close_j"])=std::min(*(roovardiff["1jet_dR_lead_j"]),*(roovardiff["1jet_dR_trail_j"]));
       *(roovardiff["1jet_dR_far_j"])=std::max(*(roovardiff["1jet_dR_lead_j"]),*(roovardiff["1jet_dR_trail_j"]));
     }
@@ -1087,7 +1093,7 @@ void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST **
       *(roovardiff["2jet_j2pt"])=jet_pt[1];
       *(roovardiff["2jet_deta_jj"])=fabs(jet_eta[0]-jet_eta[1]);
       *(roovardiff["2jet_dphi_jj"])=AbsDeltaPhi(jet_phi[0],jet_phi[1]);
-      *(roovardiff["2jet_dR_jj"])=sqrt(pow(jet_eta[0]-jet_eta[1],2+pow(AbsDeltaPhi(jet_phi[0],jet_phi[1]),2)));
+      *(roovardiff["2jet_dR_jj"])=sqrt(pow(jet_eta[0]-jet_eta[1],2)+pow(AbsDeltaPhi(jet_phi[0],jet_phi[1]),2));
       TLorentzVector pho1;
       pho1.SetPtEtaPhiE(pholead_pt,pholead_eta,pholead_phi,pholead_energy);
       TLorentzVector pho2;
@@ -1116,11 +1122,6 @@ void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST **
 
 };
 
-void template_production::AddVariablesToTree(TTree *t, std::map<TString,Float_t*> &mymap){
-  for (std::map<TString,Float_t*>::const_iterator it = mymap.begin(); it!=mymap.end(); it++){
-    t->Branch(it->first.Data(),it->second,Form("%s/F",it->first.Data()));
-  }
-};
 
 #endif // #ifdef template_production_cxx
 
