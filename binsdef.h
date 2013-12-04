@@ -218,11 +218,17 @@ int n_eta1eta2_cats = n_eta_cats*n_eta_cats;
 float *etabins = binsdef_single_gamma_EB_eta+0;
 
 // FOR PHOTON COMPONENT
-// 030903p1
+// 030903p1 2011 dataset
 float eff_areas_EB_data[n_bins] = {2.703034e-01,2.678859e-01,2.722684e-01,2.720999e-01,2.643882e-01,2.480913e-01,1.706292e-01};
 float eff_areas_EE_data[n_bins] = {5.329403e-02,7.733851e-02,1.091783e-01,1.339074e-01,1.068975e-01};
 float eff_areas_EB_mc[n_bins] = {2.840231e-01,2.859291e-01,2.825974e-01,2.930248e-01,2.766801e-01,2.567621e-01,1.797386e-01};
 float eff_areas_EE_mc[n_bins] = {5.101126e-02,7.539486e-02,1.088317e-01,1.385660e-01,1.077761e-01};
+
+// // 030903p1 2012 dataset
+// float eff_areas_EB_data[n_bins] = {3.070820e-01,3.078518e-01,3.089162e-01,3.103081e-01,3.048204e-01,2.865540e-01,1.999668e-01};
+// float eff_areas_EE_data[n_bins] = {5.330422e-02,7.396740e-02,9.679689e-02,1.125413e-01,8.631587e-02};
+
+
 
 const int n_ptbins_forreweighting = 4;
 Float_t ptbins_forreweighting[n_ptbins_forreweighting+1]={20,35,50,80,999};
