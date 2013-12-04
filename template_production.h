@@ -287,6 +287,7 @@ public :
    bool dosignal;
 
    TString inputfilename;
+   TString inputfilenameEXTRA;
    TString outputfilename;
 
   Float_t roovar1;
@@ -1102,7 +1103,8 @@ void template_production::FillDiffVariables(){ // WARNING: THIS FUNCTION MUST **
       jet1.SetPtEtaPhiE(jet_pt[0],jet_eta[0],jet_phi[0],jet_energy[0]);
       TLorentzVector jet2;
       jet2.SetPtEtaPhiE(jet_pt[1],jet_eta[1],jet_phi[1],jet_energy[1]);
-      *(roovardiff["2jet_mjj"])=(jet1+jet2).M();
+      //      *(roovardiff["2jet_mjj"])=(jet1+jet2).M();
+      *(roovardiff["2jet_mjj"])=10;
       *(roovardiff["2jet_zeppen"])=fabs((pho1+pho2).Eta()-(jet1.Eta()+jet2.Eta())/2);
       *(roovardiff["2jet_dphi_gg_jj"])=AbsDeltaPhi((pho1+pho2).Phi(),(jet1+jet2).Phi());
     }
