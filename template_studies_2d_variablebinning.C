@@ -123,7 +123,7 @@ void find_adaptive_binning(RooDataSet *dset, int *n_found_bins, Double_t *array_
 float find_repetition_eventsintemplates(RooDataSet *dset, int axis);
 bool is_2events_bin(TString diffvariable, TString splitting, int bin);
 float get_noise_systematic(TString diffvariable, TString splitting, int bin);
-void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet *roodset);
+void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet* &roodset);
 TH1F* AddTHInQuadrature(std::vector<TH1F*> vector, TString name);
 
 RooRealVar *roovar1=NULL;
@@ -249,9 +249,9 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     inputfilename_d     = "outphoton_allmc_standard.root";
   }  
   else if (do_syst_string=="newtemplates_1event") {
-    inputfilename_t2p   = "outphoton_data_sigsig_step2_1event_ago21.root";
-    inputfilename_t1p1f = "outphoton_data_sigbkg_step2_1event_ago21.root";
-    inputfilename_t2f   = "outphoton_data_bkgbkg_step2_1event_ago21.root";
+    inputfilename_t2p   = "outphoton_data_sigsig_step2_1event.root";
+    inputfilename_t1p1f = "outphoton_data_sigbkg_step2_1event.root";
+    inputfilename_t2f   = "outphoton_data_bkgbkg_step2_1event.root";
     inputfilename_d     = "outphoton_data_standard.root";
   }  
   else if (do_syst_string=="newtemplates_2events") {
@@ -337,7 +337,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   RooDataSet *dataset_bkgbkg_orig = NULL;
   RooDataSet *dataset_orig        = NULL;
 
-  get_roodset_from_ttree(dir_t2p,Form("newtempl_roodset_%s_%s_b%d_sigsig",splitting.Data(),diffvariable.Data(),bin),dataset_sigsig_orig);
   get_roodset_from_ttree(dir_t2p,Form("newtempl_roodset_%s_%s_b%d_sigsig",splitting.Data(),diffvariable.Data(),bin),dataset_sigsig_orig);
   get_roodset_from_ttree(dir_t1p1f,Form("newtempl_roodset_%s_%s_b%d_sigbkg",splitting.Data(),diffvariable.Data(),bin),dataset_sigbkg_orig);
   get_roodset_from_ttree(dir_t1p1f,Form("newtempl_roodset_%s_%s_b%d_bkgsig",splitting.Data(),diffvariable.Data(),bin),dataset_bkgsig_orig);
@@ -4561,7 +4560,7 @@ float get_noise_systematic(TString diffvariable, TString splitting, int bin){
 
 }
 
-void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet *roodset){
+void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet* &roodset){
 
   TTree *t = NULL;
   assert(roodset==NULL);
