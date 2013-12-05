@@ -642,7 +642,6 @@ void template_production::Loop(int maxevents)
 	obs_roodset[get_name_obs_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple)]->Fill();
 
 	if (donewtemplates) {
-	  cout << "doing event " << get_name_obs_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple).Data() << endl;
 
 	  Float_t phoiso_1[2][2][nclosest];
 	  Float_t phoiso_2[2][2][nclosest];
@@ -773,8 +772,8 @@ void template_production::Loop(int maxevents)
 	      }
 	    }
 
-	    if ((fabs(filleta1)>2.5) || (fabs(filleta1)>1.4442 && fabs(filleta1)<1.56)) {cout << "a " << filleta1 << endl; continue;}
-	    if ((fabs(filleta2)>2.5) || (fabs(filleta2)>1.4442 && fabs(filleta2)<1.56)) {cout << "a " << filleta2 << endl; continue;}
+	    if ((fabs(filleta1)>2.5) || (fabs(filleta1)>1.4442 && fabs(filleta1)<1.56)) {continue;}
+	    if ((fabs(filleta2)>2.5) || (fabs(filleta2)>1.4442 && fabs(filleta2)<1.56)) {continue;}
 
 	    fill1-=fillrho*geteffarea((fabs(filleta1)>1.4442),fabs(filleta1));
 	    fill2-=fillrho*geteffarea((fabs(filleta2)>1.4442),fabs(filleta2));
@@ -790,12 +789,11 @@ void template_production::Loop(int maxevents)
 //	      cout << pholead_SCeta << " " << a1 << " " << a2 << " "; 
 //	      cout << photrail_SCeta << " " << b1 << " " << b2 << " "; 
 //	      cout << endl;
-	      cout << "b" << endl;
 	      continue;
 	    }
 
-	    if (fill1<=leftrange || fill2<=leftrange)   {cout << "c" << endl; continue;}
-	    if (fill1>=rightrange || fill2>=rightrange) {cout << "c" << endl; continue;}
+	    if (fill1<=leftrange || fill2<=leftrange)   {continue;}
+	    if (fill1>=rightrange || fill2>=rightrange) {continue;}
 	    roovar1=fill1;
 	    roovar2=fill2;
 	    rooeta1=fabs(filleta1);
@@ -804,7 +802,7 @@ void template_production::Loop(int maxevents)
 	    roopt2=fillpt2;
 	    roorho=fillrho;
 	    roosigma=fillsigma;
-	    if (n1==0 && n2==0) {newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigsig")]->Fill(); cout << "fill " << get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigsig").Data() << endl;}
+	    if (n1==0 && n2==0) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigsig")]->Fill();
 	    else if (n1==0 && n2==1) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigbkg")]->Fill();
 	    else if (n1==1 && n2==0) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"bkgsig")]->Fill();
 	    else if (n1==1 && n2==1) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"bkgbkg")]->Fill();
