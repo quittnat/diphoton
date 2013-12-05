@@ -12,6 +12,7 @@ bool dolightcomparisonwithstandardselbkg = false;
 #include "TLatex.h"
 #include "TString.h"
 #include "TFile.h"
+#include "TTree.h"
 #include "TCanvas.h"
 #include "TH1F.h"
 #include "TH2F.h"
@@ -122,7 +123,7 @@ void find_adaptive_binning(RooDataSet *dset, int *n_found_bins, Double_t *array_
 float find_repetition_eventsintemplates(RooDataSet *dset, int axis);
 bool is_2events_bin(TString diffvariable, TString splitting, int bin);
 float get_noise_systematic(TString diffvariable, TString splitting, int bin);
-
+void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet *roodset);
 TH1F* AddTHInQuadrature(std::vector<TH1F*> vector, TString name);
 
 RooRealVar *roovar1=NULL;
@@ -289,8 +290,8 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   assert(dir_t2f);
   assert(dir_d);
 
-  dir_d->GetObject("roovar1",roovar1);
-  dir_d->GetObject("roovar2",roovar2);
+  roovar1 = new RooRealVar("roovar1","roovar1",leftrange,rightrange);
+  roovar2 = new RooRealVar("roovar2","roovar2",leftrange,rightrange);
   roovar1->setRange(leftrange,rightrange);
   roovar2->setRange(leftrange,rightrange);
   roovar1->setBins(n_histobins);
@@ -305,14 +306,14 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     }
   }
 
-  dir_d->GetObject("roopt1",roopt1); 
-  dir_d->GetObject("roosieie1",roosieie1); 
-  dir_d->GetObject("rooeta1",rooeta1); 
-  dir_d->GetObject("roopt2",roopt2); 
-  dir_d->GetObject("roosieie2",roosieie2); 
-  dir_d->GetObject("rooeta2",rooeta2); 
-  dir_d->GetObject("roorho",roorho); 
-  dir_d->GetObject("roosigma",roosigma); 
+  rooeta1 = new RooRealVar("rooeta1","rooeta1",0,2.5);
+  rooeta2 = new RooRealVar("rooeta2","rooeta2",0,2.5);
+  roopt1 = new RooRealVar("roopt1","roopt1",25,1000);
+  roopt2 = new RooRealVar("roopt2","roopt2",25,1000);
+  roosieie1 = new RooRealVar("roosieie1","roosieie1",0,0.045);
+  roosieie2 = new RooRealVar("roosieie2","roosieie2",0,0.045);
+  roorho = new RooRealVar("roorho","roorho",0,50);
+  roosigma = new RooRealVar("roosigma","roosigma",0,50);
   rooweight = new RooRealVar("rooweight","rooweight",0,100);
   assert (roovar1);
   assert (roovar2);
@@ -336,16 +337,17 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   RooDataSet *dataset_bkgbkg_orig = NULL;
   RooDataSet *dataset_orig        = NULL;
 
-  dir_t2p->GetObject(Form("newtempl_roodset_%s_%s_b%d_sigsig",splitting.Data(),diffvariable.Data(),bin),dataset_sigsig_orig);
-  dir_t1p1f->GetObject(Form("newtempl_roodset_%s_%s_b%d_sigbkg",splitting.Data(),diffvariable.Data(),bin),dataset_sigbkg_orig);
-  dir_t1p1f->GetObject(Form("newtempl_roodset_%s_%s_b%d_bkgsig",splitting.Data(),diffvariable.Data(),bin),dataset_bkgsig_orig);
-  dir_t2f->GetObject(Form("newtempl_roodset_%s_%s_b%d_bkgbkg",splitting.Data(),diffvariable.Data(),bin),dataset_bkgbkg_orig);
-  if (dataset_sigsig_orig == NULL) dir_t2p->GetObject(Form("template_roodset_%s_sigsig",splitting.Data()),dataset_sigsig_orig);
-  if (dataset_sigbkg_orig == NULL) dir_t1p1f->GetObject(Form("template_roodset_%s_sigbkg",splitting.Data()),dataset_sigbkg_orig);
-  if (dataset_bkgsig_orig == NULL) dir_t1p1f->GetObject(Form("template_roodset_%s_bkgsig",splitting.Data()),dataset_bkgsig_orig);
-  if (dataset_bkgbkg_orig == NULL) dir_t2f->GetObject(Form("template_roodset_%s_bkgbkg",splitting.Data()),dataset_bkgbkg_orig);
+  get_roodset_from_ttree(dir_t2p,Form("newtempl_roodset_%s_%s_b%d_sigsig",splitting.Data(),diffvariable.Data(),bin),dataset_sigsig_orig);
+  get_roodset_from_ttree(dir_t2p,Form("newtempl_roodset_%s_%s_b%d_sigsig",splitting.Data(),diffvariable.Data(),bin),dataset_sigsig_orig);
+  get_roodset_from_ttree(dir_t1p1f,Form("newtempl_roodset_%s_%s_b%d_sigbkg",splitting.Data(),diffvariable.Data(),bin),dataset_sigbkg_orig);
+  get_roodset_from_ttree(dir_t1p1f,Form("newtempl_roodset_%s_%s_b%d_bkgsig",splitting.Data(),diffvariable.Data(),bin),dataset_bkgsig_orig);
+  get_roodset_from_ttree(dir_t2f,Form("newtempl_roodset_%s_%s_b%d_bkgbkg",splitting.Data(),diffvariable.Data(),bin),dataset_bkgbkg_orig);
+  if (dataset_sigsig_orig == NULL) get_roodset_from_ttree(dir_t2p,Form("template_roodset_%s_sigsig",splitting.Data()),dataset_sigsig_orig);
+  if (dataset_sigbkg_orig == NULL) get_roodset_from_ttree(dir_t1p1f,Form("template_roodset_%s_sigbkg",splitting.Data()),dataset_sigbkg_orig);
+  if (dataset_bkgsig_orig == NULL) get_roodset_from_ttree(dir_t1p1f,Form("template_roodset_%s_bkgsig",splitting.Data()),dataset_bkgsig_orig);
+  if (dataset_bkgbkg_orig == NULL) get_roodset_from_ttree(dir_t2f,Form("template_roodset_%s_bkgbkg",splitting.Data()),dataset_bkgbkg_orig);
 
-  dir_d->GetObject(Form("obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin),dataset_orig);
+  get_roodset_from_ttree(dir_d,Form("obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin),dataset_orig);
   assert(dataset_sigsig_orig);
   assert(dataset_sigbkg_orig);
   assert(dataset_bkgsig_orig);
@@ -487,50 +489,50 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     if (dolightcomparisonwithstandardselsig || dolightcomparisonwithstandardselbkg) if (splitting=="EBEE") return NULL;
 
     TFile *fdatarcone_s = new TFile("outphoton_data_rcone.root","read");
-    fdatarcone_s->GetObject(Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_datarcone_s);
+    get_roodset_from_ttree(fdatarcone_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_datarcone_s);
     assert(dset_datarcone_s);
  
     TFile *fdatarcone_b = new TFile("outphoton_data_sieiesideband.root","read");
-    fdatarcone_b->GetObject(Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_datarcone_b);
+    get_roodset_from_ttree(fdatarcone_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_datarcone_b);
     assert(dset_datarcone_b);
 
     TFile *fmctrue_s = new TFile("outphoton_allmc_sig.root","read");
-    fmctrue_s->GetObject(Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mctrue_s);
+    get_roodset_from_ttree(fmctrue_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mctrue_s);
     assert(dset_mctrue_s);
 
     TFile *fmcfrag_s = new TFile("outphoton_allmc_frag.root","read");
-    fmcfrag_s->GetObject(Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcfrag_s);
+    get_roodset_from_ttree(fmcfrag_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcfrag_s);
     assert(dset_mcfrag_s);
   
     TFile *fmcnofrag_s = new TFile("outphoton_allmc_nofrag.root","read");
-    fmcnofrag_s->GetObject(Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcnofrag_s);
+    get_roodset_from_ttree(fmcnofrag_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcnofrag_s);
     assert(dset_mcnofrag_s);
   
     TFile *fmcrcone_s = new TFile("outphoton_allmc_rcone.root","read");
-    fmcrcone_s->GetObject(Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcrcone_s);
+    get_roodset_from_ttree(fmcrcone_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcrcone_s);
     assert(dset_mcrcone_s);
   
     TFile *fzee_s = new TFile("outphoton_data_zee.root","read");
     RooDataSet *dset_zee_s_2d = NULL;
-    fzee_s->GetObject(Form("roofit/template_roodset_%s_sigsig",splitting.Data()),dset_zee_s_2d);
+    get_roodset_from_ttree(fzee_s,Form("roofit/template_roodset_%s_sigsig",splitting.Data()),dset_zee_s_2d);
     assert(dset_zee_s_2d);
     dset_zee_s = (RooDataSet*)(dset_zee_s_2d->reduce(Name("dset_zee_s"),SelectVars(RooArgList(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma))));
     assert(dset_zee_s);
 
     TFile *fmctrue_b = new TFile("outphoton_allmc_bkg.root","read");
-    fmctrue_b->GetObject(Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_b);
+    get_roodset_from_ttree(fmctrue_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_b);
     assert(dset_mctrue_b);
 
     TFile *fmcrcone_b = new TFile("outphoton_allmc_sieiesideband.root","read");
-    fmcrcone_b->GetObject(Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mcrcone_b);
+    get_roodset_from_ttree(fmcrcone_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mcrcone_b);
     assert(dset_mcrcone_b);
 
 //    TFile *fmctrue_noEM = new TFile("outphoton_allmc_bkg_noEMenr.root","read");
-//    fmctrue_noEM->GetObject(Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_noEM);
+//    get_roodset_from_ttree(fmctrue_noEM,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_noEM);
 //    assert(dset_mctrue_noEM);
 //
 //    TFile *fmcrcone_noEM = new TFile("outphoton_allmc_sieiesideband_noEMenr.root","read");
-//    fmcrcone_noEM->GetObject(Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mcrcone_noEM);
+//    get_roodset_from_ttree(fmcrcone_noEM,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mcrcone_noEM);
 //    assert(dset_mcrcone_noEM);
   
     dset_mctrue_s = (RooDataSet*)(dset_mctrue_s->reduce(Name("dset_mctrue_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
@@ -811,31 +813,31 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   if (do_syst_string==TString("savepdfMCtrue1D") || do_syst_string==TString("templateshapeMCpromptdrivenEB") || do_syst_string==TString("templateshapeMCfakedrivenEB") || do_syst_string==TString("templateshapeMCpromptdrivenEE") || do_syst_string==TString("templateshapeMCfakedrivenEE") || do_syst_string==TString("templateshape2frag")) {
 
     TFile *fmctrue_s = new TFile("outphoton_allmc_sig.root","read");
-    fmctrue_s->GetObject(Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mctrue_s_rv1);
-    fmctrue_s->GetObject(Form("roofit/roodset_signal_%s_rv2",s2.Data()),dset_mctrue_s_rv2);
+    get_roodset_from_ttree(fmctrue_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mctrue_s_rv1);
+    get_roodset_from_ttree(fmctrue_s,Form("roofit/roodset_signal_%s_rv2",s2.Data()),dset_mctrue_s_rv2);
     assert(dset_mctrue_s_rv1);
     assert(dset_mctrue_s_rv2);
     TFile *fmcrcone_s;
     if (do_syst_string==TString("templateshape2frag")){
       fmcrcone_s = new TFile("outphoton_allmc_sig_2frag.root","read");
-      fmcrcone_s->GetObject(Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcrcone_s_rv1);
-      fmcrcone_s->GetObject(Form("roofit/roodset_signal_%s_rv2",s2.Data()),dset_mcrcone_s_rv2);
+      get_roodset_from_ttree(fmcrcone_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcrcone_s_rv1);
+      get_roodset_from_ttree(fmcrcone_s,Form("roofit/roodset_signal_%s_rv2",s2.Data()),dset_mcrcone_s_rv2);
     }
     else {
       fmcrcone_s = new TFile("outphoton_allmc_rcone.root","read");
-      fmcrcone_s->GetObject(Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcrcone_s_rv1);
-      fmcrcone_s->GetObject(Form("roofit/roodset_signal_%s_rv2",s2.Data()),dset_mcrcone_s_rv2);
+      get_roodset_from_ttree(fmcrcone_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcrcone_s_rv1);
+      get_roodset_from_ttree(fmcrcone_s,Form("roofit/roodset_signal_%s_rv2",s2.Data()),dset_mcrcone_s_rv2);
     }
     assert(dset_mcrcone_s_rv1);
     assert(dset_mcrcone_s_rv2);
     TFile *fmctrue_b = new TFile("outphoton_allmc_bkg.root","read");
-    fmctrue_b->GetObject(Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_b_rv1);
-    fmctrue_b->GetObject(Form("roofit/roodset_background_%s_rv2",s2.Data()),dset_mctrue_b_rv2);
+    get_roodset_from_ttree(fmctrue_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_b_rv1);
+    get_roodset_from_ttree(fmctrue_b,Form("roofit/roodset_background_%s_rv2",s2.Data()),dset_mctrue_b_rv2);
     assert(dset_mctrue_b_rv1);
     assert(dset_mctrue_b_rv2);
     TFile *fmcrcone_b = new TFile("outphoton_allmc_sieiesideband.root","read");
-    fmcrcone_b->GetObject(Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mcrcone_b_rv1);
-    fmcrcone_b->GetObject(Form("roofit/roodset_background_%s_rv2",s2.Data()),dset_mcrcone_b_rv2);
+    get_roodset_from_ttree(fmcrcone_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mcrcone_b_rv1);
+    get_roodset_from_ttree(fmcrcone_b,Form("roofit/roodset_background_%s_rv2",s2.Data()),dset_mcrcone_b_rv2);
     assert(dset_mcrcone_b_rv1);
     assert(dset_mcrcone_b_rv2);
 
@@ -4556,5 +4558,72 @@ float get_noise_systematic(TString diffvariable, TString splitting, int bin){
   else if (splitting=="EBEE") return 0.05;
   else if (splitting=="EEEE") return 0.05;
   else {cout << "error" << endl; return 999;};
+
+}
+
+void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet *roodset){
+
+  TTree *t = NULL;
+  assert(roodset==NULL);
+  f->GetObject(treename.Data(),t);
+  if (!t) {cout << "Impossible to find TTree " << treename.Data() << endl; return;}
+  TObjArray *objs = t->GetListOfBranches();
+  t->SetBranchStatus("*",0);
+
+  float v_roovar1;
+  float v_roovar2;
+  float v_roopt1;
+  float v_roosieie1;
+  float v_rooeta1;
+  float v_roopt2;
+  float v_roosieie2;
+  float v_rooeta2;
+  float v_roorho;
+  float v_roosigma;
+  float v_rooweight;
+
+  TBranch *b_roovar1;
+  TBranch *b_roovar2;
+  TBranch *b_roopt1;
+  TBranch *b_roosieie1;
+  TBranch *b_rooeta1;
+  TBranch *b_roopt2;
+  TBranch *b_roosieie2;
+  TBranch *b_rooeta2;
+  TBranch *b_roorho;
+  TBranch *b_roosigma;
+  TBranch *b_rooweight;
+
+  float* ptrs[11]={&v_roovar1,&v_roovar2,&v_roopt1,&v_roosieie1,&v_rooeta1,&v_roopt2,&v_roosieie2,&v_rooeta2,&v_roorho,&v_roosigma,&v_rooweight};
+  TBranch** branches[11]={&b_roovar1,&b_roovar2,&b_roopt1,&b_roosieie1,&b_rooeta1,&b_roopt2,&b_roosieie2,&b_rooeta2,&b_roorho,&b_roosigma,&b_rooweight};
+  RooRealVar* rooptrs[11]={roovar1,roovar2,roopt1,roosieie1,rooeta1,roopt2,roosieie2,rooeta2,roorho,roosigma,rooweight};
+  bool status[11];
+  RooArgSet args;
+
+  for (int i=0; i<11; i++){
+    status[i]=0;
+    TString name = rooptrs[i]->GetName();
+    TObject *obj = objs->FindObject(name.Data());
+    if (!obj) continue;
+    t->SetBranchStatus(name.Data(),1);
+    status[i]=1;
+    t->SetBranchAddress(name.Data(),ptrs[i],branches[i]);
+    args.add(*(rooptrs[i]));
+  }
+
+  TString newname = Form("roo_%s",t->GetName());
+  roodset = new RooDataSet(newname.Data(),newname.Data(),args,WeightVar(*rooweight));
+
+  for (int j=0; j<t->GetEntries(); j++){
+    t->GetEntry(j);
+    for (int i=0; i<11; i++){
+      if (!status[i]) continue;
+      rooptrs[i]->setVal(*(ptrs[i]));
+    }
+    roodset->add(args,v_rooweight);
+  }
+
+  cout << "Imported roodset " << newname.Data() << " from TTree " << t->GetName() << endl;
+  roodset->Print();
 
 }
