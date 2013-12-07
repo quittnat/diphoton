@@ -118,7 +118,7 @@ void prepare_matchingfile_forstep2(TString matching, TString data, int jobnumber
 
    std::vector<UInt_t> runonthis;
    if (jobnumber>-1){
-     for (unsigned int m=(unsigned int)jobnumber*20; m<((unsigned int)jobnumber+1)*20 && m<lista_uuid.size(); m++){
+     for (unsigned int m=(unsigned int)jobnumber*5; m<((unsigned int)jobnumber+1)*5 && m<lista_uuid.size(); m++){
        cout << m << " " << lista_uuid.at((unsigned int)m) << endl;
        runonthis.push_back(lista_uuid.at((unsigned int)m));
      }
