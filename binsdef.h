@@ -32,25 +32,25 @@ TString("2jet_zeppen"),\
 TString("2jet_dphi_gg_jj")\
 };
 TString __names__[] = {
-TString("m_{#gamma #gamma}"),\
-TString("p_{T, #gamma #gamma}"),\
-TString("|cos #theta^{*}|"),\
-TString("#Delta #phi_{#gamma #gamma}"),\
-TString("#Delta R_{#gamma #gamma}"),\
+TString("m_{#gamma #gamma}, incl."),\
+TString("p_{T, #gamma #gamma}, incl."),\
+TString("|cos #theta^{*}|, incl."),\
+TString("#Delta #phi_{#gamma #gamma}, incl."),\
+TString("#Delta R_{#gamma #gamma}, incl."),\
 TString("N_{jets}"),\
-TString("p_{T,j}, 1-jet bin"),\
-TString("p_{T,#gamma ,j}^{lead}, 1-jet bin"),\
-TString("p_{T,#gamma ,j}^{trail}, 1-jet bin"),\
-TString("p_{T,#gamma ,j}^{close}, 1-jet bin"),\
-TString("p_{T,#gamma ,j}^{far}, 1-jet bin"),\
-TString("p_{T,j}^{lead}, 2-jet bin"),\
-TString("p_{T,j}^{trail}, 2-jet bin"),\
-TString("#Delta #eta_{jj}, 2-jet bin"),\
-TString("#Delta #phi_{jj}, 2-jet bin"),\
-TString("#Delta R_{jj}, 2-jet bin"),\
-TString("m_{jj}, 2-jet bin"),\
-TString("Zeppenfeld var., 2-jet bin"),\
-TString("#Delta #phi_{#gamma #gamma,jj}, 2-jet bin")\
+TString("p_{T,j}, #geq 1j"),\
+TString("p_{T,#gamma ,j}^{lead}, #geq 1j"),\
+TString("p_{T,#gamma ,j}^{trail}, #geq 1j"),\
+TString("p_{T,#gamma ,j}^{close}, #geq 1j"),\
+TString("p_{T,#gamma ,j}^{far}, #geq 1j"),\
+TString("p_{T,j}^{lead}, #geq 2j"),\
+TString("p_{T,j}^{trail}, #geq 2j"),\
+TString("#Delta #eta_{jj}, #geq 2j"),\
+TString("#Delta #phi_{jj}, #geq 2j"),\
+TString("#Delta R_{jj}, #geq 2j"),\
+TString("m_{jj}, #geq 2j"),\
+TString("Zeppenfeld var., #geq 2j"),\
+TString("#Delta #phi_{#gamma #gamma,jj}, #geq 2j")\
 };
 TString __units__[] = {
 TString("GeV"),\
@@ -195,6 +195,9 @@ const Float_t leftrange = -3;
 const Float_t rightrange = 9;
 
 const float default_threshold_adaptive_binning = -999;
+
+const float beam_energy = 7000;
+const float pass_veto_closejets_dRcut = 1.0;
 
 const int n_templatebins_max = 1000; 
 int n_templatebins = 0;
