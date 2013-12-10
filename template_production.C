@@ -334,17 +334,17 @@ void template_production::Loop(int maxevents)
       reg_lead=0;
       reg_trail=0;
     }
-    else if (fabs(pholead_SCeta)>1.56 && fabs(photrail_SCeta)>1.56) {
+    else if (fabs(pholead_SCeta)>1.566 && fabs(photrail_SCeta)>1.566) {
       event_ok_for_dataset=2;
       reg_lead=1;
       reg_trail=1;
     }
-    else if (fabs(pholead_SCeta)<1.4442 && fabs(photrail_SCeta)>1.56) {
+    else if (fabs(pholead_SCeta)<1.4442 && fabs(photrail_SCeta)>1.566) {
       event_ok_for_dataset=3;
       reg_lead=0;
       reg_trail=1;
     }
-    else if (fabs(pholead_SCeta)>1.56 && fabs(photrail_SCeta)<1.4442) {
+    else if (fabs(pholead_SCeta)>1.566 && fabs(photrail_SCeta)<1.4442) {
       event_ok_for_dataset=4;
       reg_lead=1;
       reg_trail=0;
@@ -382,7 +382,7 @@ void template_production::Loop(int maxevents)
 
     if (dosignaltemplate||dobackgroundtemplate) recalc_lead=true;
     if (do2ptemplate || do1p1ftemplate || do2ftemplate) {recalc_lead=true; recalc_trail=true;} 
-    if (dodistribution) {recalc_lead=true; recalc_trail=true;}
+    if (dodistribution || doeffunf) {recalc_lead=true; recalc_trail=true;}
 
 
 
@@ -406,13 +406,13 @@ void template_production::Loop(int maxevents)
 //	if (printout) {
 //	  std::cout << et << " " << e << " " << deta << " " << dphi << " " << dR << " " << eta << std::endl;
 //	}
-//	if (eta>1.4442 && eta<1.56) continue;
+//	if (eta>1.4442 && eta<1.566) continue;
 //	if (eta>2.5) continue;
 //
 //#include "cleaning.cc"
 //
 //	if (fabs(pholead_SCeta)<1.4442 && eta>1.4442) continue;
-//	if (fabs(pholead_SCeta)>1.56 && eta<1.56) continue;
+//	if (fabs(pholead_SCeta)>1.566 && eta<1.566) continue;
 //	et_recalc+=et;
 //	e_recalc+=e;
 //	number_recalc++;
@@ -445,13 +445,13 @@ void template_production::Loop(int maxevents)
 //	if (printout) {
 //	  std::cout << et << " " << e << " " << deta << " " << dphi << " " << dR << " " << eta << std::endl;
 //	}
-//	if (eta>1.4442 && eta<1.56) continue;
+//	if (eta>1.4442 && eta<1.566) continue;
 //	if (eta>2.5) continue;
 //
 //#include "cleaning.cc"
 //
 //	if (fabs(photrail_SCeta)<1.4442 && eta>1.4442) continue;
-//	if (fabs(photrail_SCeta)>1.56 && eta<1.56) continue;
+//	if (fabs(photrail_SCeta)>1.566 && eta<1.566) continue;
 //	et_recalc+=et;
 //	e_recalc+=e;
 //	number_recalc++;
@@ -772,8 +772,8 @@ void template_production::Loop(int maxevents)
 	      }
 	    }
 
-	    if ((fabs(filleta1)>2.5) || (fabs(filleta1)>1.4442 && fabs(filleta1)<1.56)) {continue;}
-	    if ((fabs(filleta2)>2.5) || (fabs(filleta2)>1.4442 && fabs(filleta2)<1.56)) {continue;}
+	    if ((fabs(filleta1)>2.5) || (fabs(filleta1)>1.4442 && fabs(filleta1)<1.566)) {continue;}
+	    if ((fabs(filleta2)>2.5) || (fabs(filleta2)>1.4442 && fabs(filleta2)<1.566)) {continue;}
 
 	    fill1-=fillrho*geteffarea((fabs(filleta1)>1.4442),fabs(filleta1));
 	    fill2-=fillrho*geteffarea((fabs(filleta2)>1.4442),fabs(filleta2));
@@ -988,13 +988,72 @@ void template_production::Loop(int maxevents)
 	delete[] dists2;
       }
      
-
-
-
- 
     } // end if dodistribution
     
 
+
+    ////////////////////////////////////////////////////////////////////
+
+
+    if (doeffunf){
+
+      int event_ok_for_dataset_local = event_ok_for_dataset;
+      if (!reco_in_acc) event_ok_for_dataset_local = -1;
+      if (event_ok_for_dataset_local==3 || event_ok_for_dataset_local==4) event_ok_for_dataset_local=1;
+
+      int event_ok_for_dataset_local_gen = -1;
+      if (gen_in_acc){      
+	if (fabs(pholead_GEN_eta)<1.4442 && fabs(photrail_GEN_eta)<1.4442) {
+	  event_ok_for_dataset_local_gen=0;
+	}
+	else if (fabs(pholead_GEN_eta)>1.566 && fabs(photrail_GEN_eta)>1.566) {
+	  event_ok_for_dataset_local_gen=2;
+	}
+	else if (fabs(pholead_GEN_eta)<1.4442 && fabs(photrail_GEN_eta)>1.566) {
+	  event_ok_for_dataset_local_gen=1;
+	}
+	else if (fabs(pholead_GEN_eta)>1.566 && fabs(photrail_GEN_eta)<1.4442) {
+	  event_ok_for_dataset_local_gen=1;
+	}
+	else std::cout << "We have a problem here (gen)!!!" << std::endl;
+      }
+
+      std::map<TString,Float_t> mydiff_reco; 
+      std::map<TString,Float_t> mydiff_gen; 
+      
+      reco_in_acc = reco_in_acc && (event_ok_for_dataset_local>-1);
+      if (reco_in_acc) gen_in_acc = gen_in_acc && (event_ok_for_dataset_local_gen==event_ok_for_dataset_local);
+
+      if (reco_in_acc){
+	FillDiffVariables(false);
+	for (std::map<TString,Float_t*>::const_iterator it = roovardiff.begin(); it!=roovardiff.end(); it++) mydiff_reco[it->first]=*(it->second);
+	
+      }
+      if (gen_in_acc){
+	FillDiffVariables(true);
+	for (std::map<TString,Float_t*>::const_iterator it = roovardiff.begin(); it!=roovardiff.end(); it++) mydiff_gen[it->first]=*(it->second);
+      }
+      
+
+       for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
+
+	 Int_t bin_reco = (reco_in_acc) ? Choose_bin(*diffvariable,mydiff_reco[*diffvariable]) : -999;
+	 Int_t bin_gen  = (gen_in_acc ) ? Choose_bin(*diffvariable,mydiff_gen[*diffvariable])  : -999;
+	 
+	 if (reco_in_acc && bin_reco<0) cout << "WRONG" << endl;
+	 if (gen_in_acc && bin_gen<0) cout << "WRONG" << endl;
+	
+	 if (reco_in_acc && gen_in_acc) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)]->Fill(bin_reco,bin_gen,weight);
+	 else if (reco_in_acc) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)]->Fake(bin_reco,weight);
+	 else if (gen_in_acc) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local_gen,*diffvariable)]->Miss(bin_gen,weight);
+	 else cout << "WRONG" << endl;
+
+       }
+
+    } // end if effunf
+    
+
+    ////////////////////////////////////////////////////////////////
 
 
   } // end event loop
@@ -1079,6 +1138,7 @@ void gen_templates(TString filename="input.root", TString mode="", bool isdata=1
   if (mode=="1pgen1fside") treename_chosen=treename[17];
   if (mode=="1pgen1fside_2frag") treename_chosen=treename[17];
 
+  if (mode=="effunf") treename_chosen = "LightTreeGenReco";
 
   file->GetObject(treename_chosen.Data(),t);
 
@@ -1212,13 +1272,13 @@ std::vector<std::vector<TProfile*> > template_production::GetPUScaling(bool doEB
 //	//	float dR=sqrt(deta*deta+dphi*dphi);
 //	float eta=fabs(TMath::ACosH(e/et));
 //
-//	if (eta>1.4442 && eta<1.56) continue;
+//	if (eta>1.4442 && eta<1.566) continue;
 //	if (eta>2.5) continue;
 //
 //#include "cleaning.cc"
 //
 //	if (fabs(pholead_SCeta)<1.4442 && eta>1.4442) continue;
-//	if (fabs(pholead_SCeta)>1.56 && eta<1.56) continue;
+//	if (fabs(pholead_SCeta)>1.566 && eta<1.566) continue;
 //	et_recalc+=et;
 //	e_recalc+=e;
 //	number_recalc++;
@@ -1251,7 +1311,7 @@ std::vector<std::vector<TProfile*> > template_production::GetPUScaling(bool doEB
     Float_t weight=event_luminormfactor*event_Kfactor*event_weight;
 
     if (!doEB){
-      if (fabs(pholead_SCeta)<1.56) continue;
+      if (fabs(pholead_SCeta)<1.566) continue;
     }
     else {
       if (fabs(pholead_SCeta)>1.4442) continue;

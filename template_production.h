@@ -42,6 +42,10 @@
 #include "TKDTree.h"
 #include "TTree.h"
 
+#include "RooUnfold-1.1.1/src/RooUnfold.h"
+#include "RooUnfold-1.1.1/src/RooUnfoldBayes.h"
+#include "RooUnfold-1.1.1/src/RooUnfoldBinByBin.h"
+
 bool do_scan_cone = false;
 
 using namespace std;
@@ -160,13 +164,14 @@ public :
    Float_t pholead_GEN_eta, photrail_GEN_eta;
    Float_t pholead_GEN_phi, photrail_GEN_phi;
    Float_t pholead_GEN_pt, photrail_GEN_pt;
-
    Int_t n_GEN_jets;
    Float_t jet_GEN_pt[50];
    Float_t jet_GEN_eta[50];
    Float_t jet_GEN_phi[50];
    Float_t jet_GEN_energy[50];
 
+   Bool_t gen_in_acc;
+   Bool_t reco_in_acc;
    
    // List of branches
    TBranch        *b_event_fileuuid;   //!
@@ -272,6 +277,18 @@ public :
    TBranch *b_jet_phi;
    TBranch *b_jet_energy;
 
+   TBranch *b_pholead_GEN_eta, *b_photrail_GEN_eta;
+   TBranch *b_pholead_GEN_phi, *b_photrail_GEN_phi;
+   TBranch *b_pholead_GEN_pt,  *b_photrail_GEN_pt;
+   TBranch *b_n_GEN_jets;
+   TBranch *b_jet_GEN_pt;
+   TBranch *b_jet_GEN_eta;
+   TBranch *b_jet_GEN_phi;
+   TBranch *b_jet_GEN_energy;
+
+   TBranch *b_gen_in_acc;
+   TBranch *b_reco_in_acc;
+
 
    template_production(TTree *tree=0);
    virtual ~template_production();
@@ -341,6 +358,7 @@ public :
    TString get_name_true_purity_ispp(int region, TString diffvariable);
    TString get_name_true_purity_isnotpp(int region, TString diffvariable);
    TString get_name_template2d_roodset(int region, TString sigorbkg);
+   TString get_name_responsematrix_effunf(int region, TString diffvariable);
 
    Float_t pholead_outvar;
    Float_t photrail_outvar;
@@ -363,6 +381,9 @@ public :
    Bool_t do2ptemplate;
    Bool_t do1p1ftemplate;
    Bool_t do2ftemplate;
+   Bool_t doeffunf;
+
+   map<TString,RooUnfoldResponse*> responsematrix_effunf;
 
    int whichnewtemplate;
 
@@ -401,6 +422,7 @@ template_production::template_production(TTree *tree)
    do1p1ftemplate = false;
    do2ftemplate = false;
    do_event_mixing = false;
+   doeffunf = false;
 
    whichnewtemplate = -1;
 
@@ -427,7 +449,7 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
   if (mode=="sigbkg" || mode=="1p1fbothgen" || mode=="1prcone1fgen" || mode=="1pgen1fside" || mode=="1p1fbothgen_2frag" || mode=="1pgen1fside_2frag") do1p1ftemplate=true; 
   if (mode=="bkgbkg" || mode=="2fgen") do2ftemplate=true; 
   do2dtemplate = (do2ptemplate || do1p1ftemplate || do2ftemplate);
-
+  if (mode=="effunf") doeffunf=true;
 
   randomgen = new TRandom3(0);
 
@@ -550,10 +572,16 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
       AddVariablesToTree(template2d_roodset[t2],roovars_index2);
       AddVariablesToTree(template2d_roodset[t2],roovars_common);
     }
-  
 
+  if (doeffunf) {
+    assert(!isdata);
+    for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
+      for (int i=0; i<3; i++) {
+	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = new RooUnfoldResponse(diffvariables_nbins_list(*diffvariable),*(diffvariables_binsdef_list(*diffvariable)+0),*(diffvariables_binsdef_list(*diffvariable)+diffvariables_nbins_list(*diffvariable)-1));
+      }
+    }
+  }
 
-  
   initialized=true;
   
 };
@@ -706,6 +734,21 @@ void template_production::Init()
    fChain->SetBranchAddress("jet_phi",&jet_phi,&b_jet_phi);
    fChain->SetBranchAddress("jet_energy",&jet_energy,&b_jet_energy);
 
+   fChain->SetBranchAddress("pholead_GEN_eta", &pholead_GEN_eta, &b_pholead_GEN_eta);
+   fChain->SetBranchAddress("photrail_GEN_eta", &photrail_GEN_eta, &b_photrail_GEN_eta);
+   fChain->SetBranchAddress("pholead_GEN_phi", &pholead_GEN_phi, &b_pholead_GEN_phi);
+   fChain->SetBranchAddress("photrail_GEN_phi", &photrail_GEN_phi, &b_photrail_GEN_phi);
+   fChain->SetBranchAddress("pholead_GEN_pt", &pholead_GEN_pt, &b_pholead_GEN_pt);
+   fChain->SetBranchAddress("photrail_GEN_pt", &photrail_GEN_pt, &b_photrail_GEN_pt);
+
+   fChain->SetBranchAddress("n_GEN_jets",&n_GEN_jets,&b_n_GEN_jets);
+   fChain->SetBranchAddress("jet_GEN_pt",&jet_GEN_pt,&b_jet_GEN_pt);
+   fChain->SetBranchAddress("jet_GEN_eta",&jet_GEN_eta,&b_jet_GEN_eta);
+   fChain->SetBranchAddress("jet_GEN_phi",&jet_GEN_phi,&b_jet_GEN_phi);
+   fChain->SetBranchAddress("jet_GEN_energy",&jet_GEN_energy,&b_jet_GEN_energy);
+
+   fChain->SetBranchAddress("gen_in_acc",&gen_in_acc,&b_gen_in_acc);
+   fChain->SetBranchAddress("reco_in_acc",&reco_in_acc,&b_reco_in_acc);
 
    Notify();
 }
@@ -780,6 +823,16 @@ void template_production::WriteOutput(){
     for (std::map<TString, TH1F*>::const_iterator it = true_purity_isppevent.begin(); it!=true_purity_isppevent.end(); it++) (it->second)->Write();
     for (std::map<TString, TH1F*>::const_iterator it = true_purity_isnotppevent.begin(); it!=true_purity_isnotppevent.end(); it++) (it->second)->Write();
 
+  }
+
+  if (doeffunf) {
+    out->mkdir("effunf");
+    out->cd("effunf");
+    for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
+      for (int i=0; i<3; i++) {
+	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)]->Write();
+      }
+    }
   }
 
 //  out->mkdir("plots");
@@ -910,6 +963,14 @@ TString template_production::get_name_template2d_roodset(int region, TString sig
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
   TString t=Form("%s_%s_%s",name_signal.Data(),reg.Data(),sigorbkg.Data());
+  return t;
+};
+
+TString template_production::get_name_responsematrix_effunf(int region, TString diffvariable){
+  TString name_signal="responsematrix_effunf";
+  TString reg;
+  if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
+  TString t=Form("%s_%s_%s",name_signal.Data(),reg.Data(),diffvariable.Data());
   return t;
 };
 

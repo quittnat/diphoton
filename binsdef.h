@@ -208,7 +208,7 @@ float binsdef_single_gamma_pt[n_bins+1]={20,35,50,80,150};
 int n_templates_EB_eta=7;
 int n_templates_EE_eta=5;
 float binsdef_single_gamma_EB_eta[n_bins+1]={0,0.2,0.4,0.6,0.8,1,1.2,1.4442};
-float binsdef_single_gamma_EE_eta[n_bins+1]={1.56,1.653,1.8,2,2.2,2.5};
+float binsdef_single_gamma_EE_eta[n_bins+1]={1.566,1.653,1.8,2,2.2,2.5};
 
 float AbsDeltaPhi(double phi1, double phi2){
   // From cmssw reco::deltaPhi()
