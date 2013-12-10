@@ -475,7 +475,7 @@ void template_production::Loop(int maxevents)
     if (do2ptemplate || do1p1ftemplate || do2ftemplate) photrail_outvar-=getpuenergy(reg_trail,photrail_SCeta);
     
 
-    if (recalc_lead && mode!="standard_domatching"){
+    if (recalc_lead && mode!="standard_domatching" && mode!="effunf"){
       if (pholead_outvar<-100) std::cout << "PROBLEM WITH ISOLATION CALCULATION!!!" << std::endl;
       assert (pholead_outvar>=-100);
       //      if (pholead_outvar<leftrange) {/*std::cout << "Warning: fixing underflow " << pholead_outvar << std::endl;*/ pholead_outvar=leftrange+1e-5;}
@@ -483,7 +483,7 @@ void template_production::Loop(int maxevents)
       if (pholead_outvar>=rightrange) continue;
       //      if (pholead_outvar>=rightrange) pholead_outvar=rightrange-1e-5; // overflow in last bin 
     }
-    if (recalc_trail && mode!="standard_domatching"){
+    if (recalc_trail && mode!="standard_domatching" && mode!="effunf"){
       if (photrail_outvar<-100) std::cout << "PROBLEM WITH ISOLATION CALCULATION!!!" << std::endl;
       assert (photrail_outvar>=-100);
       //      if (photrail_outvar<leftrange) {/*std::cout << "Warning: fixing underflow " << photrail_outvar << std::endl;*/ photrail_outvar=leftrange+1e-5;}
@@ -1027,8 +1027,8 @@ void template_production::Loop(int maxevents)
       if (reco_in_acc){
 	FillDiffVariables(false);
 	for (std::map<TString,Float_t*>::const_iterator it = roovardiff.begin(); it!=roovardiff.end(); it++) mydiff_reco[it->first]=*(it->second);
-	
       }
+
       if (gen_in_acc){
 	FillDiffVariables(true);
 	for (std::map<TString,Float_t*>::const_iterator it = roovardiff.begin(); it!=roovardiff.end(); it++) mydiff_gen[it->first]=*(it->second);
@@ -1037,16 +1037,21 @@ void template_production::Loop(int maxevents)
 
        for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
 
-	 Int_t bin_reco = (reco_in_acc) ? Choose_bin(*diffvariable,mydiff_reco[*diffvariable]) : -999;
-	 Int_t bin_gen  = (gen_in_acc ) ? Choose_bin(*diffvariable,mydiff_gen[*diffvariable])  : -999;
+	 bool reco_in_acc_local = reco_in_acc;
+	 bool gen_in_acc_local = gen_in_acc;
+
+	 Int_t bin_reco = (reco_in_acc_local) ? Choose_bin(*diffvariable,mydiff_reco[*diffvariable]) : -999;
+	 Int_t bin_gen  = (gen_in_acc_local ) ? Choose_bin(*diffvariable,mydiff_gen[*diffvariable])  : -999;
 	 
-	 if (reco_in_acc && bin_reco<0) cout << "WRONG" << endl;
-	 if (gen_in_acc && bin_gen<0) cout << "WRONG" << endl;
-	
-	 if (reco_in_acc && gen_in_acc) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)]->Fill(bin_reco,bin_gen,weight);
-	 else if (reco_in_acc) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)]->Fake(bin_reco,weight);
-	 else if (gen_in_acc) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local_gen,*diffvariable)]->Miss(bin_gen,weight);
-	 else cout << "WRONG" << endl;
+	 if (reco_in_acc_local && bin_reco<0) cout << "WRONG" << endl;
+	 if (gen_in_acc_local && bin_gen<0) cout << "WRONG" << endl;
+
+	 if (bin_reco==diffvariables_nbins_list(*diffvariable)-1) reco_in_acc_local=false;
+	 if (bin_gen==diffvariables_nbins_list(*diffvariable)-1) gen_in_acc_local=false;
+
+	 if (reco_in_acc_local && gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)]->Fill(mydiff_reco[*diffvariable],mydiff_gen[*diffvariable],weight);
+	 else if (reco_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)]->Fake(mydiff_reco[*diffvariable],weight);
+	 else if (gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local_gen,*diffvariable)]->Miss(mydiff_gen[*diffvariable],weight);
 
        }
 

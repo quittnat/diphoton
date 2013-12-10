@@ -577,7 +577,9 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
     assert(!isdata);
     for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
       for (int i=0; i<3; i++) {
-	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = new RooUnfoldResponse(diffvariables_nbins_list(*diffvariable),*(diffvariables_binsdef_list(*diffvariable)+0),*(diffvariables_binsdef_list(*diffvariable)+diffvariables_nbins_list(*diffvariable)-1));
+	TH1F dummy("dummy","dummy",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = new RooUnfoldResponse(&dummy,&dummy);
+	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)]->SetName(get_name_responsematrix_effunf(i,*diffvariable));
       }
     }
   }
@@ -1088,7 +1090,6 @@ void template_production::FillDiffVariables(bool dogen){ // WARNING: THIS FUNCTI
   TLorentzVector pho2;
   int mynjets = (!dogen) ? n_jets : n_GEN_jets;
   TLorentzVector *myjets = new TLorentzVector[mynjets];
-
   if (!dogen){
     pho1.SetPtEtaPhiM(pholead_pt,pholead_eta,pholead_phi,0);
     pho2.SetPtEtaPhiM(photrail_pt,photrail_eta,photrail_phi,0);
@@ -1099,19 +1100,17 @@ void template_production::FillDiffVariables(bool dogen){ // WARNING: THIS FUNCTI
     pho2.SetPtEtaPhiM(photrail_GEN_pt,photrail_GEN_eta,photrail_GEN_phi,0);
     for (int i=0; i<n_GEN_jets; i++) myjets[i].SetPtEtaPhiE(jet_GEN_pt[i],jet_GEN_eta[i],jet_GEN_phi[i],jet_GEN_energy[i]);
   }
-
   float mindR1_gj = 999;
   float mindR2_gj = 999;
   for (int i=0; i<mynjets; i++){
-    float dR1 = sqrt(pow(pho1.Eta()-jet_eta[i],2)+pow(AbsDeltaPhi(pho1.Phi(),jet_phi[i]),2));
+    float dR1 = sqrt(pow(pho1.Eta()-myjets[i].Eta(),2)+pow(AbsDeltaPhi(pho1.Phi(),myjets[i].Phi()),2));
     if (dR1<mindR1_gj) mindR1_gj=dR1;
-    float dR2 = sqrt(pow(pho2.Eta()-jet_eta[i],2)+pow(AbsDeltaPhi(pho2.Phi(),jet_phi[i]),2));
+    float dR2 = sqrt(pow(pho2.Eta()-myjets[i].Eta(),2)+pow(AbsDeltaPhi(pho2.Phi(),myjets[i].Phi()),2));
     if (dR2<mindR2_gj) mindR2_gj=dR2;
   }
   bool pass_veto_closejets = (mindR1_gj>pass_veto_closejets_dRcut && mindR2_gj>pass_veto_closejets_dRcut);
-
   {
-    *(roovardiff["invmass"])=dipho_mgg_photon;
+    *(roovardiff["invmass"])= (!dogen) ? dipho_mgg_photon : (pho1+pho2).M();
   }
   {
     float pt = (pho1+pho2).Pt();
@@ -1165,9 +1164,9 @@ void template_production::FillDiffVariables(bool dogen){ // WARNING: THIS FUNCTI
   }
   {
     if (mynjets>=1 && pass_veto_closejets){
-      *(roovardiff["1jet_jpt"])=jet_pt[0];
-      *(roovardiff["1jet_dR_lead_j"])=sqrt(pow(pho1.Eta()-jet_eta[0],2)+pow(AbsDeltaPhi(pho1.Phi(),jet_phi[0]),2));
-      *(roovardiff["1jet_dR_trail_j"])=sqrt(pow(pho2.Eta()-jet_eta[0],2)+pow(AbsDeltaPhi(pho2.Phi(),jet_phi[0]),2));
+      *(roovardiff["1jet_jpt"])=myjets[0].Pt();
+      *(roovardiff["1jet_dR_lead_j"])=sqrt(pow(pho1.Eta()-myjets[0].Eta(),2)+pow(AbsDeltaPhi(pho1.Phi(),myjets[0].Phi()),2));
+      *(roovardiff["1jet_dR_trail_j"])=sqrt(pow(pho2.Eta()-myjets[0].Eta(),2)+pow(AbsDeltaPhi(pho2.Phi(),myjets[0].Phi()),2));
       *(roovardiff["1jet_dR_close_j"])=std::min(*(roovardiff["1jet_dR_lead_j"]),*(roovardiff["1jet_dR_trail_j"]));
       *(roovardiff["1jet_dR_far_j"])=std::max(*(roovardiff["1jet_dR_lead_j"]),*(roovardiff["1jet_dR_trail_j"]));
     }
@@ -1181,15 +1180,15 @@ void template_production::FillDiffVariables(bool dogen){ // WARNING: THIS FUNCTI
   }
   {
     if (mynjets>=2 && pass_veto_closejets){
-      *(roovardiff["2jet_j1pt"])=jet_pt[0];
-      *(roovardiff["2jet_j2pt"])=jet_pt[1];
-      *(roovardiff["2jet_deta_jj"])=fabs(jet_eta[0]-jet_eta[1]);
-      *(roovardiff["2jet_dphi_jj"])=AbsDeltaPhi(jet_phi[0],jet_phi[1]);
-      *(roovardiff["2jet_dR_jj"])=sqrt(pow(jet_eta[0]-jet_eta[1],2)+pow(AbsDeltaPhi(jet_phi[0],jet_phi[1]),2));
+      *(roovardiff["2jet_j1pt"])=myjets[0].Pt();
+      *(roovardiff["2jet_j2pt"])=myjets[1].Pt();
+      *(roovardiff["2jet_deta_jj"])=fabs(myjets[0].Eta()-myjets[1].Eta());
+      *(roovardiff["2jet_dphi_jj"])=AbsDeltaPhi(myjets[0].Phi(),myjets[1].Phi());
+      *(roovardiff["2jet_dR_jj"])=sqrt(pow(myjets[0].Eta()-myjets[1].Eta(),2)+pow(AbsDeltaPhi(myjets[0].Phi(),myjets[1].Phi()),2));
       TLorentzVector jet1;
-      jet1.SetPtEtaPhiE(jet_pt[0],jet_eta[0],jet_phi[0],jet_energy[0]);
+      jet1.SetPtEtaPhiE(myjets[0].Pt(),myjets[0].Eta(),myjets[0].Phi(),myjets[0].E());
       TLorentzVector jet2;
-      jet2.SetPtEtaPhiE(jet_pt[1],jet_eta[1],jet_phi[1],jet_energy[1]);
+      jet2.SetPtEtaPhiE(myjets[1].Pt(),myjets[1].Eta(),myjets[1].Phi(),myjets[1].E());
       *(roovardiff["2jet_mjj"])=(jet1+jet2).M();
       *(roovardiff["2jet_zeppen"])=fabs((pho1+pho2).Eta()-(jet1.Eta()+jet2.Eta())/2);
       *(roovardiff["2jet_dphi_gg_jj"])=AbsDeltaPhi((pho1+pho2).Phi(),(jet1+jet2).Phi());
@@ -1205,7 +1204,6 @@ void template_production::FillDiffVariables(bool dogen){ // WARNING: THIS FUNCTI
       *(roovardiff["2jet_dphi_gg_jj"])=9998;
     }
   }
-
   delete[] myjets;
   return;
 
