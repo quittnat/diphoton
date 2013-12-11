@@ -75,48 +75,31 @@ TString("")\
 };
 
 
-static const int n_bins=26;
+static const int n_bins=30;
 int __nbins__[] = { // this should always be the effective length of mybinsdef_ array minus 1 (last number there is for overflow)
-16,\
-21,\
-8,\
-14,\
-19,\
-5,\
-6,\
-8,\
-8,\
-8,\
-7,\
-4,\
-4,\
-5,\
-5,\
-5,\
-5,\
-5,\
-5
+  18,25,13,26,22,5,10,13,14,14,13,5,4,5,5,5,5,5,5
 };
 
-float mybinsdef_invmass[n_bins+1]={0,40,60,70,75,80,85,90,95,100,110,120,150,250,400,800,801};
-float mybinsdef_diphotonpt[n_bins+1]={0,6,10,12,14,16,18,20,22,24,28,34,40,50,60,70,80,90,100,120,200,201};
-float mybinsdef_costhetastar[n_bins+1]={0,0.20,0.28,0.36,0.44,0.60,0.90,1.00,1.01};
-float mybinsdef_dphi[n_bins+1]={0,0.2*Pi,0.4*Pi,0.6*Pi,0.7*Pi,0.8*Pi,0.84*Pi,0.88*Pi,0.90*Pi,0.92*Pi,0.94*Pi,0.96*Pi,0.98*Pi,1.0*Pi,1.01*Pi};
-float mybinsdef_dR[n_bins+1]={0,0.9,1.4,1.85,2.15,2.35,2.5,2.6,2.7,2.8,2.85,2.9,2.95,3,3.05,3.1,3.15,3.2,MaxDrExperiment,MaxDrExperiment+0.01};
+float mybinsdef_invmass[n_bins+1]={0,40,60,68,72,76,80,84,88,92,96,100,108,116,132,168,228,800,800.01};
+float mybinsdef_diphotonpt[n_bins+1]={0,5,7,9,11,13,15,16,17,19,21,23,25,27,30,33,36,40,45,51,59,67,75,85,200,200.01};
+float mybinsdef_costhetastar[n_bins+1]={0,0.15,0.185,0.215,0.24,0.265,0.29,0.32,0.36,0.415,0.784999,0.944999,1,1.01};
+float mybinsdef_dphi[n_bins+1]={0,0.518363,0.84823,1.27235,1.68075,1.9635,2.1677,2.34049,2.46615,2.5604,2.63894,2.70177,2.7646,2.81173,2.85885,2.89027,2.92168,2.9531,2.98451,3.01593,3.04735,3.06305,3.07876,3.09447,3.11018,3.14159,3.15159};
+float mybinsdef_dR[n_bins+1]={0,0.885757,1.38769,1.86009,2.18487,2.39155,2.53917,2.65727,2.74585,2.8049,2.86395,2.923,2.95253,2.98205,3.01158,3.0411,3.07063,3.10015,3.12968,3.1592,3.69066,5.90505,5.91505};
 float mybinsdef_njets[n_bins+1]={0,1,2,3,5,5.01};
-float mybinsdef_1jet_jpt[n_bins+1]={0,40,50,60,80,1000,1001};
-float mybinsdef_1jet_dR_lead_j[n_bins+1]={0,2.35,2.7,2.95,3.15,3.4,3.8,MaxDrExperiment,MaxDrExperiment+0.01};
-float mybinsdef_1jet_dR_trail_j[n_bins+1]={0,1.25,1.85,2.35,2.75,3.1,3.55,MaxDrExperiment,MaxDrExperiment+0.01};
-float mybinsdef_1jet_dR_close_j[n_bins+1]={0,1.15,1.7,2.15,2.55,2.85,3.2,MaxDrExperiment,MaxDrExperiment+0.01};
-float mybinsdef_1jet_dR_far_j[n_bins+1]={0,2.65,2.95,3.15,3.4,3.7,MaxDrExperiment,MaxDrExperiment+0.01};
-float mybinsdef_2jet_j1pt[n_bins+1]={0,50,70,1000,1001};
-float mybinsdef_2jet_j2pt[n_bins+1]={0,40,50,1000,1001};
-float mybinsdef_2jet_deta_jj[n_bins+1]={0,0.55,1.15,1.95,9.4,9.41};
-float mybinsdef_2jet_dphi_jj[n_bins+1]={0,0.95,1.9,2.6,Pi,1.01*Pi};
-float mybinsdef_2jet_dR_jj[n_bins+1]={0,1.7,2.6,3.1,MaxDrExperiment,MaxDrExperiment+0.01};
-float mybinsdef_2jet_mjj[n_bins+1]={0,80,120,180,2000,2001};
-float mybinsdef_2jet_zeppen[n_bins+1]={0,1.25,1.95,2.2,7,7.01};
-float mybinsdef_2jet_dphi_gg_jj[n_bins+1]={0,2.55,2.9,3.05,Pi,1.01*Pi};
+float mybinsdef_1jet_jpt[n_bins+1]={0,25,30,35,40,50,60,70,85,600,600.01};
+float mybinsdef_1jet_dR_lead_j[n_bins+1]={0,1.91914,2.3325,2.5687,2.74585,2.923,3.07063,3.21825,3.39541,3.60208,3.86781,4.25164,5.90505,5.91505};
+float mybinsdef_1jet_dR_trail_j[n_bins+1]={0,1.32864,1.65341,1.91914,2.18487,2.42107,2.65727,2.86395,3.07063,3.30683,3.57256,3.92686,4.39926,5.90505,5.91505};
+float mybinsdef_1jet_dR_close_j[n_bins+1]={0,1.26959,1.53531,1.74199,1.94867,2.15534,2.36202,2.5687,2.74585,2.923,3.12968,3.45446,3.98591,5.90505,5.91505};
+float mybinsdef_1jet_dR_far_j[n_bins+1]={0,2.36202,2.62775,2.83443,2.98205,3.12968,3.2773,3.45446,3.63161,3.83828,4.10401,4.45832,5.90505,5.91505};
+float mybinsdef_2jet_j1pt[n_bins+1]={0,40,55,75,600,600.01};
+float mybinsdef_2jet_j2pt[n_bins+1]={0,25,35,600,600.01};
+float mybinsdef_2jet_deta_jj[n_bins+1]={0,0.611,1.222,2.068,9.4,9.41};
+float mybinsdef_2jet_dphi_jj[n_bins+1]={0,0.691151,1.33518,2.07345,3.14159,3.15159};
+float mybinsdef_2jet_dR_jj[n_bins+1]={0,1.50579,2.36202,3.01158,5.90505,5.91505};
+float mybinsdef_2jet_mjj[n_bins+1]={0,60,100,160,1000,1000.01};
+float mybinsdef_2jet_zeppen[n_bins+1]={0,0.98,1.82,2.625,7,7.01};
+float mybinsdef_2jet_dphi_gg_jj[n_bins+1]={0,2.46615,2.82743,2.98451,3.14159,3.15159};
+
 
 float*  __binsdef__[] = {
 mybinsdef_invmass,\
