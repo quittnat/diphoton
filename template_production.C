@@ -995,7 +995,7 @@ void template_production::Loop(int maxevents)
     ////////////////////////////////////////////////////////////////////
 
 
-    if (doeffunf){
+    if (doeffunf && (dataset_id<0 || dataset_id==dy_dataset_id)){
 
       int event_ok_for_dataset_local = event_ok_for_dataset;
       if (!reco_in_acc) event_ok_for_dataset_local = -1;
@@ -1033,28 +1033,32 @@ void template_production::Loop(int maxevents)
 	FillDiffVariables(true);
 	for (std::map<TString,Float_t*>::const_iterator it = roovardiff.begin(); it!=roovardiff.end(); it++) mydiff_gen[it->first]=*(it->second);
       }
-      
 
-       for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
-
-	 bool reco_in_acc_local = reco_in_acc;
-	 bool gen_in_acc_local = gen_in_acc;
-
-	 Int_t bin_reco = (reco_in_acc_local) ? Choose_bin(*diffvariable,mydiff_reco[*diffvariable]) : -999;
-	 Int_t bin_gen  = (gen_in_acc_local ) ? Choose_bin(*diffvariable,mydiff_gen[*diffvariable])  : -999;
+      for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
+	
+	bool reco_in_acc_local = reco_in_acc;
+	bool gen_in_acc_local = gen_in_acc;
+	
+	Int_t bin_reco = (reco_in_acc_local) ? Choose_bin(*diffvariable,mydiff_reco[*diffvariable]) : -999;
+	Int_t bin_gen  = (gen_in_acc_local ) ? Choose_bin(*diffvariable,mydiff_gen[*diffvariable])  : -999;
+	
+	if (reco_in_acc_local && bin_reco<0) cout << "WRONG" << endl;
+	if (gen_in_acc_local && bin_gen<0) cout << "WRONG" << endl;
 	 
-	 if (reco_in_acc_local && bin_reco<0) cout << "WRONG" << endl;
-	 if (gen_in_acc_local && bin_gen<0) cout << "WRONG" << endl;
+	if (bin_reco==diffvariables_nbins_list(*diffvariable)-1) reco_in_acc_local=false;
+	if (bin_gen==diffvariables_nbins_list(*diffvariable)-1) gen_in_acc_local=false;
+	
+	bool is_contamination_to_be_subtracted = false;
+	if (dataset_id==dy_dataset_id) is_contamination_to_be_subtracted = true; // DY contamination subtraction
+	if (is_contamination_to_be_subtracted) gen_in_acc_local=false;
 
-	 if (bin_reco==diffvariables_nbins_list(*diffvariable)-1) reco_in_acc_local=false;
-	 if (bin_gen==diffvariables_nbins_list(*diffvariable)-1) gen_in_acc_local=false;
+	float sf = (reco_in_acc) ? getscalefactor_foreffunf(pholead_pt,photrail_pt,pholead_eta,photrail_eta,pholead_r9,photrail_r9).first : 1;
+	if (reco_in_acc_local && gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hmatched->Fill(mydiff_reco[*diffvariable],mydiff_gen[*diffvariable],weight*sf);
+	if (reco_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hreco->Fill(mydiff_reco[*diffvariable],weight*sf);
+	if (gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local_gen,*diffvariable)].htruth->Fill(mydiff_gen[*diffvariable],weight);
 
-	 if (reco_in_acc_local && gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)]->Fill(mydiff_reco[*diffvariable],mydiff_gen[*diffvariable],weight);
-	 else if (reco_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)]->Fake(mydiff_reco[*diffvariable],weight);
-	 else if (gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local_gen,*diffvariable)]->Miss(mydiff_gen[*diffvariable],weight);
-
-       }
-
+      }
+      
     } // end if effunf
     
 
@@ -1368,5 +1372,32 @@ float template_production::geteffarea(int reg, float eta){
   else eff_area = (reg==0) ? eff_areas_EB_mc[bin] : eff_areas_EE_mc[bin];
 
   return 0.4*0.4*3.14*eff_area;
+
+};
+
+std::pair<float,float> template_production::getscalefactor_foreffunf(float pho1_pt, float pho2_pt, float pho1_eta, float pho2_eta, float pho1_r9, float pho2_r9){
+
+  // This is the scale factor to be applied to reconstructed MC events when filling the unfolding matrices
+  // In order for the response matrix to correct for efficiency, bin migration and Zee contamination, it should already include:
+  // 1) Trigger efficiency (no trigger cut is applied on the MC in the selection)
+  // 2) Selection efficiency scale factor (Zee all but pixel veto + Zuug for the pixel veto)
+  // 3) Smearing of the MC to match the resolution in data (one has to see how to implement this... probably act on pho{1,2}_reco)
+  // 4) See how to implement the Zee subtraction as fakes, with the right width to match the one observed in data
+
+  float sf = 1;
+  float sferr = 0;
+
+  // Trigger efficiency
+  const float trig_eff_EBEB_highr9 = 1.;
+  const float trig_eff_EBEB_lowr9 = 0.993;
+  const float trig_eff_notEBEB_highr9 = 1.;
+  const float trig_eff_notEBEB_lowr9 = 0.988;
+  const float r9_threshold = 0.94;
+
+  // Trigger efficiency
+  if (fabs(pho1_eta)<1.5 && fabs(pho2_eta)<1.5) sf *= (pho1_r9>r9_threshold && pho2_r9>r9_threshold) ? trig_eff_EBEB_highr9 : trig_eff_EBEB_lowr9;
+  else sf *= (pho1_r9>r9_threshold && pho2_r9>r9_threshold) ? trig_eff_notEBEB_highr9 :trig_eff_notEBEB_lowr9;
+
+  return std::pair<float,float>(sf,sferr);
 
 };

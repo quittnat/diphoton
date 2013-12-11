@@ -51,6 +51,12 @@ bool do_scan_cone = false;
 using namespace std;
 using namespace RooFit;
 
+typedef struct {
+  TH1F *htruth;
+  TH1F *hreco;
+  TH2F *hmatched;
+} roounfoldmatrices_struct;
+
 class template_production {
 public :
 
@@ -62,6 +68,7 @@ public :
    Int_t           event_run;
    Int_t           event_lumi;
    UInt_t          event_number;
+   Int_t           dataset_id;
    Float_t         event_luminormfactor;
    Float_t         event_Kfactor;
    Float_t         event_weight;
@@ -178,6 +185,7 @@ public :
    TBranch        *b_event_run;   //!
    TBranch        *b_event_lumi;   //!
    TBranch        *b_event_number;   //!
+   TBranch        *b_dataset_id;   //!
    TBranch        *b_event_luminormfactor;   //!
    TBranch        *b_event_Kfactor;   //!
    TBranch        *b_event_weight;   //!
@@ -383,7 +391,8 @@ public :
    Bool_t do2ftemplate;
    Bool_t doeffunf;
 
-   map<TString,RooUnfoldResponse*> responsematrix_effunf;
+   map<TString,roounfoldmatrices_struct> responsematrix_effunf;
+   map<TString,RooUnfoldResponse*> calculated_responsematrix_effunf;
 
    int whichnewtemplate;
 
@@ -395,6 +404,7 @@ public :
 
    float getpuenergy(int reg, float eta);
    float geteffarea(int reg, float eta);
+   std::pair<float,float> getscalefactor_foreffunf(float pho1_pt, float pho2_pt, float pho1_eta, float pho2_eta, float pho1_r9, float pho2_r9);
 
    TFile *out;
 
@@ -577,9 +587,11 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
     assert(!isdata);
     for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
       for (int i=0; i<3; i++) {
-	TH1F dummy("dummy","dummy",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
-	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = new RooUnfoldResponse(&dummy,&dummy);
-	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)]->SetName(get_name_responsematrix_effunf(i,*diffvariable));
+	roounfoldmatrices_struct a;
+	a.htruth = new TH1F("htruth","htruth",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	a.hreco = new TH1F("hreco","hreco",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	a.hmatched = new TH2F("hmatched","hmatched",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = a;
       }
     }
   }
@@ -637,6 +649,7 @@ void template_production::Init()
    fChain->SetBranchAddress("event_run", &event_run, &b_event_run);
    fChain->SetBranchAddress("event_lumi", &event_lumi, &b_event_lumi);
    fChain->SetBranchAddress("event_number", &event_number, &b_event_number);
+   fChain->SetBranchAddress("dataset_id", &dataset_id, &b_dataset_id);
    fChain->SetBranchAddress("event_luminormfactor", &event_luminormfactor, &b_event_luminormfactor);
    fChain->SetBranchAddress("event_Kfactor", &event_Kfactor, &b_event_Kfactor);
    fChain->SetBranchAddress("event_weight", &event_weight, &b_event_weight);
@@ -833,7 +846,10 @@ void template_production::WriteOutput(){
     out->cd("effunf");
     for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
       for (int i=0; i<3; i++) {
-	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)]->Write();
+	roounfoldmatrices_struct a = responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)];
+	TString title = get_name_responsematrix_effunf(i,*diffvariable);
+	calculated_responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = new RooUnfoldResponse(a.hreco,a.htruth,a.hmatched,title.Data(),title.Data());
+	calculated_responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)]->Write();
       }
     }
   }
