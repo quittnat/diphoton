@@ -784,9 +784,10 @@ void template_production::Show(Long64_t entry)
 
 void template_production::WriteOutput(){
 
-  out->mkdir("roofit");
-  out->cd("roofit");
-
+  if (dosignaltemplate || dobackgroundtemplate || do2dtemplate || dodistribution){
+    out->mkdir("roofit");
+    out->cd("roofit");
+  }
 
   if (dosignaltemplate || dobackgroundtemplate) {
 
