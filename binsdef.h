@@ -225,5 +225,45 @@ Float_t ptbins_forreweighting[n_ptbins_forreweighting+1]={20,35,50,80,999};
 //const int n_ptbins_forreweighting = 1;
 //Float_t ptbins_forreweighting[n_ptbins_forreweighting+1]={0,300};
 
+typedef struct {
+  TString name;
+  TString title;
+  bool is_on_raw;
+  bool is_on_effunf;
+  bool is_uncorrelated;
+  bool is_1catcorrelated;
+  bool is_allcatcorrelated;
+} source_systematic_struct;
+
+source_systematic_struct ConstructSystematic(TString name_, TString title_, bool is_on_raw_, bool is_on_effunf_, bool is_uncorrelated_, bool is_1catcorrelated_, bool is_allcatcorrelated_) {
+  source_systematic_struct a;
+  a.name=name_;
+  a.title=title_;
+  a.is_on_raw=is_on_raw_;
+  a.is_on_effunf=is_on_effunf_;
+  a.is_uncorrelated=is_uncorrelated_;
+  a.is_1catcorrelated=is_1catcorrelated_;
+  a.is_allcatcorrelated=is_allcatcorrelated_;
+  assert((int)(a.is_uncorrelated)+(int)(a.is_1catcorrelated)+(int)(a.is_allcatcorrelated)==1);
+  assert((int)(a.is_on_raw)+(int)(a.is_on_effunf)==1);
+  return a;
+};
+
+source_systematic_struct __systematics__[]={
+  ConstructSystematic("purefitbias","Fit bias",1,0,1,0,0);
+  ConstructSystematic("zee","Zee subtraction",0,1,0,1,0);
+  ConstructSystematic("templatestatistics","Template statistics",1,0,0,1,0);
+  ConstructSystematic("efficiency","Efficiency uncertainty",0,1,0,1,0); // to be splitted in different scale factors?
+  ConstructSystematic("unfolding","Unfolding uncertainty",0,1,0,1,0);
+  ConstructSystematic("templateshapeMCpromptdrivenEB","Prompt template shape EB",1,0,0,0,1);
+  ConstructSystematic("templateshapeMCfakedrivenEB","Fake template shape EB",1,0,0,0,1);
+  ConstructSystematic("templateshapeMCpromptdrivenEE","Prompt template shape EE",1,0,0,0,1);
+  ConstructSystematic("templateshapeMCfakedrivenEE","Fake template shape EE",1,0,0,0,1);
+  ConstructSystematic("templateshape2frag","Fragmentation effect on template",1,0,0,0,1);
+  ConstructSystematic("noise_mixing","Event mixing effect on template",1,0,0,0,1);
+};
+std::vector<source_systematic_struct> systematics_list (__systematics__, __systematics__ + sizeof(__systematics__) / sizeof(source_systematic_struct) );
+
+
 
 #endif

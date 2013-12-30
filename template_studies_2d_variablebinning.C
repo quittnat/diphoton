@@ -2389,41 +2389,28 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   TH1F *eventshisto;
   TH1F *overflowremovaleffhisto;
 
-  TH1F *eff=NULL;
+  RooUnfoldResponse *effunf=NULL;
   {
-    TFile *eff_file = new TFile("plots/Efficiency_WithSysErr.root");
-    std::map<TString,TString> translation;
-    translation.insert(std::pair<TString,TString>(TString("invmass"),TString("mgg")));
-    translation.insert(std::pair<TString,TString>(TString("diphotonpt"),TString("qtgg")));
-    translation.insert(std::pair<TString,TString>(TString("costhetastar"),TString("costhetastar")));
-    translation.insert(std::pair<TString,TString>(TString("dphi"),TString("deltaphi")));
-    translation.insert(std::pair<TString,TString>(TString("dR"),TString("dR")));
-    eff_file->GetObject(Form("h_%s_%s_WithTotErr",translation[diffvariable].Data(),splitting.Data()),eff);
+    TFile *effunf_file = new TFile("effunf.root");
+    effunf_file->cd("effunf");
+    effunf_file->GetObject(Form("responsematrix_effunf_%s_%s",splitting.Data(),diffvariable.Data()),unfresp);
   }
-  assert (eff!=NULL);
-
-//  TH1F *eff=NULL;
-//  TFile *eff_file = new TFile("efficiencies.root");
-//  eff_file->GetObject(Form("w_eff_gg_%s_%s",splitting.Data(),diffvariable.Data()),eff);
-//  assert (eff!=NULL);
-//  eff->GetYaxis()->SetTitle("selection/ID efficiency");
-//  eff->GetXaxis()->SetTitle(diffvariable.Data());
-
-
+  assert (effunf!=NULL);
+  
   TH1F *unfoldunc = NULL;
 
-  if (!skipsystematics){
-    std::map<TString,TString> translation2;
-    translation2.insert(std::pair<TString,TString>(TString("invmass"),TString("mgg")));
-    translation2.insert(std::pair<TString,TString>(TString("diphotonpt"),TString("pt")));
-    translation2.insert(std::pair<TString,TString>(TString("costhetastar"),TString("costt")));
-    translation2.insert(std::pair<TString,TString>(TString("dphi"),TString("phi")));
-    translation2.insert(std::pair<TString,TString>(TString("dR"),TString("dR")));
-    TFile *unfoldunc_file = new TFile("plots/Unfolding_SysErr.root");
-    TString unfoldunc_name = Form("Unfolding_RelativeSysErr_%s_%s",translation2[diffvariable].Data(),splitting.Data());
-    unfoldunc_file->GetObject(unfoldunc_name.Data(),unfoldunc);
-    assert (unfoldunc!=NULL);
-  }
+//  if (!skipsystematics){
+//    std::map<TString,TString> translation2;
+//    translation2.insert(std::pair<TString,TString>(TString("invmass"),TString("mgg")));
+//    translation2.insert(std::pair<TString,TString>(TString("diphotonpt"),TString("pt")));
+//    translation2.insert(std::pair<TString,TString>(TString("costhetastar"),TString("costt")));
+//    translation2.insert(std::pair<TString,TString>(TString("dphi"),TString("phi")));
+//    translation2.insert(std::pair<TString,TString>(TString("dR"),TString("dR")));
+//    TFile *unfoldunc_file = new TFile("plots/Unfolding_SysErr.root");
+//    TString unfoldunc_name = Form("Unfolding_RelativeSysErr_%s_%s",translation2[diffvariable].Data(),splitting.Data());
+//    unfoldunc_file->GetObject(unfoldunc_name.Data(),unfoldunc);
+//    assert (unfoldunc!=NULL);
+//  }
 
 
   TFile *purity_file = new TFile(Form("plots/histo_purity_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
@@ -2440,9 +2427,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
   TH1F *histo_bias_purefitbias = NULL;
   TH1F *histo_bias_templatestatistics = NULL;
-  TFile *file_standardsel_dy = NULL;
-  TFile *file_pixelrevsel_dy_data = NULL;
-  TFile *file_pixelrevsel_dy_mc = NULL;
 
   TH1F *histo_bias_templateshapeMCpromptdrivenEB = NULL;
   TH1F *histo_bias_templateshapeMCfakedrivenEB = NULL;
@@ -2450,18 +2434,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   TH1F *histo_bias_templateshapeMCfakedrivenEE = NULL;
   TH1F *histo_bias_templateshape2frag = NULL;
 
-  bool skipZsubtraction = skipsystematics;
-
-  //  skipZsubtraction = false; // for debug
-
-  if (!skipZsubtraction){
-    file_standardsel_dy = new TFile("outphoton_dy_standard.root");
-    assert(file_standardsel_dy);
-    file_pixelrevsel_dy_data = new TFile("outphoton_data_pixelrev.root");
-    assert(file_pixelrevsel_dy_data);
-    file_pixelrevsel_dy_mc = new TFile("outphoton_dy_pixelrev.root");
-    assert(file_pixelrevsel_dy_mc);    
-  }
 
   if (!skipsystematics){
     TFile *file_bias_purefitbias  = new TFile(Form("plots/histo_bias_purefitbias_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
@@ -2492,9 +2464,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     xsec->SetLineColor(kBlack);
     xsec->SetLineWidth(2);
 
-  
-    //    xsec->GetYaxis()->SetTitle("");
-    //    xsec->GetXaxis()->SetTitle(diffvariables_names_list(diffvariable).Data());
     {
       TString unit = diffvariables_units_list(diffvariable);
       xsec->GetXaxis()->SetTitle(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data()));
@@ -2506,12 +2475,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     xsec_ngammagammayield = (TH1F*)(xsec->Clone("xsec_ngammagammayield"));
     xsec_ngammagammayield->SetMarkerColor(kGreen+2);
     xsec_ngammagammayield->SetLineColor(kGreen+2);
-
-    float uncertainty_scalefactor_Zee_PIXEL=2*0.025; // molt per 2 perche' due leg
-    map<TString,pair<float,float> > syst_purity_dy;
-    syst_purity_dy.insert(pair<TString,pair<float,float> >("EBEB",pair<float,float>(8.6542e-01,sqrt(pow(4.51e-02,2)+pow(uncertainty_scalefactor_Zee_PIXEL,2)))));
-    syst_purity_dy.insert(pair<TString,pair<float,float> >("EBEE",pair<float,float>(7.9537e-01,sqrt(pow(8.22e-02,2)+pow(uncertainty_scalefactor_Zee_PIXEL,2)))));
-    syst_purity_dy.insert(pair<TString,pair<float,float> >("EEEE",pair<float,float>(8.5493e-01,sqrt(pow(7.29e-02,2)+pow(uncertainty_scalefactor_Zee_PIXEL,2)))));
 
 
     if (!skipsystematics){
@@ -2545,7 +2508,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
     //    std::cout << "start loop: " << std::endl;
 
-    float unfoldingdy_mc_all = (!skipZsubtraction) ? ((RooDataSet*)(file_pixelrevsel_dy_mc->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),n_bins))))->sumEntries() : 0;
 
   for (int bin=0; bin<bins_to_run; bin++) {
 
@@ -2562,34 +2524,9 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     float tot_events = eventshisto->GetBinContent(bin+1);
     float eff_overflow = overflowremovaleffhisto->GetBinContent(bin+1);
 
-    if (!skipZsubtraction) assert((RooDataSet*)(file_standardsel_dy->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin))));
-    float events_dy = (!skipZsubtraction) ? ((RooDataSet*)(file_standardsel_dy->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin))))->sumEntries() : 0; // normalized to 1/fb, xsec normalized to 2475 
-
-    float unfoldingdy_data = (!skipZsubtraction) ? ((RooDataSet*)(file_pixelrevsel_dy_data->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin))))->sumEntries()/intlumi : 0;
-    float unfoldingdy_mc = (!skipZsubtraction) ? ((RooDataSet*)(file_pixelrevsel_dy_mc->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin))))->sumEntries() : 0;
-
-    float purity_dy = syst_purity_dy[splitting].first;
-    float purity_dy_err = syst_purity_dy[splitting].second;
-    float scale_dy = (!skipZsubtraction) ? unfoldingdy_data/unfoldingdy_mc : 0;
-
-    if (!skipZsubtraction){
-      if (unfoldingdy_mc/unfoldingdy_mc_all<0.01) scale_dy=3048./2475.; // fix for low stat bins
-    }
-
-    if (splitting=="EBEB") scale_dy*=pow(0.979,2);
-    else if (splitting=="EBEE") scale_dy*=0.979*0.985;
-    else if (splitting=="EEEE") scale_dy*=pow(0.985,2);
-    float rel_error_on_purity_pp = events_dy*purity_dy_err*scale_dy/(pp*tot_events/eff_overflow/intlumi-events_dy*purity_dy*scale_dy);
-
-    std::cout << "bin " << bin << std::endl;
-    std::cout << "Data/MC DY " << unfoldingdy_data/unfoldingdy_mc << std::endl;
-    std::cout << "UNFOLDING DY FACTOR " << scale_dy << std::endl;
-    std::cout << unfoldingdy_data << " " << unfoldingdy_mc << std::endl;
-    std::cout << "SUBTRACTION " << events_dy*purity_dy*scale_dy/(pp*tot_events/eff_overflow/intlumi) << std::endl;
-
-    xsec->SetBinContent(bin+1,(pp*tot_events/eff_overflow/intlumi-events_dy*purity_dy*scale_dy)/xsec->GetBinWidth(bin+1));
+    xsec->SetBinContent(bin+1,(pp*tot_events/eff_overflow/intlumi)/xsec->GetBinWidth(bin+1));
     xsec_withsyst->SetBinContent(bin+1,xsec->GetBinContent(bin+1));
-    xsec_ngammagammayield->SetBinContent(bin+1,pp*tot_events/eff_overflow-events_dy*purity_dy*scale_dy*intlumi);
+    xsec_ngammagammayield->SetBinContent(bin+1,pp*tot_events/eff_overflow);
     std::cout << xsec_ngammagammayield->GetBinContent(bin+1) << std::endl;
 
     float shapesyst1 = (!skipsystematics && splitting!="EEEE") ? pp*fabs(histo_bias_templateshapeMCpromptdrivenEB->GetBinContent(bin+1)-1) : 0;
@@ -2599,17 +2536,35 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     float shapesyst5 = (!skipsystematics) ? pp*fabs(histo_bias_templateshape2frag->GetBinContent(bin+1)-1) : 0;
 
     float purity_error_withsyst = pp_err;
-    if (!skipsystematics) purity_error_withsyst = sqrt(pow(pp_err,2) + pow(pp*histo_bias_templatestatistics->GetBinContent(bin+1),2) + pow(pp_err*histo_bias_purefitbias->GetBinContent(bin+1),2) + pow(shapesyst1,2) + pow(shapesyst2,2) + pow(shapesyst3,2) + pow(shapesyst4,2) + pow(shapesyst5,2) + pow(pp*rel_error_on_purity_pp,2));
-
+    if (!skipsystematics) purity_error_withsyst = sqrt(pow(pp_err,2) + pow(pp*histo_bias_templatestatistics->GetBinContent(bin+1),2) + pow(pp_err*histo_bias_purefitbias->GetBinContent(bin+1),2) + pow(shapesyst1,2) + pow(shapesyst2,2) + pow(shapesyst3,2) + pow(shapesyst4,2) + pow(shapesyst5,2));
 
     float errpoiss=1.0/sqrt(tot_events);
     float err=sqrt(pow(pp_err/pp,2)+pow(errpoiss,2));
     float err_withsyst=sqrt(pow(purity_error_withsyst/pp,2)+pow(errpoiss,2));
 
-
     xsec->SetBinError(bin+1,err*xsec->GetBinContent(bin+1));
     xsec_withsyst->SetBinError(bin+1,err_withsyst*xsec->GetBinContent(bin+1));
     xsec_ngammagammayield->SetBinError(bin+1,err_withsyst*xsec_ngammagammayield->GetBinContent(bin+1));
+
+    // spostare fuori dal loop bin
+    RooUnfoldBayes *unfmethod = new RooUnfoldBayes(effunf,measured,4);
+    TMatrixD unfcovmatrix;
+    unfmethod->SetMeasuredCov(unfcovmatrix);
+    TH1F *unfolded = unfmethod->Hreco(); // CHECK ERROR TREATMENT ARGUMENT
+
+    /*
+      sistematiche da propagare attraverso l'unfolding (quelle che cambiano il raw yield):
+      - template shapes (fully correlated) + event mixing imperfection
+      - statistic purity+poisson (uncorrelated)
+      - bias (uncorrelated)
+      - template statistics (fully correlated??? maybe not)
+
+      sistematiche da implementare come una diversa unfolding matrix:
+      - efficienze, scale factors, Zee fitted pp purity
+      - unfolding uncertainty (reweighting)
+
+     */
+
     
     if (!skipsystematics){
       systplot_purefitbias->SetBinContent(bin+1,pp_err*fabs(histo_bias_purefitbias->GetBinContent(bin+1))/pp);
@@ -2621,26 +2576,19 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       systplot_templateshape2frag->SetBinContent(bin+1,shapesyst5/pp);
       float noise = get_noise_systematic(diffvariable,splitting,bin);
       systplot_noise->SetBinContent(bin+1,noise);
-      systplot_zee->SetBinContent(bin+1,rel_error_on_purity_pp);
+      systplot_zee->SetBinContent(bin+1,-1.0);
       systplot_tot->SetBinContent(bin+1,sqrt(pow(pp*histo_bias_templatestatistics->GetBinContent(bin+1),2) + pow(pp_err*histo_bias_purefitbias->GetBinContent(bin+1),2) + pow(shapesyst1,2) + pow(shapesyst2,2) + pow(shapesyst3,2) + pow(shapesyst4,2) + pow(shapesyst5,2) + pow(pp*rel_error_on_purity_pp,2))/pp + pow(noise,2));
       systplot_efficiency->SetBinContent(bin+1,eff->GetBinError(bin+1)/eff->GetBinContent(bin+1));
       systplot_unfolding->SetBinContent(bin+1,unfoldunc->GetBinContent(bin+1));
       systplot_totfinal->SetBinContent(bin+1,sqrt(pow(systplot_tot->GetBinContent(bin+1),2)+pow(systplot_efficiency->GetBinContent(bin+1),2)+pow(systplot_unfolding->GetBinContent(bin+1),2)));
       systplot_totfinal->SetBinError(bin+1,0);
       systplot_statistic->SetBinContent(bin+1,err);
-      //      std::cout << systplot_tot->GetBinContent(bin+1) << " " << systplot_totfinal->GetBinContent(bin+1) << std::endl;
     }
     
-    //    std::cout << err << " " << err_withsyst << std::endl;
-
   }
 
 
-  //  std::cout << "NIENTE DIVIDE(EFF): EFFICIENZA NON CORRETTA!!!" << std::endl;  
-  /*
-  xsec->Divide(eff);  
-  xsec_withsyst->Divide(eff);
-  */
+
 
   TCanvas *output_canv = new TCanvas("output_canv","output_canv");
   output_canv->cd();
