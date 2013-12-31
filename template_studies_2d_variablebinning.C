@@ -2470,6 +2470,9 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     }
 
 
+    std::map<TString,TH1F*> ngg_syst_histos;
+    std::map<TString,TH1F*> xsec_syst_histos;
+    std::map<TString,TH1F*> systplots;
 
     //--- do systematics on raw yield
 
@@ -2478,41 +2481,97 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       source_systematic_struct syst = systematics_list.at(k);
       if (!(syst.is_on_raw)) continue;
 
-      TH1F *histo = histos_uncertainties.at(syst.name);
+      TH1F *histo_syst = (TH1F*)(ngg_centralvalue_raw->Clone(Form("histo_syst_%d",syst.name.Data())));
 
       switch (syst.name) {
       case TString("purefitbias"):
-	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,purity_fit_staterr->GetBinContent(bin+1)*histo_bias_purefitbias->GetBinContent(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,purity_fit_staterr->GetBinContent(bin+1)*histo_bias_purefitbias->GetBinContent(bin+1));
       break;
       case TString("templatestatistics"):
-	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,histo_bias_templatestatistics->GetBinContent(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_bias_templatestatistics->GetBinContent(bin+1));
       break;
       case TString("templateshapeMCpromptdrivenEB"):
-	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,(!skipsystematics && splitting!="EEEE") ? fabs(histo_bias_templateshapeMCpromptdrivenEB->GetBinContent(bin+1)-1) : 0);
+	for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics && splitting!="EEEE") ? fabs(histo_bias_templateshapeMCpromptdrivenEB->GetBinContent(bin+1)-1) : 0);
       break;
       case TString("templateshapeMCfakedrivenEB"):
-	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,(!skipsystematics && splitting!="EEEE") ? fabs(histo_bias_templateshapeMCfakedrivenEB->GetBinContent(bin+1)-1) : 0);
+	for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics && splitting!="EEEE") ? fabs(histo_bias_templateshapeMCfakedrivenEB->GetBinContent(bin+1)-1) : 0);
       break;
       case TString("templateshapeMCpromptdrivenEE"):
-	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,(!skipsystematics && splitting!="EBEB") ? fabs(histo_bias_templateshapeMCpromptdrivenEE->GetBinContent(bin+1)-1) : 0);
+	for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics && splitting!="EBEB") ? fabs(histo_bias_templateshapeMCpromptdrivenEE->GetBinContent(bin+1)-1) : 0);
       break;
       case TString("templateshapeMCfakedrivenEE"):
-	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,(!skipsystematics && splitting!="EBEB") ? fabs(histo_bias_templateshapeMCfakedrivenEE->GetBinContent(bin+1)-1) : 0);
+	for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics && splitting!="EBEB") ? fabs(histo_bias_templateshapeMCfakedrivenEE->GetBinContent(bin+1)-1) : 0);
       break;
       case TString("templateshape2frag"):
-	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent((!skipsystematics) ? fabs(histo_bias_templateshape2frag->GetBinContent(bin+1)-1) : 0);
+	for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent((!skipsystematics) ? fabs(histo_bias_templateshape2frag->GetBinContent(bin+1)-1) : 0);
       break;
       case TString("noise_mixing"):
-	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,get_noise_systematic(diffvariable,splitting,bin));
+	for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,get_noise_systematic(diffvariable,splitting,bin));
 	break;
       default:
 	assert(false);
       }
 
+      for (int bin=0; bin<bins_to_run; bin++) {histo_syst->SetBinContent(bin+1,1+histo_syst->GetBinContent(bin+1)); histo_syst->SetBinError(bin+1,0);}
+      TH1F *ngg_syst_raw = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_raw_%d",syst.name.Data())));
+      ngg_syst_raw->Multiply(ngg_syst_raw,histo_syst);
+
+      ngg_syst_histos[syst.name] = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_%d",syst.name.Data())));
+      TH1F *ngg_syst = ngg_syst_histos.at(syst.name);
+      xsec_syst_histos[syst.name] = (TH1F*)(xsec_centralvalue_raw->Clone(Form("xsec_syst_%d",syst.name.Data())));
+      TH1F *xsec_syst = xsec_syst_histos.at(syst.name);
+      ngg_syst->Reset();
+      xsec_syst->Reset();
+      {
+	RooUnfoldBayes *unfmethod = new RooUnfoldBayes(responsematrix_centralvalue,ngg_syst_raw,4);
+	TH1F *unfolded = unfmethod->Hreco(); // CHECK ERROR TREATMENT ARGUMENT
+	for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinContent(bin+1,unfolded->GetBinContent(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinError(bin+1,unfolded->GetBinError(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinContent(bin+1,ngg_syst->GetBinContent(bin+1)/intlumi/xsec_syst->GetBinWidth(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinError(bin+1,ngg_syst>GetBinError(bin+1)/ngg_syst->GetBinContent(bin+1)*xsec_syst->GetBinWidth(bin+1));
+      }
+
+      systplots[syst.name] = (TH1F*)(ngg_syst->Clone(Form("systplot_%d",syst.name.Data())));
+      systplot_syst = systplots.at(syst.name);
+      systplot_syst->Divide(systplot_syst,ngg_centralvalue);
+      for (int bin=0; bin<bins_to_run; bin++) {systplot_syst->SetBinContent(bin+1,systplot_syst->GetBinContent(bin+1)-1); systplot_syst->SetBinError(bin+1,0);}
+
     }
+ 
 
+    //--- do systematics on response matrix
 
+    for (size_t k=0; k<systematics_list.size(); k++){
 
+      source_systematic_struct syst = systematics_list.at(k);
+      if (!(syst.is_on_effunf)) continue;
+
+      RooUnfoldResponse *responsematrix_syst=NULL;
+      TFile *effunf_file = new TFile("effunf.root");
+      effunf_file->cd(Form("effunf_syst_%d",syst.name.Data()));
+      effunf_file->GetObject(Form("responsematrix_effunf_%s_%s",splitting.Data(),diffvariable.Data()),responsematrix_syst);
+      assert (responsematrix_syst!=NULL);
+     
+      ngg_syst_histos[syst.name] = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_%d",syst.name.Data())));
+      TH1F *ngg_syst = ngg_syst_histos.at(syst.name);
+      xsec_syst_histos[syst.name] = (TH1F*)(xsec_centralvalue_raw->Clone(Form("xsec_syst_%d",syst.name.Data())));
+      TH1F *xsec_syst = xsec_syst_histos.at(syst.name);
+      ngg_syst->Reset();
+      xsec_syst->Reset();
+      {
+	RooUnfoldBayes *unfmethod = new RooUnfoldBayes(responsematrix_syst,ngg_centralvalue_raw,4);
+	TH1F *unfolded = unfmethod->Hreco(); // CHECK ERROR TREATMENT ARGUMENT
+	for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinContent(bin+1,unfolded->GetBinContent(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinError(bin+1,unfolded->GetBinError(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinContent(bin+1,ngg_syst->GetBinContent(bin+1)/intlumi/xsec_syst->GetBinWidth(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinError(bin+1,ngg_syst>GetBinError(bin+1)/ngg_syst->GetBinContent(bin+1)*xsec_syst->GetBinWidth(bin+1));
+      }
+
+      systplots[syst.name] = (TH1F*)(ngg_syst->Clone(Form("systplot_%d",syst.name.Data())));
+      systplot_syst = systplots.at(syst.name);
+      for (int bin=0; bin<bins_to_run; bin++) {systplot_syst->SetBinContent(bin+1,systplot_syst->GetBinContent(bin+1)-1); systplot_syst->SetBinError(bin+1,0);}
+
+    }
 
 
 
