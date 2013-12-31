@@ -250,17 +250,17 @@ source_systematic_struct ConstructSystematic(TString name_, TString title_, bool
 };
 
 source_systematic_struct __systematics__[]={
-  ConstructSystematic("purefitbias","Fit bias",1,0,1,0,0);
-  ConstructSystematic("zee","Zee subtraction",0,1,0,1,0);
-  ConstructSystematic("templatestatistics","Template statistics",1,0,0,1,0);
-  ConstructSystematic("efficiency","Efficiency uncertainty",0,1,0,1,0); // to be splitted in different scale factors?
-  ConstructSystematic("unfolding","Unfolding uncertainty",0,1,0,1,0);
-  ConstructSystematic("templateshapeMCpromptdrivenEB","Prompt template shape EB",1,0,0,0,1);
-  ConstructSystematic("templateshapeMCfakedrivenEB","Fake template shape EB",1,0,0,0,1);
-  ConstructSystematic("templateshapeMCpromptdrivenEE","Prompt template shape EE",1,0,0,0,1);
-  ConstructSystematic("templateshapeMCfakedrivenEE","Fake template shape EE",1,0,0,0,1);
-  ConstructSystematic("templateshape2frag","Fragmentation effect on template",1,0,0,0,1);
-  ConstructSystematic("noise_mixing","Event mixing effect on template",1,0,0,0,1);
+  ConstructSystematic("purefitbias","Fit bias",1,0,1,0,0),
+  ConstructSystematic("zee","Zee subtraction",0,1,0,1,0),
+  ConstructSystematic("templatestatistics","Template statistics",1,0,0,1,0),
+  ConstructSystematic("efficiency","Efficiency uncertainty",0,1,0,1,0), // to be splitted in different scale factors?
+  ConstructSystematic("unfolding","Unfolding uncertainty",0,1,0,1,0),
+  ConstructSystematic("templateshapeMCpromptdrivenEB","Prompt template shape EB",1,0,0,0,1),
+  ConstructSystematic("templateshapeMCfakedrivenEB","Fake template shape EB",1,0,0,0,1),
+  ConstructSystematic("templateshapeMCpromptdrivenEE","Prompt template shape EE",1,0,0,0,1),
+  ConstructSystematic("templateshapeMCfakedrivenEE","Fake template shape EE",1,0,0,0,1),
+  ConstructSystematic("templateshape2frag","Fragmentation effect on template",1,0,0,0,1),
+  ConstructSystematic("noise_mixing","Event mixing effect on template",1,0,0,0,1)
 };
 std::vector<source_systematic_struct> systematics_list (__systematics__, __systematics__ + sizeof(__systematics__) / sizeof(source_systematic_struct) );
 

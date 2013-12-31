@@ -2370,7 +2370,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     fitpull_histo=axsec_fitpull_histo[0];
   }
 
-  else {
+  else { // start splitting!="inclusive"
 
   bool sym = false;
   
@@ -2425,16 +2425,18 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   std::cout << "Purity histos imported" << std::endl;
   for (int i=0; i<4; i++) purity[i]->Print(); eventshisto->Print(); overflowremovaleffhisto->Print(); 
 
-  TH1F *histo_bias_purefitbias = NULL;
-  TH1F *histo_bias_templatestatistics = NULL;
+  std::map<TString,TH1F*> histos_systematics;
+  for (size_t i = 0; i<systematics_list.size(); i++){
+    histos_systematics[systematics_list.at(i).name] = NULL;
+  }
 
-  TH1F *histo_bias_templateshapeMCpromptdrivenEB = NULL;
-  TH1F *histo_bias_templateshapeMCfakedrivenEB = NULL;
-  TH1F *histo_bias_templateshapeMCpromptdrivenEE = NULL;
-  TH1F *histo_bias_templateshapeMCfakedrivenEE = NULL;
-  TH1F *histo_bias_templateshape2frag = NULL;
-
-
+  TH1F *histo_bias_purefitbias = histos_systematics.at("purefitbias");
+  TH1F *histo_bias_templatestatistics = histos_systematics.at("templatestatistics");
+  TH1F *histo_bias_templateshapeMCpromptdrivenEB = histos_systematics.at("templateshapeMCpromptdrivenEB");
+  TH1F *histo_bias_templateshapeMCfakedrivenEB =   histos_systematics.at("templateshapeMCfakedrivenEB");
+  TH1F *histo_bias_templateshapeMCpromptdrivenEE = histos_systematics.at("templateshapeMCpromptdrivenEE");
+  TH1F *histo_bias_templateshapeMCfakedrivenEE =   histos_systematics.at("templateshapeMCfakedrivenEE");
+  TH1F *histo_bias_templateshape2frag = histos_systematics.at("templateshape2frag");
   if (!skipsystematics){
     TFile *file_bias_purefitbias  = new TFile(Form("plots/histo_bias_purefitbias_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
     file_bias_purefitbias->GetObject("histo_bias_purefitbias",histo_bias_purefitbias);
@@ -2476,7 +2478,11 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     xsec_ngammagammayield->SetMarkerColor(kGreen+2);
     xsec_ngammagammayield->SetLineColor(kGreen+2);
 
-
+    std::map<TString,TH1F*> plots_uncertainties;
+    for (size_t i = 0; i<systematics_list.size(); i++){
+      plots_uncertainties[systematics_list.at(i).name] = NULL;
+    }
+    
     if (!skipsystematics){
       TH1F *systplot = NULL;
       systplot = new TH1F("systplot","Systematic uncertainties",bins_to_run,binsdef);
@@ -2486,23 +2492,25 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 	TString unit = diffvariables_units_list(diffvariable);
 	systplot->GetXaxis()->SetTitle(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data()));
       }
-      systplot_purefitbias=(TH1F*)(systplot->Clone("systplot_purefitbias"));
-      systplot_templatestatistics=(TH1F*)(systplot->Clone("systplot_templatestatistics"));
-      systplot_templateshapeMCpromptdrivenEB=(TH1F*)(systplot->Clone("systplot_templateshapeMCpromptdrivenEB"));
-      systplot_templateshapeMCfakedrivenEB=(TH1F*)(systplot->Clone("systplot_templateshapeMCfakedrivenEB"));
-      systplot_templateshapeMCpromptdrivenEE=(TH1F*)(systplot->Clone("systplot_templateshapeMCpromptdrivenEE"));
-      systplot_templateshapeMCfakedrivenEE=(TH1F*)(systplot->Clone("systplot_templateshapeMCfakedrivenEE"));
-      systplot_templateshape2frag=(TH1F*)(systplot->Clone("systplot_templateshape2frag"));
-      systplot_noise=(TH1F*)(systplot->Clone("systplot_noise"));
-      systplot_zee=(TH1F*)(systplot->Clone("systplot_zee"));
-      systplot_tot=(TH1F*)(systplot->Clone("systplot_tot"));
-      systplot_efficiency=(TH1F*)(systplot->Clone("systplot_efficiency"));
-      systplot_unfolding=(TH1F*)(systplot->Clone("systplot_unfolding"));
-      systplot_totfinal=(TH1F*)(systplot->Clone("systplot_totfinal"));
-      systplot_uncorrelated=(TH1F*)(systplot->Clone("systplot_uncorrelated"));
-      systplot_1catcorrelated=(TH1F*)(systplot->Clone("systplot_1catcorrelated"));
-      systplot_allcatcorrelated=(TH1F*)(systplot->Clone("systplot_allcatcorrelated"));
-      systplot_statistic=(TH1F*)(systplot->Clone("systplot_statistic"));
+
+      plots_uncertainties.at("purefitbias")=(TH1F*)(systplot->Clone("systplot_purefitbias"));
+      plots_uncertainties.at("zee")=(TH1F*)(systplot->Clone("systplot_zee"));
+      plots_uncertainties.at("templatestatistics")=(TH1F*)(systplot->Clone("systplot_templatestatistics"));
+      plots_uncertainties.at("efficiency")=(TH1F*)(systplot->Clone("systplot_efficiency"));
+      plots_uncertainties.at("unfolding")=(TH1F*)(systplot->Clone("systplot_unfolding"));
+      plots_uncertainties.at("templateshapeMCpromptdrivenEB")=(TH1F*)(systplot->Clone("systplot_templateshapeMCpromptdrivenEB"));
+      plots_uncertainties.at("templateshapeMCfakedrivenEB")=(TH1F*)(systplot->Clone("systplot_templateshapeMCfakedrivenEB"));
+      plots_uncertainties.at("templateshapeMCpromptdrivenEE")=(TH1F*)(systplot->Clone("systplot_templateshapeMCpromptdrivenEE"));
+      plots_uncertainties.at("templateshapeMCfakedrivenEE")=(TH1F*)(systplot->Clone("systplot_templateshapeMCfakedrivenEE"));
+      plots_uncertainties.at("templateshape2frag")=(TH1F*)(systplot->Clone("systplot_templateshape2frag"));
+      plots_uncertainties.at("noise_mixing")=(TH1F*)(systplot->Clone("systplot_noise"));
+
+      plots_uncertainties["tot"]=(TH1F*)(systplot->Clone("systplot_tot"));
+      plots_uncertainties["totfinal"]=(TH1F*)(systplot->Clone("systplot_totfinal"));
+      plots_uncertainties["uncorrelated"]=(TH1F*)(systplot->Clone("systplot_uncorrelated"));
+      plots_uncertainties["1catcorrelated"]=(TH1F*)(systplot->Clone("systplot_1catcorrelated"));
+      plots_uncertainties["allcatcorrelated"]=(TH1F*)(systplot->Clone("systplot_allcatcorrelated"));
+      plots_uncertainties["statistic"]=(TH1F*)(systplot->Clone("systplot_statistic"));
       
     }
 
@@ -2512,7 +2520,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   for (int bin=0; bin<bins_to_run; bin++) {
 
     //    if (!fr[bin]->fr) continue;
-
+  
     float pp = 	       purity[0]->GetBinContent(bin+1);
     float pp_err =     purity[0]->GetBinError(bin+1);
 //    float pf = 	       purity[1]->GetBinContent(bin+1);
@@ -2537,7 +2545,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
     float purity_error_withsyst = pp_err;
     if (!skipsystematics) purity_error_withsyst = sqrt(pow(pp_err,2) + pow(pp*histo_bias_templatestatistics->GetBinContent(bin+1),2) + pow(pp_err*histo_bias_purefitbias->GetBinContent(bin+1),2) + pow(shapesyst1,2) + pow(shapesyst2,2) + pow(shapesyst3,2) + pow(shapesyst4,2) + pow(shapesyst5,2));
-
+  
     float errpoiss=1.0/sqrt(tot_events);
     float err=sqrt(pow(pp_err/pp,2)+pow(errpoiss,2));
     float err_withsyst=sqrt(pow(purity_error_withsyst/pp,2)+pow(errpoiss,2));
@@ -2551,7 +2559,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     TMatrixD unfcovmatrix;
     unfmethod->SetMeasuredCov(unfcovmatrix);
     TH1F *unfolded = unfmethod->Hreco(); // CHECK ERROR TREATMENT ARGUMENT
-
+  
     /*
       sistematiche da propagare attraverso l'unfolding (quelle che cambiano il raw yield):
       - template shapes (fully correlated) + event mixing imperfection
@@ -2564,27 +2572,27 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       - unfolding uncertainty (reweighting)
 
      */
-
+  
     
     if (!skipsystematics){
-      systplot_purefitbias->SetBinContent(bin+1,pp_err*fabs(histo_bias_purefitbias->GetBinContent(bin+1))/pp);
-      systplot_templatestatistics->SetBinContent(bin+1,histo_bias_templatestatistics->GetBinContent(bin+1));
-      systplot_templateshapeMCpromptdrivenEB->SetBinContent(bin+1,shapesyst1/pp);
-      systplot_templateshapeMCfakedrivenEB->SetBinContent(bin+1,shapesyst2/pp);
-      systplot_templateshapeMCpromptdrivenEE->SetBinContent(bin+1,shapesyst3/pp);
-      systplot_templateshapeMCfakedrivenEE->SetBinContent(bin+1,shapesyst4/pp);
-      systplot_templateshape2frag->SetBinContent(bin+1,shapesyst5/pp);
+      plots_uncertainties.at("purefitbias")->SetBinContent(bin+1,pp_err*fabs(histo_bias_purefitbias->GetBinContent(bin+1))/pp);
+      plots_uncertainties.at("templatestatistics")->SetBinContent(bin+1,histo_bias_templatestatistics->GetBinContent(bin+1));
+      plots_uncertainties.at("templateshapeMCpromptdrivenEB")->SetBinContent(bin+1,shapesyst1/pp);
+      plots_uncertainties.at("templateshapeMCfakedrivenEB")->SetBinContent(bin+1,shapesyst2/pp);
+      plots_uncertainties.at("templateshapeMCpromptdrivenEE")->SetBinContent(bin+1,shapesyst3/pp);
+      plots_uncertainties.at("templateshapeMCfakedrivenEE")->SetBinContent(bin+1,shapesyst4/pp);
+      plots_uncertainties.at("templateshape2frag")->SetBinContent(bin+1,shapesyst5/pp);
       float noise = get_noise_systematic(diffvariable,splitting,bin);
-      systplot_noise->SetBinContent(bin+1,noise);
-      systplot_zee->SetBinContent(bin+1,-1.0);
-      systplot_tot->SetBinContent(bin+1,sqrt(pow(pp*histo_bias_templatestatistics->GetBinContent(bin+1),2) + pow(pp_err*histo_bias_purefitbias->GetBinContent(bin+1),2) + pow(shapesyst1,2) + pow(shapesyst2,2) + pow(shapesyst3,2) + pow(shapesyst4,2) + pow(shapesyst5,2) + pow(pp*rel_error_on_purity_pp,2))/pp + pow(noise,2));
-      systplot_efficiency->SetBinContent(bin+1,eff->GetBinError(bin+1)/eff->GetBinContent(bin+1));
-      systplot_unfolding->SetBinContent(bin+1,unfoldunc->GetBinContent(bin+1));
-      systplot_totfinal->SetBinContent(bin+1,sqrt(pow(systplot_tot->GetBinContent(bin+1),2)+pow(systplot_efficiency->GetBinContent(bin+1),2)+pow(systplot_unfolding->GetBinContent(bin+1),2)));
-      systplot_totfinal->SetBinError(bin+1,0);
-      systplot_statistic->SetBinContent(bin+1,err);
-    }
-    
+      plots_uncertainties.at("noise_mixing")->SetBinContent(bin+1,noise);
+
+      plots_uncertainties.at("zee")->SetBinContent(bin+1,-1.0);
+      plots_uncertainties.at("tot")->SetBinContent(bin+1,sqrt(pow(pp*histo_bias_templatestatistics->GetBinContent(bin+1),2) + pow(pp_err*histo_bias_purefitbias->GetBinContent(bin+1),2) + pow(shapesyst1,2) + pow(shapesyst2,2) + pow(shapesyst3,2) + pow(shapesyst4,2) + pow(shapesyst5,2) + pow(pp*rel_error_on_purity_pp,2))/pp + pow(noise,2));
+      plots_uncertainties.at("efficiency")->SetBinContent(bin+1,eff->GetBinError(bin+1)/eff->GetBinContent(bin+1));
+      plots_uncertainties.at("unfolding")->SetBinContent(bin+1,unfoldunc->GetBinContent(bin+1));
+      plots_uncertainties.at("totfinal")->SetBinContent(bin+1,sqrt(pow(plots_uncertainties.at("tot")->GetBinContent(bin+1),2)+pow(plots_uncertainties.at("efficiency")->GetBinContent(bin+1),2)+pow(plots_uncertainties.at("unfolding")->GetBinContent(bin+1),2)));
+      plots_uncertainties.at("totfinal")->SetBinError(bin+1,0);
+      plots_uncertainties.at("statistic")->SetBinContent(bin+1,err);
+    } 
   }
 
 
@@ -2643,7 +2651,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   purity[3]->Write();
   out1->Close();
 
-  }
+  } // end splitting!=inclusive
 
 
 
