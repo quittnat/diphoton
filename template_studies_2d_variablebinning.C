@@ -2315,11 +2315,14 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
   const float intlumi=5.044;
 
+
+
+
   TH1F *xsec;
   TH1F *xsec_withsyst;
   TH1F *xsec_ngammagammayield = NULL;
 
-  TH1F *fitpull_histo = NULL;
+
 
   TH1F *systplot_purefitbias=NULL;
   TH1F *systplot_templatestatistics=NULL;
@@ -2344,7 +2347,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   int bins_to_run = diffvariables_nbins_list(diffvariable);
   float *binsdef = diffvariables_binsdef_list(diffvariable);
 
-  if (splitting=="inclusive"){
+  else if (splitting=="inclusive"){
     TString sp[3]={"EBEB","EBEE","EEEE"};
     TFile *axsec_file[3];
     TH1F *axsec[3];
@@ -2370,24 +2373,156 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     fitpull_histo=axsec_fitpull_histo[0];
   }
 
-  else { // start splitting!="inclusive"
+  if (splitting!="inclusive") { // start splitting!="inclusive"
 
-  bool sym = false;
-  
-  TString s1; TString s2;
-  if (splitting=="EBEB") {s1="EB"; s2="EB";}
-  else if (splitting=="EEEE") {s1="EE"; s2="EE";}
-  else if (splitting=="EBEE") {s1="EB"; s2="EE";}
-  sym  = (s1==s2);
-  
+    //--- init
+    bool sym = false;
+    TString s1; TString s2;
+    if (splitting=="EBEB") {s1="EB"; s2="EB";}
+    else if (splitting=="EEEE") {s1="EE"; s2="EE";}
+    else if (splitting=="EBEE") {s1="EB"; s2="EE";}
+    sym  = (s1==s2);
+    TH1F::SetDefaultSumw2(kTRUE);
+    
 
-  TH1F::SetDefaultSumw2(kTRUE);
-  
-  //  fit_output *fr[n_bins];
 
-  TH1F *purity[4];
-  TH1F *eventshisto;
-  TH1F *overflowremovaleffhisto;
+    TH1F *xsec_centralvalue_raw = new TH1F("xsec_centralvalue_raw","xsec_centralvalue_raw",bins_to_run,binsdef);
+    xsec_centralvalue_raw->SetMarkerStyle(20);
+    xsec_centralvalue_raw->SetMarkerColor(kBlack);
+    xsec_centralvalue_raw->SetLineColor(kBlack);
+    xsec_centralvalue_raw->SetLineWidth(2);
+    {
+      TString unit = diffvariables_units_list(diffvariable);
+      xsec_centralvalue_raw->GetXaxis()->SetTitle(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data()));
+    }
+    TH1F *ngg_centralvalue_raw = (TH1F*)(xsec_centralvalue_raw->Clone("ngg_centralvalue_raw"));
+    ngg_centralvalue_raw->SetMarkerColor(kGreen+2);
+    ngg_centralvalue_raw->SetLineColor(kGreen+2);
+
+    TH1F *purity_fit_staterr = (TH1F*)(xsec_centralvalue_raw->Clone("purity_fit_staterr"));
+
+    { //--- construct {xsec,ngg}_centralvalue_raw with stat uncertainty only
+
+    // import histos
+    TH1F *purity[4];
+    TH1F *eventshisto;
+    TH1F *overflowremovaleffhisto;
+    TH1F *fitpull_histo;
+    TFile *purity_file = new TFile(Form("plots/histo_purity_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
+    purity_file->GetObject("purity_sigsig",purity[0]);
+    purity_file->GetObject("purity_sigbkg",purity[1]);
+    purity_file->GetObject("purity_bkgsig",purity[2]);
+    purity_file->GetObject("purity_bkgbkg",purity[3]);
+    purity_file->GetObject("eventshisto",eventshisto);
+    purity_file->GetObject("overflowremovaleffhisto",overflowremovaleffhisto);
+    purity_file->GetObject("fitpull_histo",fitpull_histo);
+    std::cout << "Purity histos imported" << std::endl;
+    for (int i=0; i<4; i++) purity[i]->Print(); eventshisto->Print(); overflowremovaleffhisto->Print(); 
+
+    // prepare central value raw yield
+    for (int bin=0; bin<bins_to_run; bin++) {
+      float pp = 	       purity[0]->GetBinContent(bin+1);
+      float pp_err =     purity[0]->GetBinError(bin+1);
+      //    float pf = 	       purity[1]->GetBinContent(bin+1);
+      //    float pf_err =     purity[1]->GetBinError(bin+1);
+      //    float fp = 	       purity[2]->GetBinContent(bin+1);
+      //    float fp_err =     purity[2]->GetBinError(bin+1);
+      //    float ff = 	       purity[3]->GetBinContent(bin+1);
+      //    float ff_err =     purity[3]->GetBinError(bin+1);
+      float tot_events = eventshisto->GetBinContent(bin+1);
+      float eff_overflow = overflowremovaleffhisto->GetBinContent(bin+1);
+
+      xsec_centralvalue_raw->SetBinContent(bin+1,(pp*tot_events/eff_overflow/intlumi)/xsec_centralvalue_raw->GetBinWidth(bin+1));      
+      ngg_centralvalue_raw->SetBinContent(bin+1,pp*tot_events/eff_overflow);
+      purity_fit_staterr->SetBinContent(bin+1,pp_err/pp);
+
+      float errpoiss=1.0/sqrt(tot_events);
+      float err=sqrt(pow(pp_err/pp,2)+pow(errpoiss,2));
+      xsec_centralvalue_raw->SetBinError(bin+1,err*xsec_centralvalue_raw->GetBinContent(bin+1));
+      ngg_centralvalue_raw->SetBinError(bin+1,err*ngg_centralvalue_raw->GetBinContent(bin+1));
+
+    }
+    }
+
+
+    RooUnfoldResponse *responsematrix_centralvalue=NULL;
+    { //--- construct central response matrix
+      TFile *effunf_file = new TFile("effunf.root");
+      effunf_file->cd("effunf");
+      effunf_file->GetObject(Form("responsematrix_effunf_%s_%s",splitting.Data(),diffvariable.Data()),unfresp);
+      assert (effunf!=NULL);
+    }
+
+
+
+
+    //--- do central value
+    
+    TH1F *xsec_centralvalue = (TH1F*)(xsec_centralvalue_raw->Clone("xsec_centralvalue")); xsec_centralvalue->Reset();
+    TH1F *ngg_centralvalue = (TH1F*)(ngg_centralvalue_raw->Clone("ngg_centralvalue")); ngg_centralvalue->Reset();
+    {
+      RooUnfoldBayes *unfmethod = new RooUnfoldBayes(responsematrix_centralvalue,ngg_centralvalue_raw,4);
+      TH1F *unfolded = unfmethod->Hreco(); // CHECK ERROR TREATMENT ARGUMENT
+      for (int bin=0; bin<bins_to_run; bin++) ngg_centralvalue->SetBinContent(bin+1,unfolded->GetBinContent(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) ngg_centralvalue->SetBinError(bin+1,unfolded->GetBinError(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) xsec_centralvalue->SetBinContent(bin+1,ngg_centralvalue->GetBinContent(bin+1)/intlumi/xsec_centralvalue->GetBinWidth(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) xsec_centralvalue->SetBinError(bin+1,ngg_centralvalue->GetBinError(bin+1)/ngg_centralvalue->GetBinContent(bin+1)*xsec_centralvalue->GetBinWidth(bin+1));
+    }
+
+
+
+    //--- do systematics on raw yield
+
+    for (size_t k=0; k<systematics_list.size(); k++){
+
+      source_systematic_struct syst = systematics_list.at(k);
+      if (!(syst.is_on_raw)) continue;
+
+      TH1F *histo = histos_uncertainties.at(syst.name);
+
+      switch (syst.name) {
+      case TString("purefitbias"):
+	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,purity_fit_staterr->GetBinContent(bin+1)*histo_bias_purefitbias->GetBinContent(bin+1));
+      break;
+      case TString("templatestatistics"):
+	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,histo_bias_templatestatistics->GetBinContent(bin+1));
+      break;
+      case TString("templateshapeMCpromptdrivenEB"):
+	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,(!skipsystematics && splitting!="EEEE") ? fabs(histo_bias_templateshapeMCpromptdrivenEB->GetBinContent(bin+1)-1) : 0);
+      break;
+      case TString("templateshapeMCfakedrivenEB"):
+	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,(!skipsystematics && splitting!="EEEE") ? fabs(histo_bias_templateshapeMCfakedrivenEB->GetBinContent(bin+1)-1) : 0);
+      break;
+      case TString("templateshapeMCpromptdrivenEE"):
+	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,(!skipsystematics && splitting!="EBEB") ? fabs(histo_bias_templateshapeMCpromptdrivenEE->GetBinContent(bin+1)-1) : 0);
+      break;
+      case TString("templateshapeMCfakedrivenEE"):
+	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,(!skipsystematics && splitting!="EBEB") ? fabs(histo_bias_templateshapeMCfakedrivenEE->GetBinContent(bin+1)-1) : 0);
+      break;
+      case TString("templateshape2frag"):
+	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent((!skipsystematics) ? fabs(histo_bias_templateshape2frag->GetBinContent(bin+1)-1) : 0);
+      break;
+      case TString("noise_mixing"):
+	for (int bin=0; bin<bins_to_run; bin++) histo->SetBinContent(bin+1,get_noise_systematic(diffvariable,splitting,bin));
+	break;
+      default:
+	assert(false);
+      }
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   RooUnfoldResponse *effunf=NULL;
   {
@@ -2413,17 +2548,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 //  }
 
 
-  TFile *purity_file = new TFile(Form("plots/histo_purity_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
-  purity_file->GetObject("purity_sigsig",purity[0]);
-  purity_file->GetObject("purity_sigbkg",purity[1]);
-  purity_file->GetObject("purity_bkgsig",purity[2]);
-  purity_file->GetObject("purity_bkgbkg",purity[3]);
-  purity_file->GetObject("eventshisto",eventshisto);
-  purity_file->GetObject("overflowremovaleffhisto",overflowremovaleffhisto);
-  purity_file->GetObject("fitpull_histo",fitpull_histo);
-
-  std::cout << "Purity histos imported" << std::endl;
-  for (int i=0; i<4; i++) purity[i]->Print(); eventshisto->Print(); overflowremovaleffhisto->Print(); 
 
   std::map<TString,TH1F*> histos_systematics;
   for (size_t i = 0; i<systematics_list.size(); i++){
@@ -2460,23 +2584,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     file_bias_templateshape2frag->GetObject("histo_bias_templateshape2frag",histo_bias_templateshape2frag);
   }
   
-    xsec = new TH1F("xsec","xsec",bins_to_run,binsdef);
-    xsec->SetMarkerStyle(20);
-    xsec->SetMarkerColor(kBlack);
-    xsec->SetLineColor(kBlack);
-    xsec->SetLineWidth(2);
-
-    {
-      TString unit = diffvariables_units_list(diffvariable);
-      xsec->GetXaxis()->SetTitle(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data()));
-    }
-
-    xsec_withsyst = (TH1F*)(xsec->Clone("xsec_withsyst"));
-    xsec_withsyst->SetLineColor(kRed);
-
-    xsec_ngammagammayield = (TH1F*)(xsec->Clone("xsec_ngammagammayield"));
-    xsec_ngammagammayield->SetMarkerColor(kGreen+2);
-    xsec_ngammagammayield->SetLineColor(kGreen+2);
 
     std::map<TString,TH1F*> plots_uncertainties;
     for (size_t i = 0; i<systematics_list.size(); i++){
