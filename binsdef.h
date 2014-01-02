@@ -170,6 +170,12 @@ float* diffvariables_binsdef_list(TString diffvariable){
   return diffvariables_binsdef_list_[diffvariable];
 };
 
+const char* get_unit(TString dvar){
+  TString unit = diffvariables_units_list(dvar);
+  return TString(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data())).Data();
+};
+
+
 const int nclosest = 5;
 const int nclosestmore = 40;
 
@@ -233,6 +239,19 @@ typedef struct {
   bool is_uncorrelated;
   bool is_1catcorrelated;
   bool is_allcatcorrelated;
+  int color;
+//  systplot_templateshapeMCpromptdrivenEB->SetLineColor(kRed);
+//  systplot_templateshapeMCfakedrivenEB->SetLineColor(kBlue);
+//  systplot_templateshapeMCpromptdrivenEE->SetLineColor(kRed);
+//  systplot_templateshapeMCfakedrivenEE->SetLineColor(kBlue);
+//  systplot_templateshapeMCpromptdrivenEE->SetLineStyle(kDotted);
+//  systplot_templateshapeMCfakedrivenEE->SetLineStyle(kDotted);
+//  systplot_templateshape2frag->SetLineColor(kOrange);
+//  systplot_noise->SetLineColor(kCyan);
+//  systplot_purefitbias->SetLineColor(kGreen);
+//  systplot_templatestatistics->SetLineColor(kGray);
+//  systplot_zee->SetLineColor(kMagenta);
+//  systplot_tot->SetLineColor(kBlack);
 } source_systematic_struct;
 
 source_systematic_struct ConstructSystematic(TString name_, TString title_, bool is_on_raw_, bool is_on_effunf_, bool is_uncorrelated_, bool is_1catcorrelated_, bool is_allcatcorrelated_) {
@@ -264,6 +283,6 @@ source_systematic_struct __systematics__[]={
 };
 std::vector<source_systematic_struct> systematics_list (__systematics__, __systematics__ + sizeof(__systematics__) / sizeof(source_systematic_struct) );
 
-
+const float intlumi = 5.044;
 
 #endif
