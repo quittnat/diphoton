@@ -2424,7 +2424,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       for (int bin=0; bin<bins_to_run; bin++) ngg_centralvalue->SetBinContent(bin+1,unfolded->GetBinContent(bin+1));
       for (int bin=0; bin<bins_to_run; bin++) ngg_centralvalue->SetBinError(bin+1,unfolded->GetBinError(bin+1));
       for (int bin=0; bin<bins_to_run; bin++) xsec_centralvalue->SetBinContent(bin+1,ngg_centralvalue->GetBinContent(bin+1)/intlumi/xsec_centralvalue->GetBinWidth(bin+1));
-      for (int bin=0; bin<bins_to_run; bin++) xsec_centralvalue->SetBinError(bin+1,ngg_centralvalue->GetBinError(bin+1)/ngg_centralvalue->GetBinContent(bin+1)*xsec_centralvalue->GetBinWidth(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) xsec_centralvalue->SetBinError(bin+1,ngg_centralvalue->GetBinError(bin+1)/ngg_centralvalue->GetBinContent(bin+1)*xsec_centralvalue->GetBinContent(bin+1));
     }
 
 
@@ -2516,9 +2516,13 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       
       }
 
-      for (int bin=0; bin<bins_to_run; bin++) {histo_syst->SetBinContent(bin+1,1+histo_syst->GetBinContent(bin+1)); histo_syst->SetBinError(bin+1,0);}
       TH1F *ngg_syst_raw = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_raw_%s",syst.name.Data())));
-      ngg_syst_raw->Multiply(ngg_syst_raw,histo_syst);
+      {
+	TH1F *temp = (TH1F*)(histo_syst->Clone("temp"));
+	for (int bin=0; bin<bins_to_run; bin++) {temp->SetBinContent(bin+1,temp->GetBinContent(bin+1)+1); temp->SetBinError(bin+1,0);}
+	ngg_syst_raw->Multiply(ngg_syst_raw,temp);
+	delete temp;
+      }
 
       ngg_syst_histos[syst.name] = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_%s",syst.name.Data())));
       TH1F *ngg_syst = ngg_syst_histos.at(syst.name);
@@ -2531,7 +2535,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 	for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinContent(bin+1,unfolded->GetBinContent(bin+1));
 	for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinError(bin+1,unfolded->GetBinError(bin+1));
 	for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinContent(bin+1,ngg_syst->GetBinContent(bin+1)/intlumi/xsec_syst->GetBinWidth(bin+1));
-	for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinError(bin+1,ngg_syst->GetBinError(bin+1)/ngg_syst->GetBinContent(bin+1)*xsec_syst->GetBinWidth(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinError(bin+1,ngg_syst->GetBinError(bin+1)/ngg_syst->GetBinContent(bin+1)*xsec_syst->GetBinContent(bin+1));
       }
 
       systplots[syst.name] = (TH1F*)(ngg_syst->Clone(Form("systplot_%s",syst.name.Data())));
@@ -2562,11 +2566,13 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
       for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinContent(bin+1,unfolded->GetBinContent(bin+1));
       for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinError(bin+1,unfolded->GetBinError(bin+1));
+      delete unfolded;
       for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinContent(bin+1,ngg_syst->GetBinContent(bin+1)/intlumi/xsec_syst->GetBinWidth(bin+1));
-      for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinError(bin+1,ngg_syst->GetBinError(bin+1)/ngg_syst->GetBinContent(bin+1)*xsec_syst->GetBinWidth(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinError(bin+1,ngg_syst->GetBinError(bin+1)/ngg_syst->GetBinContent(bin+1)*xsec_syst->GetBinContent(bin+1));
 
       systplots[syst.name] = (TH1F*)(ngg_syst->Clone(Form("systplot_%s",syst.name.Data())));
       TH1F *systplot_syst = systplots.at(syst.name);
+      systplot_syst->Divide(ngg_centralvalue);
       for (int bin=0; bin<bins_to_run; bin++) {systplot_syst->SetBinContent(bin+1,systplot_syst->GetBinContent(bin+1)-1); systplot_syst->SetBinError(bin+1,0);}
 
       }
@@ -2700,7 +2706,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   TCanvas *xsec_canv = new TCanvas("xsec_canv","xsec_canv");
   xsec_canv->cd();
   xsec_centralvalue_raw->SetStats(0);
-  xsec_centralvalue_raw->SetTitle(Form("Differential cross section - %s category",splitting.Data()));
+  //  xsec_centralvalue_raw->SetTitle(Form("Differential cross section - %s category",splitting.Data()));
   xsec_centralvalue_raw->GetYaxis()->SetTitle(Form("d#sigma/d%s (fb%s)",diffvariables_names_list(diffvariable).Data(),get_unit(diffvariable)));
   xsec_centralvalue_raw->SetMinimum(0);
   SetFormat(xsec_centralvalue_raw,kRed,20,kDotted);
@@ -2709,8 +2715,8 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   xsec_centralvalue->Draw("e1 same");
 
   TLegend *legxsec = (diffvariable!="dphi") ? new TLegend(0.7,0.7,0.9,0.9) : new TLegend(0.1,0.7,0.3,0.9);
-  legxsec->AddEntry(xsec_centralvalue_raw,"Raw cross section, stat. unc. only","l");
-  legxsec->AddEntry(xsec_centralvalue,"Unfolded cross section, stat. unc. only","l");
+  legxsec->AddEntry(xsec_centralvalue_raw,"Raw cross section","l");
+  legxsec->AddEntry(xsec_centralvalue,"Unfolded cross section","l");
   legxsec->SetFillColor(kWhite);
   legxsec->Draw();
 
@@ -2753,11 +2759,9 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     systplot_tot->SetStats(0);
     systplot_tot->SetTitle(Form("Systematic uncertainties on cross-section - %s category",splitting.Data()));
     systplot_tot->SetMinimum(0);
+    SetFormat(systplot_tot,kBlack,20,kDashed);
 
     systplot_tot->Draw();
-
-    for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++) it->second->SetLineColor(map_systematics_list.at(it->first).color);
-    systplot_tot->SetLineColor(kBlack);
 
     TLegend *legsystplot = new TLegend(0.6,0.7,0.9,0.9);
 
@@ -2766,7 +2770,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       if (splitting=="EBEB") if (it->first=="templateshapeMCpromptdrivenEE" || it->first=="templateshapeMCfakedrivenEE") continue;
       SetFormat(it->second,map_systematics_list.at(it->first).color);
       it->second->Draw("same");
-      legsystplot->AddEntry(it->second,map_systematics_list.at(it->first).name.Data());
+      legsystplot->AddEntry(it->second,map_systematics_list.at(it->first).name.Data(),"l");
     }
     legsystplot->AddEntry(systplot_tot,"Total syst. uncertainty","l");
     legsystplot->SetFillColor(kWhite);
