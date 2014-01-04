@@ -2349,6 +2349,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   TH1F *ngg_centralvalue = NULL;
   std::map<TString,TH1F*> systplots;
   TH1F *xsec_centralvalue_raw = NULL;
+  TH1F *ngg_centralvalue_raw = NULL;
   TH1F *purity[4] = {NULL,NULL,NULL,NULL};
 
   std::map<TString,source_systematic_struct> map_systematics_list;
@@ -2361,7 +2362,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     xsec_centralvalue_raw = new TH1F("xsec_centralvalue_raw","",bins_to_run,binsdef);
     xsec_centralvalue_raw->GetXaxis()->SetTitle(get_unit(diffvariable));
 
-    TH1F *ngg_centralvalue_raw = (TH1F*)(xsec_centralvalue_raw->Clone("ngg_centralvalue_raw"));
+    ngg_centralvalue_raw = (TH1F*)(xsec_centralvalue_raw->Clone("ngg_centralvalue_raw"));
     TH1F *purity_fit_staterr = (TH1F*)(xsec_centralvalue_raw->Clone("purity_fit_staterr"));
 
     {
@@ -2744,6 +2745,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   ngg_centralvalue->Write();
   for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++) it->second->Write();
   xsec_centralvalue_raw->Write();
+  ngg_centralvalue_raw->Write();
   for (int i=0; i<4; i++) if (purity[i]) purity[i]->Write();
   xsec_file->Close();  
   }
