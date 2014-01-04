@@ -5,8 +5,11 @@
 #include <vector>
 #include "TString.h"
 #include "TMath.h"
+#include "TColor.h"
+#include "TLine.h"
 #include <iostream>
 #include <assert.h>
+
 const float Pi = TMath::Pi();
 const float MaxDrExperiment = sqrt(pow(5.,2)+pow(Pi,2)); // = 5.90
 
@@ -172,7 +175,7 @@ float* diffvariables_binsdef_list(TString diffvariable){
 
 const char* get_unit(TString dvar){
   TString unit = diffvariables_units_list(dvar);
-  return TString(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data())).Data();
+  return TString(Form("%s %s",diffvariables_names_list(dvar).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data())).Data();
 };
 
 
@@ -240,21 +243,10 @@ typedef struct {
   bool is_1catcorrelated;
   bool is_allcatcorrelated;
   int color;
-//  systplot_templateshapeMCpromptdrivenEB->SetLineColor(kRed);
-//  systplot_templateshapeMCfakedrivenEB->SetLineColor(kBlue);
-//  systplot_templateshapeMCpromptdrivenEE->SetLineColor(kRed);
-//  systplot_templateshapeMCfakedrivenEE->SetLineColor(kBlue);
-//  systplot_templateshapeMCpromptdrivenEE->SetLineStyle(kDotted);
-//  systplot_templateshapeMCfakedrivenEE->SetLineStyle(kDotted);
-//  systplot_templateshape2frag->SetLineColor(kOrange);
-//  systplot_noise->SetLineColor(kCyan);
-//  systplot_purefitbias->SetLineColor(kGreen);
-//  systplot_templatestatistics->SetLineColor(kGray);
-//  systplot_zee->SetLineColor(kMagenta);
-//  systplot_tot->SetLineColor(kBlack);
+  int style;
 } source_systematic_struct;
 
-source_systematic_struct ConstructSystematic(TString name_, TString title_, bool is_on_raw_, bool is_on_effunf_, bool is_uncorrelated_, bool is_1catcorrelated_, bool is_allcatcorrelated_) {
+source_systematic_struct ConstructSystematic(TString name_, TString title_, bool is_on_raw_, bool is_on_effunf_, bool is_uncorrelated_, bool is_1catcorrelated_, bool is_allcatcorrelated_, int color_, int style_=1) {
   source_systematic_struct a;
   a.name=name_;
   a.title=title_;
@@ -263,23 +255,25 @@ source_systematic_struct ConstructSystematic(TString name_, TString title_, bool
   a.is_uncorrelated=is_uncorrelated_;
   a.is_1catcorrelated=is_1catcorrelated_;
   a.is_allcatcorrelated=is_allcatcorrelated_;
+  a.color = color_;
+  a.style = style_;
   assert((int)(a.is_uncorrelated)+(int)(a.is_1catcorrelated)+(int)(a.is_allcatcorrelated)==1);
   assert((int)(a.is_on_raw)+(int)(a.is_on_effunf)==1);
   return a;
 };
 
 source_systematic_struct __systematics__[]={
-  ConstructSystematic("purefitbias","Fit bias",1,0,1,0,0),
-  ConstructSystematic("zee","Zee subtraction",0,1,0,1,0),
-  ConstructSystematic("templatestatistics","Template statistics",1,0,0,1,0),
-  ConstructSystematic("efficiency","Efficiency uncertainty",0,1,0,1,0), // to be splitted in different scale factors?
-  ConstructSystematic("unfolding","Unfolding uncertainty",0,1,0,1,0),
-  ConstructSystematic("templateshapeMCpromptdrivenEB","Prompt template shape EB",1,0,0,0,1),
-  ConstructSystematic("templateshapeMCfakedrivenEB","Fake template shape EB",1,0,0,0,1),
-  ConstructSystematic("templateshapeMCpromptdrivenEE","Prompt template shape EE",1,0,0,0,1),
-  ConstructSystematic("templateshapeMCfakedrivenEE","Fake template shape EE",1,0,0,0,1),
-  ConstructSystematic("templateshape2frag","Fragmentation effect on template",1,0,0,0,1),
-  ConstructSystematic("noise_mixing","Event mixing effect on template",1,0,0,0,1)
+  ConstructSystematic("purefitbias","Fit bias",1,0,1,0,0,kGreen),
+  ConstructSystematic("zee","Zee subtraction",0,1,0,1,0,kMagenta),
+  ConstructSystematic("templatestatistics","Template statistics",1,0,0,1,0,kGray),
+  ConstructSystematic("efficiency","Efficiency uncertainty",0,1,0,1,0,kGreen+2), // to be splitted in different scale factors?
+  ConstructSystematic("unfolding","Unfolding uncertainty",0,1,0,1,0,kYellow),
+  ConstructSystematic("templateshapeMCpromptdrivenEB","Prompt template shape EB",1,0,0,0,1,kRed),
+  ConstructSystematic("templateshapeMCfakedrivenEB","Fake template shape EB",1,0,0,0,1,kBlue),
+  ConstructSystematic("templateshapeMCpromptdrivenEE","Prompt template shape EE",1,0,0,0,1,kRed,kDotted),
+  ConstructSystematic("templateshapeMCfakedrivenEE","Fake template shape EE",1,0,0,0,1,kBlue,kDotted),
+  ConstructSystematic("templateshape2frag","Fragmentation effect on template",1,0,0,0,1,kOrange),
+  ConstructSystematic("noise_mixing","Event mixing effect on template",1,0,0,0,1,kCyan)
 };
 std::vector<source_systematic_struct> systematics_list (__systematics__, __systematics__ + sizeof(__systematics__) / sizeof(source_systematic_struct) );
 
