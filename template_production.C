@@ -493,6 +493,7 @@ void template_production::Loop(int maxevents)
     }
 
     Float_t weight=event_luminormfactor*event_Kfactor*event_weight;
+    if (dataset_id==dy_dataset_id) weight*=3048./2475.;
 
     if (mode=="standard_2frag" || mode=="2pgen_2frag" || mode=="1p1fbothgen_2frag" || mode=="1pgen1fside_2frag") {
       if (pholead_PhoMCmatchexitcode==1 && pholead_GenPhotonIsoDR04<5) weight*=2;
@@ -997,6 +998,8 @@ void template_production::Loop(int maxevents)
 
     if (doeffunf && (dataset_id<0 || dataset_id==dy_dataset_id)){
 
+      // DY xsec already scaled (included in 'weight' variable)
+
       int event_ok_for_dataset_local = event_ok_for_dataset;
       if (!reco_in_acc) event_ok_for_dataset_local = -1;
       if (event_ok_for_dataset_local==3 || event_ok_for_dataset_local==4) event_ok_for_dataset_local=1;
@@ -1053,6 +1056,21 @@ void template_production::Loop(int maxevents)
 	if (is_contamination_to_be_subtracted) gen_in_acc_local=false;
 
 	float sf = (reco_in_acc) ? getscalefactor_foreffunf(pholead_pt,photrail_pt,pholead_eta,photrail_eta,pholead_r9,photrail_r9).first : 1;
+
+	// p(e->g) efficiency scale factor
+	if (dataset_id==dy_dataset_id) {
+	  if (event_ok_for_dataset_local==0) sf*=pow(0.979,2);
+	  else if (event_ok_for_dataset_local==1) sf*=0.979*0.985;
+	  else if (event_ok_for_dataset_local==2) sf*=pow(0.985,2);
+	}
+
+	// fitted pp purity fraction in Zee events
+	if (dataset_id==dy_dataset_id) {
+	  if (event_ok_for_dataset_local==0) sf*=8.6542e-01;
+	  else if (event_ok_for_dataset_local==1) sf*=7.9537e-01;
+	  else if (event_ok_for_dataset_local==2) sf*=8.5493e-01;
+	}
+
 	if (reco_in_acc_local && gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hmatched->Fill(mydiff_reco[*diffvariable],mydiff_gen[*diffvariable],weight*sf);
 	if (reco_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hreco->Fill(mydiff_reco[*diffvariable],weight*sf);
 	if (gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local_gen,*diffvariable)].htruth->Fill(mydiff_gen[*diffvariable],weight);
@@ -1381,8 +1399,6 @@ std::pair<float,float> template_production::getscalefactor_foreffunf(float pho1_
   // In order for the response matrix to correct for efficiency, bin migration and Zee contamination, it should already include:
   // 1) Trigger efficiency (no trigger cut is applied on the MC in the selection)
   // 2) Selection efficiency scale factor (Zee all but pixel veto + Zuug for the pixel veto)
-  // 3) Smearing of the MC to match the resolution in data (one has to see how to implement this... probably act on pho{1,2}_reco)
-  // 4) See how to implement the Zee subtraction as fakes, with the right width to match the one observed in data
 
   float sf = 1;
   float sferr = 0;
