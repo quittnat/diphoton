@@ -588,9 +588,9 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
     for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
       for (int i=0; i<3; i++) {
 	roounfoldmatrices_struct a;
-	a.htruth = new TH1F("htruth","htruth",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
-	a.hreco = new TH1F("hreco","hreco",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
-	a.hmatched = new TH2F("hmatched","hmatched",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	a.htruth = new TH1F(Form("htruth_%s_%d",diffvariable->Data(),i),Form("htruth_%s_%d",diffvariable->Data(),i),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	a.hreco = new TH1F(Form("hreco_%s_%d",diffvariable->Data(),i),Form("hreco_%s_%d",diffvariable->Data(),i),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	a.hmatched = new TH2F(Form("hmatched_%s_%d",diffvariable->Data(),i),Form("hmatched_%s_%d",diffvariable->Data(),i),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
 	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = a;
       }
     }
@@ -850,6 +850,9 @@ void template_production::WriteOutput(){
 	TString title = get_name_responsematrix_effunf(i,*diffvariable);
 	calculated_responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = new RooUnfoldResponse(a.hreco,a.htruth,a.hmatched,title.Data(),title.Data());
 	calculated_responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)]->Write();
+	a.hreco->Write();
+	a.htruth->Write();
+	a.hmatched->Write();
       }
     }
   }
