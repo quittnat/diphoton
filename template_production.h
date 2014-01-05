@@ -179,6 +179,7 @@ public :
 
    Bool_t gen_in_acc;
    Bool_t reco_in_acc;
+   Bool_t matched;
    
    // List of branches
    TBranch        *b_event_fileuuid;   //!
@@ -296,6 +297,7 @@ public :
 
    TBranch *b_gen_in_acc;
    TBranch *b_reco_in_acc;
+   TBranch *b_matched;
 
 
    template_production(TTree *tree=0);
@@ -764,6 +766,7 @@ void template_production::Init()
 
    fChain->SetBranchAddress("gen_in_acc",&gen_in_acc,&b_gen_in_acc);
    fChain->SetBranchAddress("reco_in_acc",&reco_in_acc,&b_reco_in_acc);
+   fChain->SetBranchAddress("matched",&matched,&b_matched);
 
    Notify();
 }

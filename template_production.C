@@ -1055,7 +1055,9 @@ void template_production::Loop(int maxevents)
 	if (dataset_id==dy_dataset_id) is_contamination_to_be_subtracted = true; // DY contamination subtraction
 	if (is_contamination_to_be_subtracted) gen_in_acc_local=false;
 
-	float sf = (reco_in_acc) ? getscalefactor_foreffunf(pholead_pt,photrail_pt,pholead_eta,photrail_eta,pholead_r9,photrail_r9).first : 1;
+	if (dataset_id!=dy_dataset_id) if (reco_in_acc_local) reco_in_acc_local = reco_in_acc_local && matched;
+
+	float sf = (reco_in_acc_local) ? getscalefactor_foreffunf(pholead_pt,photrail_pt,pholead_eta,photrail_eta,pholead_r9,photrail_r9).first : 1;
 
 	// p(e->g) efficiency scale factor
 	if (dataset_id==dy_dataset_id) {
