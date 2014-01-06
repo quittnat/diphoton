@@ -393,6 +393,9 @@ public :
    Bool_t do2ftemplate;
    Bool_t doeffunf;
 
+   TH2F *histo_zee_scalefactor;
+   TH1F *histo_zuug_scalefactor;
+
    map<TString,roounfoldmatrices_struct> responsematrix_effunf;
    map<TString,RooUnfoldResponse*> calculated_responsematrix_effunf;
 
@@ -435,6 +438,9 @@ template_production::template_production(TTree *tree)
    do2ftemplate = false;
    do_event_mixing = false;
    doeffunf = false;
+
+   histo_zee_scalefactor = NULL;
+   histo_zuug_scalefactor = NULL;
 
    whichnewtemplate = -1;
 

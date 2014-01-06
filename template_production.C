@@ -1402,6 +1402,19 @@ std::pair<float,float> template_production::getscalefactor_foreffunf(float pho1_
   // 1) Trigger efficiency (no trigger cut is applied on the MC in the selection)
   // 2) Selection efficiency scale factor (Zee all but pixel veto + Zuug for the pixel veto)
 
+  // DEBUG XXX da aggiungere sf uncertainties e come gestirle nel seguito
+
+  if (!histo_zee_scalefactor) {
+    TFile *file_histo_zee_scalefactor = new TFile("histo_scalefactor_Zee_totaluncertainty.root");
+    file_histo_zee_scalefactor->GetObject("histo_withsyst",histo_zee_scalefactor);
+    assert(histo_zee_scalefactor);
+  }
+  if (!histo_zuug_scalefactor) {
+    TFile *file_histo_zuug_scalefactor = new TFile("histo_scalefactor_Zuug_totaluncertainty.root");
+    file_histo_zuug_scalefactor->GetObject("h_zuug",histo_zuug_scalefactor);
+    assert(histo_zuug_scalefactor);
+  }
+
   float sf = 1;
   float sferr = 0;
 
@@ -1415,6 +1428,12 @@ std::pair<float,float> template_production::getscalefactor_foreffunf(float pho1_
   // Trigger efficiency
   if (fabs(pho1_eta)<1.5 && fabs(pho2_eta)<1.5) sf *= (pho1_r9>r9_threshold && pho2_r9>r9_threshold) ? trig_eff_EBEB_highr9 : trig_eff_EBEB_lowr9;
   else sf *= (pho1_r9>r9_threshold && pho2_r9>r9_threshold) ? trig_eff_notEBEB_highr9 :trig_eff_notEBEB_lowr9;
+
+  // Efficiency data/mc scale factors
+  sf*=histo_zee_scalefactor->GetBinContent(histo_zee_scalefactor->FindBin(pho1_pt,fabs(pho1_eta)));
+  sf*=histo_zee_scalefactor->GetBinContent(histo_zee_scalefactor->FindBin(pho2_pt,fabs(pho2_eta)));
+  sf*=histo_zuug_scalefactor->GetBinContent(histo_zuug_scalefactor->FindBin(fabs(pho1_eta)));
+  sf*=histo_zuug_scalefactor->GetBinContent(histo_zuug_scalefactor->FindBin(fabs(pho2_eta)));
 
   return std::pair<float,float>(sf,sferr);
 
