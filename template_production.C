@@ -493,7 +493,7 @@ void template_production::Loop(int maxevents)
     }
 
     Float_t weight=event_luminormfactor*event_Kfactor*event_weight;
-    if (dataset_id==dy_dataset_id) weight*=3048./2475.;
+
 
     if (mode=="standard_2frag" || mode=="2pgen_2frag" || mode=="1p1fbothgen_2frag" || mode=="1pgen1fside_2frag") {
       if (pholead_PhoMCmatchexitcode==1 && pholead_GenPhotonIsoDR04<5) weight*=2;
@@ -628,7 +628,6 @@ void template_production::Loop(int maxevents)
 	 rooweight=weight;
 
 	 counter_selection++;
-
 
        for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
 
@@ -998,8 +997,6 @@ void template_production::Loop(int maxevents)
 
     if (doeffunf && (dataset_id<0 || dataset_id==dy_dataset_id)){
 
-      // DY xsec already scaled (included in 'weight' variable)
-
       int event_ok_for_dataset_local = event_ok_for_dataset;
       if (!reco_in_acc) event_ok_for_dataset_local = -1;
       if (event_ok_for_dataset_local==3 || event_ok_for_dataset_local==4) event_ok_for_dataset_local=1;
@@ -1051,31 +1048,19 @@ void template_production::Loop(int maxevents)
 	if (bin_reco==diffvariables_nbins_list(*diffvariable)-1) reco_in_acc_local=false;
 	if (bin_gen==diffvariables_nbins_list(*diffvariable)-1) gen_in_acc_local=false;
 	
-	bool is_contamination_to_be_subtracted = false;
-	if (dataset_id==dy_dataset_id) is_contamination_to_be_subtracted = true; // DY contamination subtraction
-	if (is_contamination_to_be_subtracted) gen_in_acc_local=false;
+	if (reco_in_acc_local) reco_in_acc_local = reco_in_acc_local && matched;
 
-	if (dataset_id!=dy_dataset_id) if (reco_in_acc_local) reco_in_acc_local = reco_in_acc_local && matched;
-
+	if (dataset_id<0){
 	float sf = (reco_in_acc_local) ? getscalefactor_foreffunf(pholead_pt,photrail_pt,pholead_eta,photrail_eta,pholead_r9,photrail_r9).first : 1;
-
-	// p(e->g) efficiency scale factor
-	if (dataset_id==dy_dataset_id) {
-	  if (event_ok_for_dataset_local==0) sf*=pow(0.979,2);
-	  else if (event_ok_for_dataset_local==1) sf*=0.979*0.985;
-	  else if (event_ok_for_dataset_local==2) sf*=pow(0.985,2);
-	}
-
-	// fitted pp purity fraction in Zee events
-	if (dataset_id==dy_dataset_id) {
-	  if (event_ok_for_dataset_local==0) sf*=8.6542e-01;
-	  else if (event_ok_for_dataset_local==1) sf*=7.9537e-01;
-	  else if (event_ok_for_dataset_local==2) sf*=8.5493e-01;
-	}
-
 	if (reco_in_acc_local && gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hmatched->Fill(mydiff_reco[*diffvariable],mydiff_gen[*diffvariable],weight*sf);
 	if (reco_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hreco->Fill(mydiff_reco[*diffvariable],weight*sf);
 	if (gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local_gen,*diffvariable)].htruth->Fill(mydiff_gen[*diffvariable],weight);
+	}
+
+	if (dataset_id==dy_dataset_id){
+	  float sf = getscalefactor_forzeesubtraction(event_ok_for_dataset_local).first;
+	  if (reco_in_acc_local) histo_zee_yieldtosubtract[get_name_zeehisto(event_ok_for_dataset_local,*diffvariable)]->Fill(mydiff_reco[*diffvariable],weight*sf);
+	}
 
       }
       
@@ -1437,4 +1422,26 @@ std::pair<float,float> template_production::getscalefactor_foreffunf(float pho1_
 
   return std::pair<float,float>(sf,sferr);
 
+};
+
+std::pair<float,float> template_production::getscalefactor_forzeesubtraction(int ev_ok_for_dset){
+
+  float sf = 1;
+  float sferr = 0;
+
+  sf*=3048./2475.;
+
+  // p(e->g) efficiency scale factor
+  if (ev_ok_for_dset==0) sf*=pow(0.979,2);
+  else if (ev_ok_for_dset==1) sf*=0.979*0.985;
+  else if (ev_ok_for_dset==2) sf*=pow(0.985,2);
+  
+  
+  // fitted pp purity fraction in Zee events
+  if (ev_ok_for_dset==0) sf*=8.6542e-01;
+  else if (ev_ok_for_dset==1) sf*=7.9537e-01;
+  else if (ev_ok_for_dset==2) sf*=8.5493e-01;
+  
+  return std::pair<float,float>(sf,sferr);
+  
 };

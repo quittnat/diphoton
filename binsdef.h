@@ -264,7 +264,7 @@ source_systematic_struct ConstructSystematic(TString name_, TString title_, bool
 
 source_systematic_struct __systematics__[]={
   ConstructSystematic("purefitbias","Fit bias",1,0,1,0,0,kGreen),
-  ConstructSystematic("zee","Zee subtraction",0,1,0,1,0,kMagenta),
+  ConstructSystematic("zee","Zee subtraction",1,0,0,1,0,kMagenta),
   ConstructSystematic("templatestatistics","Template statistics",1,0,0,1,0,kGray),
   ConstructSystematic("efficiency","Efficiency uncertainty",0,1,0,1,0,kGreen+2), // to be splitted in different scale factors?
   ConstructSystematic("unfolding","Unfolding uncertainty",0,1,0,1,0,kYellow),

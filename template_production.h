@@ -369,6 +369,7 @@ public :
    TString get_name_true_purity_isnotpp(int region, TString diffvariable);
    TString get_name_template2d_roodset(int region, TString sigorbkg);
    TString get_name_responsematrix_effunf(int region, TString diffvariable);
+   TString get_name_zeehisto(int region, TString diffvariable);
 
    Float_t pholead_outvar;
    Float_t photrail_outvar;
@@ -398,6 +399,7 @@ public :
 
    map<TString,roounfoldmatrices_struct> responsematrix_effunf;
    map<TString,RooUnfoldResponse*> calculated_responsematrix_effunf;
+   map<TString,TH1F*> histo_zee_yieldtosubtract;
 
    int whichnewtemplate;
 
@@ -410,6 +412,7 @@ public :
    float getpuenergy(int reg, float eta);
    float geteffarea(int reg, float eta);
    std::pair<float,float> getscalefactor_foreffunf(float pho1_pt, float pho2_pt, float pho1_eta, float pho2_eta, float pho1_r9, float pho2_r9);
+   std::pair<float,float> getscalefactor_forzeesubtraction(int ev_ok_for_dset);
 
    TFile *out;
 
@@ -600,6 +603,9 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
 	a.hreco = new TH1F(Form("hreco_%s_%d",diffvariable->Data(),i),Form("hreco_%s_%d",diffvariable->Data(),i),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
 	a.hmatched = new TH2F(Form("hmatched_%s_%d",diffvariable->Data(),i),Form("hmatched_%s_%d",diffvariable->Data(),i),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
 	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = a;
+	TString reg;
+	if (i==0) reg="EBEB"; else if (i==1) reg="EBEE"; else if (i==2) reg="EEEE";
+	histo_zee_yieldtosubtract[get_name_zeehisto(i,*diffvariable)] = new TH1F(Form("histo_zee_yieldtosubtract_%s_%s",diffvariable->Data(),reg.Data()),Form("histo_zee_yieldtosubtract_%s_%s",diffvariable->Data(),reg.Data()),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
       }
     }
   }
@@ -862,6 +868,7 @@ void template_production::WriteOutput(){
 	a.hreco->Write();
 	a.htruth->Write();
 	a.hmatched->Write();
+	histo_zee_yieldtosubtract[get_name_zeehisto(i,*diffvariable)]->Write();
       }
     }
   }
@@ -999,6 +1006,14 @@ TString template_production::get_name_template2d_roodset(int region, TString sig
 
 TString template_production::get_name_responsematrix_effunf(int region, TString diffvariable){
   TString name_signal="responsematrix_effunf";
+  TString reg;
+  if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
+  TString t=Form("%s_%s_%s",name_signal.Data(),reg.Data(),diffvariable.Data());
+  return t;
+};
+
+TString template_production::get_name_zeehisto(int region, TString diffvariable){
+  TString name_signal="histo_zee_yieldtosubtract";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
   TString t=Form("%s_%s_%s",name_signal.Data(),reg.Data(),diffvariable.Data());

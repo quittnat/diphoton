@@ -127,6 +127,7 @@ float find_repetition_eventsintemplates(RooDataSet *dset, int axis);
 bool is_2events_bin(TString diffvariable, TString splitting, int bin);
 float get_noise_systematic(TString diffvariable, TString splitting, int bin);
 void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet* &roodset);
+float get_ttree_sumofweights(TDirectoryFile *f, TString treename);
 TH1F* AddTHInQuadrature(std::vector<TH1F*> vector, TString name);
 
 RooRealVar *roovar1=NULL;
@@ -889,7 +890,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
 
   }
 
-  bool islowstatcat = false;
+  bool islowstatcat = true;
   if (splitting=="EEEE") islowstatcat=true;
   if (diffvariable=="costhetastar" && splitting=="EEEE" && bin==1) islowstatcat=true;
   if (diffvariable=="costhetastar" && splitting=="EEEE" && bin>=4) islowstatcat=true;
@@ -2382,10 +2383,25 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     std::cout << "Purity histos imported" << std::endl;
     for (int i=0; i<4; i++) purity[i]->Print(); eventshisto->Print(); overflowremovaleffhisto->Print(); 
 
+
+    TH1F *histo_zee_subtraction= (TH1F*)(eventshisto->Clone(Form("histo_zee_subtraction_%s_%s",diffvariable.Data(),splitting.Data())));
+    histo_zee_subtraction->Reset();
+    TFile *file_zee_subtraction = NULL;
+    const bool do_zee_subtraction = true;
+    if (do_zee_subtraction){
+      file_zee_subtraction = new TFile("effunf.root");
+      TH1F *hist = NULL;
+      file_zee_subtraction->GetObject(Form("effunf/histo_zee_yieldtosubtract_%s_%s",diffvariable.Data(),splitting.Data()),hist);
+      for (int bin=0; bin<bins_to_run; bin++){
+	histo_zee_subtraction->SetBinContent(bin+1,hist->GetBinContent(bin+1)*intlumi); // event counts are normalized to 1/fb by default
+	histo_zee_subtraction->SetBinError(bin+1,0); // TO BE FIXED
+      }      
+    }
+
     // prepare central value raw yield
     for (int bin=0; bin<bins_to_run; bin++) {
       float pp = 	       purity[0]->GetBinContent(bin+1);
-      float pp_err =     purity[0]->GetBinError(bin+1);
+      float pp_err =           purity[0]->GetBinError(bin+1);
       //    float pf = 	       purity[1]->GetBinContent(bin+1);
       //    float pf_err =     purity[1]->GetBinError(bin+1);
       //    float fp = 	       purity[2]->GetBinContent(bin+1);
@@ -2395,14 +2411,17 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       float tot_events = eventshisto->GetBinContent(bin+1);
       float eff_overflow = overflowremovaleffhisto->GetBinContent(bin+1);
 
-      xsec_centralvalue_raw->SetBinContent(bin+1,(pp*tot_events/eff_overflow/intlumi)/xsec_centralvalue_raw->GetBinWidth(bin+1));      
       ngg_centralvalue_raw->SetBinContent(bin+1,pp*tot_events/eff_overflow);
       purity_fit_staterr->SetBinContent(bin+1,pp_err/pp);
 
       float errpoiss=1.0/sqrt(tot_events);
       float err=sqrt(pow(pp_err/pp,2)+pow(errpoiss,2));
-      xsec_centralvalue_raw->SetBinError(bin+1,err*xsec_centralvalue_raw->GetBinContent(bin+1));
+
       ngg_centralvalue_raw->SetBinError(bin+1,err*ngg_centralvalue_raw->GetBinContent(bin+1));
+      ngg_centralvalue_raw->Add(histo_zee_subtraction,-1);
+
+      xsec_centralvalue_raw->SetBinContent(bin+1,ngg_centralvalue_raw->GetBinContent(bin+1)/intlumi/xsec_centralvalue_raw->GetBinWidth(bin+1));      
+      xsec_centralvalue_raw->SetBinError(bin+1,xsec_centralvalue_raw->GetBinContent(bin+1)/ngg_centralvalue_raw->GetBinContent(bin+1)*ngg_centralvalue_raw->GetBinError(bin+1));
 
     }
     }
@@ -2511,10 +2530,14 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 	else if (syst.name=="noise_mixing"){
 	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,get_noise_systematic(diffvariable,splitting,bin));
 	}
+	else if (syst.name=="zee"){
+	  // TO BE FIXED: THIS IS AN UNCERTAINTY!!!
+	  //	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_zee_subtraction->GetBinContent(bin+1));
+	}
 	else {
 	  assert(false);
 	}
-      
+
       }
 
       TH1F *ngg_syst_raw = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_raw_%s",syst.name.Data())));
@@ -4387,3 +4410,34 @@ void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet* &ro
   roodset->Print();
 
 }
+
+
+float get_ttree_sumofweights(TDirectoryFile *f, TString treename){
+
+  TTree *t = NULL;
+  f->GetObject(treename.Data(),t);
+  assert (t);
+  t->SetBranchStatus("*",0);
+
+  float v_rooweight;
+  TBranch *b_rooweight;
+
+  float* ptrs[1]={&v_rooweight};
+  TBranch** branches[1]={&b_rooweight};
+  RooArgSet args;
+
+  TString name="rooweight";
+  int i=0;
+  t->SetBranchStatus(name.Data(),1);
+  t->SetBranchAddress(name.Data(),ptrs[i],branches[i]);
+
+  float totw=0;
+
+  for (int j=0; j<t->GetEntries(); j++){
+    t->GetEntry(j);
+    totw+=*(ptrs[i]);
+  }
+
+  return totw;
+
+};
