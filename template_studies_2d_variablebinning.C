@@ -87,7 +87,6 @@ typedef struct {
   float fp_err;
   float ff;
   float ff_err;
-  float eff_overflow_removal_pp;
   RooAbsPdf *pdf_forgen[8];
   float fsig1_firstpass;
   float fsig2_firstpass;
@@ -371,8 +370,8 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   dataset_orig->Print();
   dataset->Print();
   const float eff_overflow_removal = dataset_sigsig->sumEntries()/dataset_sigsig_orig->sumEntries();
-  std::cout << "TO BE DONE BETTER AFTER REWEIGHTING: Efficiency of overflow removal: " << eff_overflow_removal << std::endl;
-  //  assert (eff_overflow_removal>0.995);
+  std::cout << "CHECK THAT THIS NUMBER IS VERY CLOSE TO 1!!! Efficiency of overflow removal: " << eff_overflow_removal << std::endl;
+  assert (eff_overflow_removal>0.99);
 
 
   RooDataSet *dataset_sig_axis1 = (RooDataSet*)(dataset_sigsig->reduce(Name("dataset_sig_axis1"),SelectVars(RooArgList(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma))));
@@ -1318,7 +1317,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     out->fp_err=0;
     out->ff=0;
     out->ff_err=0;
-    out->eff_overflow_removal_pp=eff_overflow_removal;
     out->chi2=0;
     out->ndof=0;
     out->probchi2=0;
@@ -1553,7 +1551,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     out->ff=fbkgbkg->getVal();
     out->ff_err=fbkgbkg->getPropagatedError(*secondpass);
 
-    std::cout << "RAW YIELD " << out->pp*out->tot_events/out->eff_overflow_removal_pp << std::endl;
+    std::cout << "RAW YIELD " << out->pp*out->tot_events << std::endl;
 
     bool dochi2=false;
 
@@ -2227,9 +2225,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     TH1F *fitpull_histo;
     if (bins_to_run>0) {eventshisto = new TH1F("eventshisto","eventshisto",bins_to_run,binsdef); redchi2 = new TH1F("redchi2","redchi2",bins_to_run,binsdef); probchi2 = new TH1F("probchi2","probchi2",bins_to_run,binsdef);}
     else {eventshisto = new TH1F("eventshisto","eventshisto",n_bins,0,n_bins); redchi2 = new TH1F("redchi2","redchi2",n_bins,0,n_bins); probchi2 = new TH1F("probchi2","probchi2",n_bins,0,n_bins);}
-    TH1F *overflowremovaleffhisto;
-    if (bins_to_run>0) overflowremovaleffhisto = new TH1F("overflowremovaleffhisto","overflowremovaleffhisto",bins_to_run,binsdef);
-    else overflowremovaleffhisto = new TH1F("overflowremovaleffhisto","overflowremovaleffhisto",n_bins,0,n_bins);
     fitpull = new TH1F("fitpull","fitpull",100,0,100);
     fitpull_histo = new TH1F("fitpull_histo","fitpull_histo",25,-5,5);
 
@@ -2273,7 +2268,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     probchi2->SetBinContent((bin!=n_bins) ? bin+1 : 1, out->probchi2);
     for (int i=0; i<n_templatebins*n_templatebins; i++) fitpull->SetBinContent(i+1,out->fitpulls[i]);
     for (int i=0; i<n_templatebins*n_templatebins; i++) if (!(out->lowstatbin[i])) fitpull_histo->Fill(out->fitpulls[i]);
-    overflowremovaleffhisto->SetBinContent((bin!=n_bins) ? bin+1 : 1,out->eff_overflow_removal_pp);
 
     std::cout << "Output histos filled" << std::endl;
 
@@ -2284,7 +2278,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     purityfile->cd();
     for (int i=0; i<6; i++) purity[i]->Write();
     eventshisto->Write();
-    overflowremovaleffhisto->Write();
     redchi2->Write();
     probchi2->Write();
     fitpull->Write();
@@ -2370,7 +2363,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
     // import histos
     TH1F *eventshisto;
-    TH1F *overflowremovaleffhisto;
     TH1F *fitpull_histo;
     TFile *purity_file = new TFile(Form("plots/histo_purity_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
     purity_file->GetObject("purity_sigsig",purity[0]);
@@ -2378,10 +2370,9 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     purity_file->GetObject("purity_bkgsig",purity[2]);
     purity_file->GetObject("purity_bkgbkg",purity[3]);
     purity_file->GetObject("eventshisto",eventshisto);
-    purity_file->GetObject("overflowremovaleffhisto",overflowremovaleffhisto);
     purity_file->GetObject("fitpull_histo",fitpull_histo);
     std::cout << "Purity histos imported" << std::endl;
-    for (int i=0; i<4; i++) purity[i]->Print(); eventshisto->Print(); overflowremovaleffhisto->Print(); 
+    for (int i=0; i<4; i++) purity[i]->Print(); eventshisto->Print();
 
 
     TH1F *histo_zee_subtraction= (TH1F*)(eventshisto->Clone(Form("histo_zee_subtraction_%s_%s",diffvariable.Data(),splitting.Data())));
@@ -2409,9 +2400,8 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       //    float ff = 	       purity[3]->GetBinContent(bin+1);
       //    float ff_err =     purity[3]->GetBinError(bin+1);
       float tot_events = eventshisto->GetBinContent(bin+1);
-      float eff_overflow = overflowremovaleffhisto->GetBinContent(bin+1);
 
-      ngg_centralvalue_raw->SetBinContent(bin+1,pp*tot_events/eff_overflow);
+      ngg_centralvalue_raw->SetBinContent(bin+1,pp*tot_events);
       purity_fit_staterr->SetBinContent(bin+1,pp_err/pp);
 
       float errpoiss=1.0/sqrt(tot_events);
