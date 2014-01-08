@@ -361,6 +361,7 @@ public :
    std::map<TString, TProfile*> true_purity;
    std::map<TString, TH1F*> true_purity_isppevent;
    std::map<TString, TH1F*> true_purity_isnotppevent;
+   std::map<TString, TH1F*> discriminator_for2events_dR;
 
    TString get_name_obs_roodset(int region, TString diffvariable, int bin);
    TString get_name_newtempl_roodset(int region, TString diffvariable, int bin, TString sigbkg);
@@ -558,6 +559,10 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
 	AddVariablesToTree(obs_roodset[t2],roovars_index2);
 	AddVariablesToTree(obs_roodset[t2],roovars_common);
 	AddVariablesToTree(obs_roodset[t2],roovardiff);
+
+	TString t2b(t2);
+	t2b.Append("_discr_for2events_dR");
+	discriminator_for2events_dR[t2] = new TH1F(t2b.Data(),t2b.Data(),2,0,2);
 
 	TString type_array[4] = {"sigsig","sigbkg","bkgsig","bkgbkg"};
 	for (int l=0; l<4; l++){
@@ -845,6 +850,7 @@ void template_production::WriteOutput(){
     }
 
     for (std::map<TString, TTree*>::const_iterator it = obs_roodset.begin(); it!=obs_roodset.end(); it++) (it->second)->Write();
+    for (std::map<TString, TH1F*>::const_iterator it = discriminator_for2events_dR.begin(); it!=discriminator_for2events_dR.end(); it++) (it->second)->Write();
     for (std::map<TString, TTree*>::const_iterator it = newtempl_roodset.begin(); it!=newtempl_roodset.end(); it++) (it->second)->Write();
 
     out->mkdir("purity");

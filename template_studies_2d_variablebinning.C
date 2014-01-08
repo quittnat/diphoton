@@ -123,8 +123,8 @@ void generate_toy_dataset_2d(RooDataSet **target, RooAbsPdf *sigsigpdf, RooAbsPd
 void print_mem();
 void find_adaptive_binning(RooDataSet *dset, int *n_found_bins, Double_t *array_bounds, int axis=-1, float threshold = default_threshold_adaptive_binning);
 float find_repetition_eventsintemplates(RooDataSet *dset, int axis);
-bool is_2events_bin(TString diffvariable, TString splitting, int bin);
-float get_noise_systematic(TString diffvariable, TString splitting, int bin);
+bool is_2events_bin(TString filename, TString diffvariable, TString splitting, int bin);
+float get_noise_systematic(TString filename, TString diffvariable, TString splitting, int bin);
 void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet* &roodset);
 float get_ttree_sumofweights(TDirectoryFile *f, TString treename);
 TH1F* AddTHInQuadrature(std::vector<TH1F*> vector, TString name);
@@ -258,9 +258,9 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     inputfilename_d     = "outphoton_data_standard.root";
   }  
   else if (do_syst_string=="newtemplates_2events") {
-    inputfilename_t2p   = "outphoton_data_sigsig_step2_2events_ago21.root";
-    inputfilename_t1p1f = "outphoton_data_sigbkg_step2_2events_ago21.root";
-    inputfilename_t2f   = "outphoton_data_bkgbkg_step2_2events_ago21.root";
+    inputfilename_t2p   = "outphoton_data_sigsig_step2_2events.root";
+    inputfilename_t1p1f = "outphoton_data_sigbkg_step2_2events.root";
+    inputfilename_t2f   = "outphoton_data_bkgbkg_step2_2events.root";
     inputfilename_d     = "outphoton_data_standard.root";
   }  
   else if (do_syst_string=="oldtemplates"){
@@ -270,10 +270,11 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     inputfilename_d     = "outphoton_data_standard.root";
   }  
   else {
-    inputfilename_t2p   = "outphoton_data_sigsig_step2_1event_ago21.root";
-    inputfilename_t1p1f = "outphoton_data_sigbkg_step2_1event_ago21.root";
-    inputfilename_t2f = (is_2events_bin(diffvariable,splitting,bin)) ? "outphoton_data_bkgbkg_step2_2events_ago21.root" : "outphoton_data_bkgbkg_step2_1event_ago21.root";
     inputfilename_d     = "outphoton_data_standard.root";
+    inputfilename_t2p   = "outphoton_data_sigsig_step2_1event.root";
+    inputfilename_t1p1f = "outphoton_data_sigbkg_step2_1event.root";
+    bool is2ev = is_2events_bin(inputfilename_d,diffvariable,splitting,bin);
+    inputfilename_t2f = (is2ev) ? "outphoton_data_bkgbkg_step2_2events.root" : "outphoton_data_bkgbkg_step2_1event.root";
   }  
 
   if ((!inputfile_t2p)   ||  (TString(inputfile_t2p->GetName())   != TString(inputfilename_t2p)  )) {inputfile_t2p = TFile::Open(inputfilename_t2p);     dir_t2p=NULL;  }
@@ -2452,6 +2453,8 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       histos_systematics[systematics_list.at(i).name] = NULL;
     }
     
+    TString name_file_for2events_decision;
+
     TH1F *histo_bias_purefitbias = histos_systematics.at("purefitbias");
     TH1F *histo_bias_templatestatistics = histos_systematics.at("templatestatistics");
     TH1F *histo_bias_templateshapeMCpromptdrivenEB = histos_systematics.at("templateshapeMCpromptdrivenEB");
@@ -2480,6 +2483,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       }
       TFile *file_bias_templateshape2frag = new TFile(Form("plots/histo_bias_templateshape2frag_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
       file_bias_templateshape2frag->GetObject("histo_bias_templateshape2frag",histo_bias_templateshape2frag);
+      name_file_for2events_decision = "outphoton_data_standard.root";
     }
     else {
       for (std::map<TString,TH1F*>::iterator it = histos_systematics.begin(); it!=histos_systematics.end(); it++){
@@ -2525,7 +2529,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics) ? fabs(histo_bias_templateshape2frag->GetBinContent(bin+1)-1) : 0);
 	}
 	else if (syst.name=="noise_mixing"){
-	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,get_noise_systematic(diffvariable,splitting,bin));
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,get_noise_systematic(name_file_for2events_decision.Data(),diffvariable,splitting,bin));
 	}
 	else if (syst.name=="zee"){
 	  // TO BE FIXED: THIS IS AN UNCERTAINTY!!!
@@ -4319,20 +4323,21 @@ float find_repetition_eventsintemplates(RooDataSet *dset, int axis){
 
 };
 
-bool is_2events_bin(TString diffvariable, TString splitting, int bin){
+bool is_2events_bin(TString filename, TString diffvariable, TString splitting, int bin){
 
-  splitting=""; // AVOID ANNOYING WARNING AT COMPILE
+  TFile *f = new TFile(filename.Data());
+  TH1F *hist = NULL;
+  f->GetObject(Form("roofit/obs_roodset_%s_%s_b%d_discr_for2events_dR",splitting.Data(),diffvariable.Data(),bin),hist);
+  assert(hist);
 
-  if ( (diffvariable=="invmass" && bin<=1)	    \
-       || (diffvariable=="diphotonpt" && bin>=14)   \
-       || (diffvariable=="dphi" && bin<=1) ) return true;
+  if (hist->GetBinContent(1)/hist->Integral()>threshold_for_using_2events) return true;
   else return false;
 
 }
 
-float get_noise_systematic(TString diffvariable, TString splitting, int bin){
+float get_noise_systematic(TString filename, TString diffvariable, TString splitting, int bin){
 
-  if (!is_2events_bin(diffvariable,splitting,bin)) return 0;
+  if (!is_2events_bin(filename,diffvariable,splitting,bin)) return 0;
 
   if (splitting=="EBEB") return 0.03;
   else if (splitting=="EBEE") return 0.05;

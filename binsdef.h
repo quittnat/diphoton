@@ -279,5 +279,6 @@ source_systematic_struct __systematics__[]={
 std::vector<source_systematic_struct> systematics_list (__systematics__, __systematics__ + sizeof(__systematics__) / sizeof(source_systematic_struct) );
 
 const float intlumi = 5.044;
+const float threshold_for_using_2events = 0.1;
 
 #endif

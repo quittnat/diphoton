@@ -640,6 +640,7 @@ void template_production::Loop(int maxevents)
 	if (bin_couple<0) continue;
 	
 	obs_roodset[get_name_obs_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple)]->Fill();
+	discriminator_for2events_dR[get_name_obs_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple)]->Fill((*(roovardiff["dR"])>1.0),weight);
 
 	if (donewtemplates) {
 
