@@ -60,6 +60,9 @@ bool dolightcomparisonwithstandardselbkg = false;
 #include "TLegend.h"
 #include "TSystem.h"
 
+#include "RooUnfold-1.1.1/src/RooUnfold.h"
+#include "RooUnfold-1.1.1/src/RooUnfoldBayes.h"
+
 TRandom3 *_random_generator = new TRandom3(0);
 
 using namespace std;
@@ -84,7 +87,6 @@ typedef struct {
   float fp_err;
   float ff;
   float ff_err;
-  float eff_overflow_removal_pp;
   RooAbsPdf *pdf_forgen[8];
   float fsig1_firstpass;
   float fsig2_firstpass;
@@ -124,6 +126,7 @@ float find_repetition_eventsintemplates(RooDataSet *dset, int axis);
 bool is_2events_bin(TString diffvariable, TString splitting, int bin);
 float get_noise_systematic(TString diffvariable, TString splitting, int bin);
 void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet* &roodset);
+float get_ttree_sumofweights(TDirectoryFile *f, TString treename);
 TH1F* AddTHInQuadrature(std::vector<TH1F*> vector, TString name);
 
 RooRealVar *roovar1=NULL;
@@ -178,7 +181,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   else if (splitting=="EBEE") {s1="EB"; s2="EE";}
   bool sym  = (s1==s2);
 
-  int bins_to_run = diffvariables_nbins_list(diffvariable);
+  int bins_to_run = diffvariables_nbins_list(diffvariable)-1;
   float *binsdef = diffvariables_binsdef_list(diffvariable);
 
   if (bins_to_run==bin) bins_to_run=-1;
@@ -367,8 +370,8 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   dataset_orig->Print();
   dataset->Print();
   const float eff_overflow_removal = dataset_sigsig->sumEntries()/dataset_sigsig_orig->sumEntries();
-  std::cout << "TO BE DONE BETTER AFTER REWEIGHTING: Efficiency of overflow removal: " << eff_overflow_removal << std::endl;
-  //  assert (eff_overflow_removal>0.995);
+  std::cout << "CHECK THAT THIS NUMBER IS VERY CLOSE TO 1!!! Efficiency of overflow removal: " << eff_overflow_removal << std::endl;
+  assert (eff_overflow_removal>0.99);
 
 
   RooDataSet *dataset_sig_axis1 = (RooDataSet*)(dataset_sigsig->reduce(Name("dataset_sig_axis1"),SelectVars(RooArgList(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma))));
@@ -886,7 +889,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
 
   }
 
-  bool islowstatcat = false;
+  bool islowstatcat = true;
   if (splitting=="EEEE") islowstatcat=true;
   if (diffvariable=="costhetastar" && splitting=="EEEE" && bin==1) islowstatcat=true;
   if (diffvariable=="costhetastar" && splitting=="EEEE" && bin>=4) islowstatcat=true;
@@ -1314,7 +1317,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     out->fp_err=0;
     out->ff=0;
     out->ff_err=0;
-    out->eff_overflow_removal_pp=eff_overflow_removal;
     out->chi2=0;
     out->ndof=0;
     out->probchi2=0;
@@ -1549,7 +1551,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     out->ff=fbkgbkg->getVal();
     out->ff_err=fbkgbkg->getPropagatedError(*secondpass);
 
-    std::cout << "RAW YIELD " << out->pp*out->tot_events/out->eff_overflow_removal_pp << std::endl;
+    std::cout << "RAW YIELD " << out->pp*out->tot_events << std::endl;
 
     bool dochi2=false;
 
@@ -2223,9 +2225,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     TH1F *fitpull_histo;
     if (bins_to_run>0) {eventshisto = new TH1F("eventshisto","eventshisto",bins_to_run,binsdef); redchi2 = new TH1F("redchi2","redchi2",bins_to_run,binsdef); probchi2 = new TH1F("probchi2","probchi2",bins_to_run,binsdef);}
     else {eventshisto = new TH1F("eventshisto","eventshisto",n_bins,0,n_bins); redchi2 = new TH1F("redchi2","redchi2",n_bins,0,n_bins); probchi2 = new TH1F("probchi2","probchi2",n_bins,0,n_bins);}
-    TH1F *overflowremovaleffhisto;
-    if (bins_to_run>0) overflowremovaleffhisto = new TH1F("overflowremovaleffhisto","overflowremovaleffhisto",bins_to_run,binsdef);
-    else overflowremovaleffhisto = new TH1F("overflowremovaleffhisto","overflowremovaleffhisto",n_bins,0,n_bins);
     fitpull = new TH1F("fitpull","fitpull",100,0,100);
     fitpull_histo = new TH1F("fitpull_histo","fitpull_histo",25,-5,5);
 
@@ -2269,7 +2268,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     probchi2->SetBinContent((bin!=n_bins) ? bin+1 : 1, out->probchi2);
     for (int i=0; i<n_templatebins*n_templatebins; i++) fitpull->SetBinContent(i+1,out->fitpulls[i]);
     for (int i=0; i<n_templatebins*n_templatebins; i++) if (!(out->lowstatbin[i])) fitpull_histo->Fill(out->fitpulls[i]);
-    overflowremovaleffhisto->SetBinContent((bin!=n_bins) ? bin+1 : 1,out->eff_overflow_removal_pp);
 
     std::cout << "Output histos filled" << std::endl;
 
@@ -2280,7 +2278,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     purityfile->cd();
     for (int i=0; i<6; i++) purity[i]->Write();
     eventshisto->Write();
-    overflowremovaleffhisto->Write();
     redchi2->Write();
     probchi2->Write();
     fitpull->Write();
@@ -2299,7 +2296,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
 
 void fit_dataset_allbins(TString diffvariable="", TString splitting="", TString do_syst_string=TString("")){
 
-  int bins_to_run = diffvariables_nbins_list(diffvariable);
+  int bins_to_run = diffvariables_nbins_list(diffvariable)-1;
   //float *binsdef = diffvariables_binsdef_list(diffvariable);
 
   fit_output *fr[n_bins];
@@ -2310,345 +2307,374 @@ void fit_dataset_allbins(TString diffvariable="", TString splitting="", TString 
 
 };
 
+TH1F* run_unfolding(RooUnfoldResponse *resp, TH1F *folded, int niterations = 4){
+  RooUnfoldBayes *unfmethod = new RooUnfoldBayes(resp,folded,niterations);
+  TH1F *unfolded = (TH1F*)(unfmethod->Hreco()); // CHECK ERROR TREATMENT ARGUMENT 
+  delete unfmethod;
+  return unfolded;
+};
+
+void SetFormat(TH1F *h, int color=kBlack, int markerstyle=20, int linestyle=1, int linewidth=2){
+  h->SetLineColor(color);
+  h->SetMarkerColor(color);
+  h->SetMarkerStyle(markerstyle);
+  h->SetLineStyle(linestyle);
+  h->SetLineWidth(linewidth);
+};
 
 void post_process(TString diffvariable="", TString splitting="", bool skipsystematics=false){
 
-  const float intlumi=5.044;
-
-  TH1F *xsec;
-  TH1F *xsec_withsyst;
-  TH1F *xsec_ngammagammayield = NULL;
-
-  TH1F *fitpull_histo = NULL;
-
-  TH1F *systplot_purefitbias=NULL;
-  TH1F *systplot_templatestatistics=NULL;
-  TH1F *systplot_templateshapeMCpromptdrivenEB=NULL;
-  TH1F *systplot_templateshapeMCfakedrivenEB=NULL;
-  TH1F *systplot_templateshapeMCpromptdrivenEE=NULL;
-  TH1F *systplot_templateshapeMCfakedrivenEE=NULL;
-  TH1F *systplot_templateshape2frag=NULL;
-  TH1F *systplot_noise=NULL;
-  TH1F *systplot_zee=NULL;
-  TH1F *systplot_tot=NULL;
-  TH1F *systplot_efficiency=NULL;
-  TH1F *systplot_unfolding=NULL;
-  TH1F *systplot_totfinal=NULL;
-
-  TH1F *systplot_uncorrelated=NULL;
-  TH1F *systplot_1catcorrelated=NULL;
-  TH1F *systplot_allcatcorrelated=NULL;
-
-  TH1F *systplot_statistic=NULL;
-
-  int bins_to_run = diffvariables_nbins_list(diffvariable);
+  int bins_to_run = diffvariables_nbins_list(diffvariable)-1;
   float *binsdef = diffvariables_binsdef_list(diffvariable);
-
-  if (splitting=="inclusive"){
-    TString sp[3]={"EBEB","EBEE","EEEE"};
-    TFile *axsec_file[3];
-    TH1F *axsec[3];
-    TH1F *axsec_withsyst[3];
-    TH1F *axsec_ngammagammayield[3];
-    TH1F *axsec_fitpull_histo[3];
-    for (int i=0; i<3; i++) {
-      axsec_file[i] = new TFile(Form("plots/histo_xsec_%s_%s.root", diffvariable.Data(),sp[i].Data()));
-      axsec_file[i]->GetObject("xsec",axsec[i]);
-      axsec_file[i]->GetObject("xsec_withsyst",axsec_withsyst[i]);
-      axsec_file[i]->GetObject("xsec_ngammagammayield",axsec_ngammagammayield[i]);
-      axsec_file[i]->GetObject("fitpull_histo",axsec_fitpull_histo[i]);
-    }
-    for (int i=1; i<3; i++) {
-      axsec[0]->Add(axsec[i]);
-      axsec_withsyst[0]->Add(axsec_withsyst[i]);
-      axsec_ngammagammayield[0]->Add(axsec_ngammagammayield[i]);
-      axsec_fitpull_histo[0]->Add(axsec_fitpull_histo[i]);
-    }
-    xsec=axsec[0];
-    xsec_withsyst=axsec_withsyst[0];
-    xsec_ngammagammayield=axsec_ngammagammayield[0];
-    fitpull_histo=axsec_fitpull_histo[0];
-  }
-
-  else {
-
-  bool sym = false;
   
+  //--- init
+  bool sym = false;
   TString s1; TString s2;
   if (splitting=="EBEB") {s1="EB"; s2="EB";}
   else if (splitting=="EEEE") {s1="EE"; s2="EE";}
   else if (splitting=="EBEE") {s1="EB"; s2="EE";}
-  sym  = (s1==s2);
-  
-
+  sym  = (s1==s2) || (splitting=="inclusive");
   TH1F::SetDefaultSumw2(kTRUE);
-  
-  //  fit_output *fr[n_bins];
-
-  TH1F *purity[4];
-  TH1F *eventshisto;
-  TH1F *overflowremovaleffhisto;
-
-  TH1F *eff=NULL;
-  {
-    TFile *eff_file = new TFile("plots/Efficiency_WithSysErr.root");
-    std::map<TString,TString> translation;
-    translation.insert(std::pair<TString,TString>(TString("invmass"),TString("mgg")));
-    translation.insert(std::pair<TString,TString>(TString("diphotonpt"),TString("qtgg")));
-    translation.insert(std::pair<TString,TString>(TString("costhetastar"),TString("costhetastar")));
-    translation.insert(std::pair<TString,TString>(TString("dphi"),TString("deltaphi")));
-    translation.insert(std::pair<TString,TString>(TString("dR"),TString("dR")));
-    eff_file->GetObject(Form("h_%s_%s_WithTotErr",translation[diffvariable].Data(),splitting.Data()),eff);
-  }
-  assert (eff!=NULL);
-
-//  TH1F *eff=NULL;
-//  TFile *eff_file = new TFile("efficiencies.root");
-//  eff_file->GetObject(Form("w_eff_gg_%s_%s",splitting.Data(),diffvariable.Data()),eff);
-//  assert (eff!=NULL);
-//  eff->GetYaxis()->SetTitle("selection/ID efficiency");
-//  eff->GetXaxis()->SetTitle(diffvariable.Data());
 
 
-  TH1F *unfoldunc = NULL;
+  // objects for plots, to be filled
+  TH1F *xsec_centralvalue = NULL;
+  TH1F *xsec_centralvalue_cat[3] = {NULL,NULL,NULL};
+  TH1F *ngg_centralvalue = NULL;
+  std::map<TString,TH1F*> systplots;
+  TH1F *xsec_centralvalue_raw = NULL;
+  TH1F *ngg_centralvalue_raw = NULL;
+  TH1F *purity[4] = {NULL,NULL,NULL,NULL};
 
-  if (!skipsystematics){
-    std::map<TString,TString> translation2;
-    translation2.insert(std::pair<TString,TString>(TString("invmass"),TString("mgg")));
-    translation2.insert(std::pair<TString,TString>(TString("diphotonpt"),TString("pt")));
-    translation2.insert(std::pair<TString,TString>(TString("costhetastar"),TString("costt")));
-    translation2.insert(std::pair<TString,TString>(TString("dphi"),TString("phi")));
-    translation2.insert(std::pair<TString,TString>(TString("dR"),TString("dR")));
-    TFile *unfoldunc_file = new TFile("plots/Unfolding_SysErr.root");
-    TString unfoldunc_name = Form("Unfolding_RelativeSysErr_%s_%s",translation2[diffvariable].Data(),splitting.Data());
-    unfoldunc_file->GetObject(unfoldunc_name.Data(),unfoldunc);
-    assert (unfoldunc!=NULL);
-  }
+  std::map<TString,source_systematic_struct> map_systematics_list;
+  for (size_t i = 0; i<systematics_list.size(); i++) map_systematics_list[systematics_list.at(i).name] = systematics_list.at(i);
 
+  if (splitting!="inclusive") { // start splitting!="inclusive"
 
-  TFile *purity_file = new TFile(Form("plots/histo_purity_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
-  purity_file->GetObject("purity_sigsig",purity[0]);
-  purity_file->GetObject("purity_sigbkg",purity[1]);
-  purity_file->GetObject("purity_bkgsig",purity[2]);
-  purity_file->GetObject("purity_bkgbkg",purity[3]);
-  purity_file->GetObject("eventshisto",eventshisto);
-  purity_file->GetObject("overflowremovaleffhisto",overflowremovaleffhisto);
-  purity_file->GetObject("fitpull_histo",fitpull_histo);
+    //--- construct {xsec,ngg}_centralvalue_raw with stat uncertainty only
 
-  std::cout << "Purity histos imported" << std::endl;
-  for (int i=0; i<4; i++) purity[i]->Print(); eventshisto->Print(); overflowremovaleffhisto->Print(); 
+    xsec_centralvalue_raw = new TH1F("xsec_centralvalue_raw","",bins_to_run,binsdef);
+    xsec_centralvalue_raw->GetXaxis()->SetTitle(get_unit(diffvariable));
 
-  TH1F *histo_bias_purefitbias = NULL;
-  TH1F *histo_bias_templatestatistics = NULL;
-  TFile *file_standardsel_dy = NULL;
-  TFile *file_pixelrevsel_dy_data = NULL;
-  TFile *file_pixelrevsel_dy_mc = NULL;
+    ngg_centralvalue_raw = (TH1F*)(xsec_centralvalue_raw->Clone("ngg_centralvalue_raw"));
+    TH1F *purity_fit_staterr = (TH1F*)(xsec_centralvalue_raw->Clone("purity_fit_staterr"));
 
-  TH1F *histo_bias_templateshapeMCpromptdrivenEB = NULL;
-  TH1F *histo_bias_templateshapeMCfakedrivenEB = NULL;
-  TH1F *histo_bias_templateshapeMCpromptdrivenEE = NULL;
-  TH1F *histo_bias_templateshapeMCfakedrivenEE = NULL;
-  TH1F *histo_bias_templateshape2frag = NULL;
-
-  bool skipZsubtraction = skipsystematics;
-
-  //  skipZsubtraction = false; // for debug
-
-  if (!skipZsubtraction){
-    file_standardsel_dy = new TFile("outphoton_dy_standard.root");
-    assert(file_standardsel_dy);
-    file_pixelrevsel_dy_data = new TFile("outphoton_data_pixelrev.root");
-    assert(file_pixelrevsel_dy_data);
-    file_pixelrevsel_dy_mc = new TFile("outphoton_dy_pixelrev.root");
-    assert(file_pixelrevsel_dy_mc);    
-  }
-
-  if (!skipsystematics){
-    TFile *file_bias_purefitbias  = new TFile(Form("plots/histo_bias_purefitbias_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
-    file_bias_purefitbias->GetObject("histo_bias_purefitbias",histo_bias_purefitbias);
-    assert(histo_bias_purefitbias);
-    TFile *file_bias_templatestatistics  = new TFile(Form("plots/histo_bias_templatestatistics_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
-    file_bias_templatestatistics->GetObject("histo_bias_templatestatistics",histo_bias_templatestatistics);
-    assert(histo_bias_templatestatistics);
-    if (splitting!="EEEE"){
-    TFile *file_bias_templateshapepromptEB = new TFile(Form("plots/histo_bias_templateshapeMCpromptdrivenEB_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
-    file_bias_templateshapepromptEB->GetObject("histo_bias_templateshapeMCpromptdrivenEB",histo_bias_templateshapeMCpromptdrivenEB);
-    TFile *file_bias_templateshapefakeEB = new TFile(Form("plots/histo_bias_templateshapeMCfakedrivenEB_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
-    file_bias_templateshapefakeEB->GetObject("histo_bias_templateshapeMCfakedrivenEB",histo_bias_templateshapeMCfakedrivenEB);
-    }
-    if (splitting!="EBEB"){
-    TFile *file_bias_templateshapepromptEE = new TFile(Form("plots/histo_bias_templateshapeMCpromptdrivenEE_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
-    file_bias_templateshapepromptEE->GetObject("histo_bias_templateshapeMCpromptdrivenEE",histo_bias_templateshapeMCpromptdrivenEE);
-    TFile *file_bias_templateshapefakeEE = new TFile(Form("plots/histo_bias_templateshapeMCfakedrivenEE_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
-    file_bias_templateshapefakeEE->GetObject("histo_bias_templateshapeMCfakedrivenEE",histo_bias_templateshapeMCfakedrivenEE);
-    }
-    TFile *file_bias_templateshape2frag = new TFile(Form("plots/histo_bias_templateshape2frag_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
-    file_bias_templateshape2frag->GetObject("histo_bias_templateshape2frag",histo_bias_templateshape2frag);
-  }
-  
-    xsec = new TH1F("xsec","xsec",bins_to_run,binsdef);
-    xsec->SetMarkerStyle(20);
-    xsec->SetMarkerColor(kBlack);
-    xsec->SetLineColor(kBlack);
-    xsec->SetLineWidth(2);
-
-  
-    //    xsec->GetYaxis()->SetTitle("");
-    //    xsec->GetXaxis()->SetTitle(diffvariables_names_list(diffvariable).Data());
     {
-      TString unit = diffvariables_units_list(diffvariable);
-      xsec->GetXaxis()->SetTitle(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data()));
+
+    // import histos
+    TH1F *eventshisto;
+    TH1F *fitpull_histo;
+    TFile *purity_file = new TFile(Form("plots/histo_purity_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
+    purity_file->GetObject("purity_sigsig",purity[0]);
+    purity_file->GetObject("purity_sigbkg",purity[1]);
+    purity_file->GetObject("purity_bkgsig",purity[2]);
+    purity_file->GetObject("purity_bkgbkg",purity[3]);
+    purity_file->GetObject("eventshisto",eventshisto);
+    purity_file->GetObject("fitpull_histo",fitpull_histo);
+    std::cout << "Purity histos imported" << std::endl;
+    for (int i=0; i<4; i++) purity[i]->Print(); eventshisto->Print();
+
+
+    TH1F *histo_zee_subtraction= (TH1F*)(eventshisto->Clone(Form("histo_zee_subtraction_%s_%s",diffvariable.Data(),splitting.Data())));
+    histo_zee_subtraction->Reset();
+    TFile *file_zee_subtraction = NULL;
+    const bool do_zee_subtraction = true;
+    if (do_zee_subtraction){
+      file_zee_subtraction = new TFile("effunf.root");
+      TH1F *hist = NULL;
+      file_zee_subtraction->GetObject(Form("effunf/histo_zee_yieldtosubtract_%s_%s",diffvariable.Data(),splitting.Data()),hist);
+      for (int bin=0; bin<bins_to_run; bin++){
+	histo_zee_subtraction->SetBinContent(bin+1,hist->GetBinContent(bin+1)*intlumi); // event counts are normalized to 1/fb by default
+	histo_zee_subtraction->SetBinError(bin+1,0); // TO BE FIXED
+      }      
     }
 
-    xsec_withsyst = (TH1F*)(xsec->Clone("xsec_withsyst"));
-    xsec_withsyst->SetLineColor(kRed);
+    cout << "Integral of subtraction: " << histo_zee_subtraction->Integral() << " ev. = xsec " << histo_zee_subtraction->Integral()/intlumi/1e3 << " pb" << endl;
 
-    xsec_ngammagammayield = (TH1F*)(xsec->Clone("xsec_ngammagammayield"));
-    xsec_ngammagammayield->SetMarkerColor(kGreen+2);
-    xsec_ngammagammayield->SetLineColor(kGreen+2);
+    // prepare central value raw yield
+    for (int bin=0; bin<bins_to_run; bin++) {
+      float pp = 	       purity[0]->GetBinContent(bin+1);
+      float pp_err =           purity[0]->GetBinError(bin+1);
+      //    float pf = 	       purity[1]->GetBinContent(bin+1);
+      //    float pf_err =     purity[1]->GetBinError(bin+1);
+      //    float fp = 	       purity[2]->GetBinContent(bin+1);
+      //    float fp_err =     purity[2]->GetBinError(bin+1);
+      //    float ff = 	       purity[3]->GetBinContent(bin+1);
+      //    float ff_err =     purity[3]->GetBinError(bin+1);
+      float tot_events = eventshisto->GetBinContent(bin+1);
 
-    float uncertainty_scalefactor_Zee_PIXEL=2*0.025; // molt per 2 perche' due leg
-    map<TString,pair<float,float> > syst_purity_dy;
-    syst_purity_dy.insert(pair<TString,pair<float,float> >("EBEB",pair<float,float>(8.6542e-01,sqrt(pow(4.51e-02,2)+pow(uncertainty_scalefactor_Zee_PIXEL,2)))));
-    syst_purity_dy.insert(pair<TString,pair<float,float> >("EBEE",pair<float,float>(7.9537e-01,sqrt(pow(8.22e-02,2)+pow(uncertainty_scalefactor_Zee_PIXEL,2)))));
-    syst_purity_dy.insert(pair<TString,pair<float,float> >("EEEE",pair<float,float>(8.5493e-01,sqrt(pow(7.29e-02,2)+pow(uncertainty_scalefactor_Zee_PIXEL,2)))));
+      ngg_centralvalue_raw->SetBinContent(bin+1,pp*tot_events);
+      purity_fit_staterr->SetBinContent(bin+1,pp_err/pp);
+
+      float errpoiss=1.0/sqrt(tot_events);
+      float err=sqrt(pow(pp_err/pp,2)+pow(errpoiss,2));
+
+      ngg_centralvalue_raw->SetBinError(bin+1,err*ngg_centralvalue_raw->GetBinContent(bin+1));
+
+    }
+    
+    ngg_centralvalue_raw->Add(histo_zee_subtraction,-1);
+    
+    for (int bin=0; bin<bins_to_run; bin++) {
+      xsec_centralvalue_raw->SetBinContent(bin+1,ngg_centralvalue_raw->GetBinContent(bin+1)/intlumi/xsec_centralvalue_raw->GetBinWidth(bin+1));      
+      xsec_centralvalue_raw->SetBinError(bin+1,xsec_centralvalue_raw->GetBinContent(bin+1)/ngg_centralvalue_raw->GetBinContent(bin+1)*ngg_centralvalue_raw->GetBinError(bin+1));
+    }
+    
+    
+    }
 
 
+    RooUnfoldResponse *responsematrix_centralvalue=NULL;
+    { //--- construct central response matrix
+      TFile *effunf_file = new TFile("effunf.root");
+      effunf_file->GetObject(Form("effunf/responsematrix_effunf_%s_%s",splitting.Data(),diffvariable.Data()),responsematrix_centralvalue);
+      cout << Form("responsematrix_effunf_%s_%s",splitting.Data(),diffvariable.Data()) << endl;
+      assert (responsematrix_centralvalue!=NULL);
+    }
+
+    //--- do central value
+    
+    xsec_centralvalue = (TH1F*)(xsec_centralvalue_raw->Clone("xsec_centralvalue")); xsec_centralvalue->Reset();
+    ngg_centralvalue = (TH1F*)(ngg_centralvalue_raw->Clone("ngg_centralvalue")); ngg_centralvalue->Reset();
+    {
+      TH1F *unfolded = run_unfolding(responsematrix_centralvalue,ngg_centralvalue_raw);
+      for (int bin=0; bin<bins_to_run; bin++) ngg_centralvalue->SetBinContent(bin+1,unfolded->GetBinContent(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) ngg_centralvalue->SetBinError(bin+1,unfolded->GetBinError(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) xsec_centralvalue->SetBinContent(bin+1,ngg_centralvalue->GetBinContent(bin+1)/intlumi/xsec_centralvalue->GetBinWidth(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) xsec_centralvalue->SetBinError(bin+1,ngg_centralvalue->GetBinError(bin+1)/ngg_centralvalue->GetBinContent(bin+1)*xsec_centralvalue->GetBinContent(bin+1));
+    }
+
+
+    // prepare histos for systematics
+
+    std::map<TString,TH1F*> histos_systematics;
+    for (size_t i = 0; i<systematics_list.size(); i++){
+      histos_systematics[systematics_list.at(i).name] = NULL;
+    }
+    
+    TH1F *histo_bias_purefitbias = histos_systematics.at("purefitbias");
+    TH1F *histo_bias_templatestatistics = histos_systematics.at("templatestatistics");
+    TH1F *histo_bias_templateshapeMCpromptdrivenEB = histos_systematics.at("templateshapeMCpromptdrivenEB");
+    TH1F *histo_bias_templateshapeMCfakedrivenEB =   histos_systematics.at("templateshapeMCfakedrivenEB");
+    TH1F *histo_bias_templateshapeMCpromptdrivenEE = histos_systematics.at("templateshapeMCpromptdrivenEE");
+    TH1F *histo_bias_templateshapeMCfakedrivenEE =   histos_systematics.at("templateshapeMCfakedrivenEE");
+    TH1F *histo_bias_templateshape2frag = histos_systematics.at("templateshape2frag");
     if (!skipsystematics){
-      TH1F *systplot = NULL;
-      systplot = new TH1F("systplot","Systematic uncertainties",bins_to_run,binsdef);
+      TFile *file_bias_purefitbias  = new TFile(Form("plots/histo_bias_purefitbias_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
+      file_bias_purefitbias->GetObject("histo_bias_purefitbias",histo_bias_purefitbias);
+      assert(histo_bias_purefitbias);
+      TFile *file_bias_templatestatistics  = new TFile(Form("plots/histo_bias_templatestatistics_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
+      file_bias_templatestatistics->GetObject("histo_bias_templatestatistics",histo_bias_templatestatistics);
+      assert(histo_bias_templatestatistics);
+      if (splitting!="EEEE"){
+	TFile *file_bias_templateshapepromptEB = new TFile(Form("plots/histo_bias_templateshapeMCpromptdrivenEB_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
+	file_bias_templateshapepromptEB->GetObject("histo_bias_templateshapeMCpromptdrivenEB",histo_bias_templateshapeMCpromptdrivenEB);
+	TFile *file_bias_templateshapefakeEB = new TFile(Form("plots/histo_bias_templateshapeMCfakedrivenEB_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
+	file_bias_templateshapefakeEB->GetObject("histo_bias_templateshapeMCfakedrivenEB",histo_bias_templateshapeMCfakedrivenEB);
+      }
+      if (splitting!="EBEB"){
+	TFile *file_bias_templateshapepromptEE = new TFile(Form("plots/histo_bias_templateshapeMCpromptdrivenEE_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
+	file_bias_templateshapepromptEE->GetObject("histo_bias_templateshapeMCpromptdrivenEE",histo_bias_templateshapeMCpromptdrivenEE);
+	TFile *file_bias_templateshapefakeEE = new TFile(Form("plots/histo_bias_templateshapeMCfakedrivenEE_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
+	file_bias_templateshapefakeEE->GetObject("histo_bias_templateshapeMCfakedrivenEE",histo_bias_templateshapeMCfakedrivenEE);
+      }
+      TFile *file_bias_templateshape2frag = new TFile(Form("plots/histo_bias_templateshape2frag_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
+      file_bias_templateshape2frag->GetObject("histo_bias_templateshape2frag",histo_bias_templateshape2frag);
+    }
+    else {
+      for (std::map<TString,TH1F*>::iterator it = histos_systematics.begin(); it!=histos_systematics.end(); it++){
+	it->second = (TH1F*)(xsec_centralvalue_raw->Clone(Form("syst_%s",it->first.Data())));
+	it->second->Reset();
+      }
+    }
+
+
+    std::map<TString,TH1F*> ngg_syst_histos;
+    std::map<TString,TH1F*> xsec_syst_histos;
+
+    for (size_t k=0; k<systematics_list.size(); k++){
+
+      source_systematic_struct syst = systematics_list.at(k);
+
+      if (syst.is_on_raw) {   // do systematics on raw yield
+
+      TH1F *histo_syst = (TH1F*)(ngg_centralvalue_raw->Clone(Form("histo_syst_%s",syst.name.Data())));
+
+      if (skipsystematics) histo_syst->Reset();
+      else {
+
+	if (syst.name=="purefitbias"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,purity_fit_staterr->GetBinContent(bin+1)*histo_bias_purefitbias->GetBinContent(bin+1));
+	}
+	else if (syst.name=="templatestatistics"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_bias_templatestatistics->GetBinContent(bin+1));
+	}
+	else if (syst.name=="templateshapeMCpromptdrivenEB"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics && splitting!="EEEE") ? fabs(histo_bias_templateshapeMCpromptdrivenEB->GetBinContent(bin+1)-1) : 0);
+	}
+	else if (syst.name=="templateshapeMCfakedrivenEB"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics && splitting!="EEEE") ? fabs(histo_bias_templateshapeMCfakedrivenEB->GetBinContent(bin+1)-1) : 0);
+	}
+	else if (syst.name=="templateshapeMCpromptdrivenEE"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics && splitting!="EBEB") ? fabs(histo_bias_templateshapeMCpromptdrivenEE->GetBinContent(bin+1)-1) : 0);
+	}
+	else if (syst.name=="templateshapeMCfakedrivenEE"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics && splitting!="EBEB") ? fabs(histo_bias_templateshapeMCfakedrivenEE->GetBinContent(bin+1)-1) : 0);
+	}
+	else if (syst.name=="templateshape2frag"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,(!skipsystematics) ? fabs(histo_bias_templateshape2frag->GetBinContent(bin+1)-1) : 0);
+	}
+	else if (syst.name=="noise_mixing"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,get_noise_systematic(diffvariable,splitting,bin));
+	}
+	else if (syst.name=="zee"){
+	  // TO BE FIXED: THIS IS AN UNCERTAINTY!!!
+	  //	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_zee_subtraction->GetBinContent(bin+1));
+	}
+	else {
+	  assert(false);
+	}
+
+      }
+
+      TH1F *ngg_syst_raw = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_raw_%s",syst.name.Data())));
+      {
+	TH1F *temp = (TH1F*)(histo_syst->Clone("temp"));
+	for (int bin=0; bin<bins_to_run; bin++) {temp->SetBinContent(bin+1,temp->GetBinContent(bin+1)+1); temp->SetBinError(bin+1,0);}
+	ngg_syst_raw->Multiply(ngg_syst_raw,temp);
+	delete temp;
+      }
+
+      ngg_syst_histos[syst.name] = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_%s",syst.name.Data())));
+      TH1F *ngg_syst = ngg_syst_histos.at(syst.name);
+      xsec_syst_histos[syst.name] = (TH1F*)(xsec_centralvalue_raw->Clone(Form("xsec_syst_%s",syst.name.Data())));
+      TH1F *xsec_syst = xsec_syst_histos.at(syst.name);
+      ngg_syst->Reset();
+      xsec_syst->Reset();
+      {
+	TH1F *unfolded = run_unfolding(responsematrix_centralvalue,ngg_syst_raw);
+	for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinContent(bin+1,unfolded->GetBinContent(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinError(bin+1,unfolded->GetBinError(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinContent(bin+1,ngg_syst->GetBinContent(bin+1)/intlumi/xsec_syst->GetBinWidth(bin+1));
+	for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinError(bin+1,ngg_syst->GetBinError(bin+1)/ngg_syst->GetBinContent(bin+1)*xsec_syst->GetBinContent(bin+1));
+      }
+
+      systplots[syst.name] = (TH1F*)(ngg_syst->Clone(Form("systplot_%s",syst.name.Data())));
+      TH1F *systplot_syst = systplots.at(syst.name);
+      systplot_syst->Divide(systplot_syst,ngg_centralvalue);
+      for (int bin=0; bin<bins_to_run; bin++) {systplot_syst->SetBinContent(bin+1,systplot_syst->GetBinContent(bin+1)-1); systplot_syst->SetBinError(bin+1,0);}
+
+      }
+     
+      else if (syst.is_on_effunf) {   // do systematics on response matrix
+
+      ngg_syst_histos[syst.name] = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_%s",syst.name.Data())));
+      TH1F *ngg_syst = ngg_syst_histos.at(syst.name);
+      xsec_syst_histos[syst.name] = (TH1F*)(xsec_centralvalue_raw->Clone(Form("xsec_syst_%s",syst.name.Data())));
+      TH1F *xsec_syst = xsec_syst_histos.at(syst.name);
+      ngg_syst->Reset();
+      xsec_syst->Reset();
+
+      TH1F *unfolded = NULL;
+      if (skipsystematics) unfolded = (TH1F*)(ngg_centralvalue->Clone("unfolded"));
+      else {
+	RooUnfoldResponse *responsematrix_syst=NULL;
+	TFile *effunf_file = new TFile("effunf.root");
+	effunf_file->GetObject(Form("effunf_syst_%s/responsematrix_effunf_%s_%s",syst.name.Data(),splitting.Data(),diffvariable.Data()),responsematrix_syst);
+	assert (responsematrix_syst!=NULL);
+	unfolded = run_unfolding(responsematrix_syst,ngg_centralvalue_raw);
+      }
+
+      for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinContent(bin+1,unfolded->GetBinContent(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) ngg_syst->SetBinError(bin+1,unfolded->GetBinError(bin+1));
+      delete unfolded;
+      for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinContent(bin+1,ngg_syst->GetBinContent(bin+1)/intlumi/xsec_syst->GetBinWidth(bin+1));
+      for (int bin=0; bin<bins_to_run; bin++) xsec_syst->SetBinError(bin+1,ngg_syst->GetBinError(bin+1)/ngg_syst->GetBinContent(bin+1)*xsec_syst->GetBinContent(bin+1));
+
+      systplots[syst.name] = (TH1F*)(ngg_syst->Clone(Form("systplot_%s",syst.name.Data())));
+      TH1F *systplot_syst = systplots.at(syst.name);
+      systplot_syst->Divide(ngg_centralvalue);
+      for (int bin=0; bin<bins_to_run; bin++) {systplot_syst->SetBinContent(bin+1,systplot_syst->GetBinContent(bin+1)-1); systplot_syst->SetBinError(bin+1,0);}
+
+      }
+
+      // format systplot
+      TH1F *systplot = systplots.at(syst.name);
       systplot->SetLineStyle(kDashed);
       systplot->SetLineWidth(2);
-      {
-	TString unit = diffvariables_units_list(diffvariable);
-	systplot->GetXaxis()->SetTitle(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data()));
-      }
-      systplot_purefitbias=(TH1F*)(systplot->Clone("systplot_purefitbias"));
-      systplot_templatestatistics=(TH1F*)(systplot->Clone("systplot_templatestatistics"));
-      systplot_templateshapeMCpromptdrivenEB=(TH1F*)(systplot->Clone("systplot_templateshapeMCpromptdrivenEB"));
-      systplot_templateshapeMCfakedrivenEB=(TH1F*)(systplot->Clone("systplot_templateshapeMCfakedrivenEB"));
-      systplot_templateshapeMCpromptdrivenEE=(TH1F*)(systplot->Clone("systplot_templateshapeMCpromptdrivenEE"));
-      systplot_templateshapeMCfakedrivenEE=(TH1F*)(systplot->Clone("systplot_templateshapeMCfakedrivenEE"));
-      systplot_templateshape2frag=(TH1F*)(systplot->Clone("systplot_templateshape2frag"));
-      systplot_noise=(TH1F*)(systplot->Clone("systplot_noise"));
-      systplot_zee=(TH1F*)(systplot->Clone("systplot_zee"));
-      systplot_tot=(TH1F*)(systplot->Clone("systplot_tot"));
-      systplot_efficiency=(TH1F*)(systplot->Clone("systplot_efficiency"));
-      systplot_unfolding=(TH1F*)(systplot->Clone("systplot_unfolding"));
-      systplot_totfinal=(TH1F*)(systplot->Clone("systplot_totfinal"));
-      systplot_uncorrelated=(TH1F*)(systplot->Clone("systplot_uncorrelated"));
-      systplot_1catcorrelated=(TH1F*)(systplot->Clone("systplot_1catcorrelated"));
-      systplot_allcatcorrelated=(TH1F*)(systplot->Clone("systplot_allcatcorrelated"));
-      systplot_statistic=(TH1F*)(systplot->Clone("systplot_statistic"));
-      
+      systplot->GetXaxis()->SetTitle(get_unit(diffvariable));
+      systplot->GetYaxis()->SetTitle("Relative uncertainty");
+
+    }
+ 
+  } // end splitting!=inclusive
+
+  else if (splitting=="inclusive"){
+    TString sp[3]={"EBEB","EBEE","EEEE"};
+    TFile *axsec_file[3];
+    TH1F *axsec[3];
+    TH1F *axsec_raw[3];
+    TH1F *angg[3];
+    for (int i=0; i<3; i++) {
+      axsec_file[i] = new TFile(Form("plots/histo_xsec_%s_%s.root", diffvariable.Data(),sp[i].Data()));
+      axsec_file[i]->GetObject("xsec_centralvalue",axsec[i]);
+      axsec_file[i]->GetObject("xsec_centralvalue_raw",axsec_raw[i]);
+      axsec_file[i]->GetObject("ngg_centralvalue",angg[i]);
+      xsec_centralvalue_cat[i] = (TH1F*)(axsec[i]->Clone(Form("xsec_centralvalue_%s",splitting.Data())));
+    }
+    for (int i=1; i<3; i++) {
+      axsec[0]->Add(axsec[i]);
+      axsec[0]->Add(axsec_raw[i]);
+      angg[0]->Add(angg[i]);
+    }
+    xsec_centralvalue=axsec[0];
+    xsec_centralvalue_raw=axsec_raw[0];
+    ngg_centralvalue=angg[0];
+
+    TH1F *h[3][4];
+    for (int i=0; i<3; i++){
+      axsec_file[i]->GetObject("purity_sigsig",h[i][0]);
+      axsec_file[i]->GetObject("purity_sigbkg",h[i][1]);
+      axsec_file[i]->GetObject("purity_bkgsig",h[i][2]);
+      axsec_file[i]->GetObject("purity_bkgbkg",h[i][3]);
     }
 
-    //    std::cout << "start loop: " << std::endl;
+    TH1F *totev[3];
+    TH1F *ev[3][4];
 
-    float unfoldingdy_mc_all = (!skipZsubtraction) ? ((RooDataSet*)(file_pixelrevsel_dy_mc->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),n_bins))))->sumEntries() : 0;
+    for (int i=0; i<3; i++) {totev[i] = (TH1F*)(angg[i]->Clone()); totev[i]->Divide(h[i][0]);}
+    for (int j=0; j<4; j++) for (int i=0; i<3; i++) {ev[i][j] = (TH1F*)(totev[i]->Clone()); ev[i][j]->Multiply(h[i][j]);} 
+    for (int j=0; j<4; j++) for (int i=1; i<3; i++) ev[0][j]->Add(ev[i][j]);
+    for (int i=1; i<3; i++) totev[0]->Add(totev[i]);  
+    for (int j=0; j<4; j++) ev[0][j]->Divide(totev[0]);
+    ev[0][1]->Add(ev[0][2]);
 
-  for (int bin=0; bin<bins_to_run; bin++) {
-
-    //    if (!fr[bin]->fr) continue;
-
-    float pp = 	       purity[0]->GetBinContent(bin+1);
-    float pp_err =     purity[0]->GetBinError(bin+1);
-//    float pf = 	       purity[1]->GetBinContent(bin+1);
-//    float pf_err =     purity[1]->GetBinError(bin+1);
-//    float fp = 	       purity[2]->GetBinContent(bin+1);
-//    float fp_err =     purity[2]->GetBinError(bin+1);
-//    float ff = 	       purity[3]->GetBinContent(bin+1);
-//    float ff_err =     purity[3]->GetBinError(bin+1);
-    float tot_events = eventshisto->GetBinContent(bin+1);
-    float eff_overflow = overflowremovaleffhisto->GetBinContent(bin+1);
-
-    if (!skipZsubtraction) assert((RooDataSet*)(file_standardsel_dy->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin))));
-    float events_dy = (!skipZsubtraction) ? ((RooDataSet*)(file_standardsel_dy->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin))))->sumEntries() : 0; // normalized to 1/fb, xsec normalized to 2475 
-
-    float unfoldingdy_data = (!skipZsubtraction) ? ((RooDataSet*)(file_pixelrevsel_dy_data->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin))))->sumEntries()/intlumi : 0;
-    float unfoldingdy_mc = (!skipZsubtraction) ? ((RooDataSet*)(file_pixelrevsel_dy_mc->Get(Form("roofit/obs_roodset_%s_%s_b%d",splitting.Data(),diffvariable.Data(),bin))))->sumEntries() : 0;
-
-    float purity_dy = syst_purity_dy[splitting].first;
-    float purity_dy_err = syst_purity_dy[splitting].second;
-    float scale_dy = (!skipZsubtraction) ? unfoldingdy_data/unfoldingdy_mc : 0;
-
-    if (!skipZsubtraction){
-      if (unfoldingdy_mc/unfoldingdy_mc_all<0.01) scale_dy=3048./2475.; // fix for low stat bins
-    }
-
-    if (splitting=="EBEB") scale_dy*=pow(0.979,2);
-    else if (splitting=="EBEE") scale_dy*=0.979*0.985;
-    else if (splitting=="EEEE") scale_dy*=pow(0.985,2);
-    float rel_error_on_purity_pp = events_dy*purity_dy_err*scale_dy/(pp*tot_events/eff_overflow/intlumi-events_dy*purity_dy*scale_dy);
-
-    std::cout << "bin " << bin << std::endl;
-    std::cout << "Data/MC DY " << unfoldingdy_data/unfoldingdy_mc << std::endl;
-    std::cout << "UNFOLDING DY FACTOR " << scale_dy << std::endl;
-    std::cout << unfoldingdy_data << " " << unfoldingdy_mc << std::endl;
-    std::cout << "SUBTRACTION " << events_dy*purity_dy*scale_dy/(pp*tot_events/eff_overflow/intlumi) << std::endl;
-
-    xsec->SetBinContent(bin+1,(pp*tot_events/eff_overflow/intlumi-events_dy*purity_dy*scale_dy)/xsec->GetBinWidth(bin+1));
-    xsec_withsyst->SetBinContent(bin+1,xsec->GetBinContent(bin+1));
-    xsec_ngammagammayield->SetBinContent(bin+1,pp*tot_events/eff_overflow-events_dy*purity_dy*scale_dy*intlumi);
-    std::cout << xsec_ngammagammayield->GetBinContent(bin+1) << std::endl;
-
-    float shapesyst1 = (!skipsystematics && splitting!="EEEE") ? pp*fabs(histo_bias_templateshapeMCpromptdrivenEB->GetBinContent(bin+1)-1) : 0;
-    float shapesyst2 = (!skipsystematics && splitting!="EEEE") ? pp*fabs(histo_bias_templateshapeMCfakedrivenEB->GetBinContent(bin+1)-1) : 0;
-    float shapesyst3 = (!skipsystematics && splitting!="EBEB") ? pp*fabs(histo_bias_templateshapeMCpromptdrivenEE->GetBinContent(bin+1)-1) : 0;
-    float shapesyst4 = (!skipsystematics && splitting!="EBEB") ? pp*fabs(histo_bias_templateshapeMCfakedrivenEE->GetBinContent(bin+1)-1) : 0;
-    float shapesyst5 = (!skipsystematics) ? pp*fabs(histo_bias_templateshape2frag->GetBinContent(bin+1)-1) : 0;
-
-    float purity_error_withsyst = pp_err;
-    if (!skipsystematics) purity_error_withsyst = sqrt(pow(pp_err,2) + pow(pp*histo_bias_templatestatistics->GetBinContent(bin+1),2) + pow(pp_err*histo_bias_purefitbias->GetBinContent(bin+1),2) + pow(shapesyst1,2) + pow(shapesyst2,2) + pow(shapesyst3,2) + pow(shapesyst4,2) + pow(shapesyst5,2) + pow(pp*rel_error_on_purity_pp,2));
-
-
-    float errpoiss=1.0/sqrt(tot_events);
-    float err=sqrt(pow(pp_err/pp,2)+pow(errpoiss,2));
-    float err_withsyst=sqrt(pow(purity_error_withsyst/pp,2)+pow(errpoiss,2));
-
-
-    xsec->SetBinError(bin+1,err*xsec->GetBinContent(bin+1));
-    xsec_withsyst->SetBinError(bin+1,err_withsyst*xsec->GetBinContent(bin+1));
-    xsec_ngammagammayield->SetBinError(bin+1,err_withsyst*xsec_ngammagammayield->GetBinContent(bin+1));
-    
-    if (!skipsystematics){
-      systplot_purefitbias->SetBinContent(bin+1,pp_err*fabs(histo_bias_purefitbias->GetBinContent(bin+1))/pp);
-      systplot_templatestatistics->SetBinContent(bin+1,histo_bias_templatestatistics->GetBinContent(bin+1));
-      systplot_templateshapeMCpromptdrivenEB->SetBinContent(bin+1,shapesyst1/pp);
-      systplot_templateshapeMCfakedrivenEB->SetBinContent(bin+1,shapesyst2/pp);
-      systplot_templateshapeMCpromptdrivenEE->SetBinContent(bin+1,shapesyst3/pp);
-      systplot_templateshapeMCfakedrivenEE->SetBinContent(bin+1,shapesyst4/pp);
-      systplot_templateshape2frag->SetBinContent(bin+1,shapesyst5/pp);
-      float noise = get_noise_systematic(diffvariable,splitting,bin);
-      systplot_noise->SetBinContent(bin+1,noise);
-      systplot_zee->SetBinContent(bin+1,rel_error_on_purity_pp);
-      systplot_tot->SetBinContent(bin+1,sqrt(pow(pp*histo_bias_templatestatistics->GetBinContent(bin+1),2) + pow(pp_err*histo_bias_purefitbias->GetBinContent(bin+1),2) + pow(shapesyst1,2) + pow(shapesyst2,2) + pow(shapesyst3,2) + pow(shapesyst4,2) + pow(shapesyst5,2) + pow(pp*rel_error_on_purity_pp,2))/pp + pow(noise,2));
-      systplot_efficiency->SetBinContent(bin+1,eff->GetBinError(bin+1)/eff->GetBinContent(bin+1));
-      systplot_unfolding->SetBinContent(bin+1,unfoldunc->GetBinContent(bin+1));
-      systplot_totfinal->SetBinContent(bin+1,sqrt(pow(systplot_tot->GetBinContent(bin+1),2)+pow(systplot_efficiency->GetBinContent(bin+1),2)+pow(systplot_unfolding->GetBinContent(bin+1),2)));
-      systplot_totfinal->SetBinError(bin+1,0);
-      systplot_statistic->SetBinContent(bin+1,err);
-      //      std::cout << systplot_tot->GetBinContent(bin+1) << " " << systplot_totfinal->GetBinContent(bin+1) << std::endl;
-    }
-    
-    //    std::cout << err << " " << err_withsyst << std::endl;
+    purity[0] = ev[0][0];
+    purity[1] = ev[0][1];
+    purity[2] = (TH1F*)(purity[1]->Clone("purity_bkgsig_donotuse")); purity[2]->Reset();
+    purity[3] = ev[0][3];
 
   }
 
+  ///--- START PLOTTING
 
-  //  std::cout << "NIENTE DIVIDE(EFF): EFFICIENZA NON CORRETTA!!!" << std::endl;  
-  /*
-  xsec->Divide(eff);  
-  xsec_withsyst->Divide(eff);
-  */
+  {  // purity plot
 
   TCanvas *output_canv = new TCanvas("output_canv","output_canv");
   output_canv->cd();
 
   purity[0]->SetStats(0);
   purity[0]->SetTitle("");
-  purity[0]->Draw("e1");
 
+  purity[0]->SetMinimum(0);
+  purity[0]->SetMaximum(1);
+  purity[0]->GetXaxis()->SetTitle(get_unit(diffvariable));
+  purity[0]->GetYaxis()->SetTitle("Purity fraction");
+  purity[0]->GetXaxis()->SetLabelSize(0.038);
+  purity[0]->GetXaxis()->SetTitleSize(0.038);
+  purity[0]->GetXaxis()->SetTitleOffset(1.15);
+
+  purity[0]->Draw("e1");
   if (!sym){
     purity[1]->Draw("e1same");
     purity[2]->Draw("e1same");
@@ -2658,14 +2684,9 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     purity[1]->Draw("e1same");
   }
   purity[3]->Draw("e1same");
-  
-  //  purity[0]->GetXaxis()->SetTitle(diffvariables_names_list(diffvariable).Data());
-  {
-    TString unit = diffvariables_units_list(diffvariable);
-    purity[0]->GetXaxis()->SetTitle(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data()));
-  }
+  purity[0]->Draw("e1same");
 
-  TLegend *leg = new TLegend(0.6,0.7,0.9,0.9);
+  TLegend *leg = new TLegend(0.55,0.7,0.9,0.9);
   if (sym){
     leg->AddEntry(purity[0],"prompt - prompt","lp");
     leg->AddEntry(purity[1],"prompt - fake","lp");
@@ -2680,8 +2701,12 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   leg->SetFillColor(kWhite);
   leg->Draw();
 
-  output_canv->Update();
+  TLatex a;
+  a.SetNDC();
+  a.SetTextSize(0.03);
+  a.DrawLatex(0.13,0.83,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
 
+  output_canv->Update();
   output_canv->SaveAs(Form("plots/plot_purity_%s_%s.png", diffvariable.Data(),splitting.Data()));
   output_canv->SaveAs(Form("plots/plot_purity_%s_%s.jpg", diffvariable.Data(),splitting.Data()));
   output_canv->SaveAs(Form("plots/plot_purity_%s_%s.root",diffvariable.Data(),splitting.Data()));
@@ -2694,30 +2719,26 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   purity[2]->Write();
   purity[3]->Write();
   out1->Close();
-
+  
   }
 
-
-
-  xsec_withsyst->Print();
-  xsec->Print();
-
+  // yields without systematics
+  {
   TCanvas *xsec_canv = new TCanvas("xsec_canv","xsec_canv");
   xsec_canv->cd();
-  xsec_withsyst->SetStats(0);
-  xsec_withsyst->SetTitle(Form("Differential cross section - %s category",splitting.Data()));
-  {
-    TString unit = diffvariables_units_list(diffvariable);
-    xsec_withsyst->GetYaxis()->SetTitle(Form("d#sigma/d%s (fb%s)",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("/").Append(unit.Data())).Data() : TString("").Data()));
-  }
-  xsec_withsyst->SetMinimum(0);
-  xsec_withsyst->Draw("e1");
-  xsec->Draw("e1same");
-
+  xsec_centralvalue->SetStats(0);
+  //  xsec_centralvalue->SetTitle(Form("Differential cross section - %s category",splitting.Data()));
+  xsec_centralvalue->GetYaxis()->SetTitle(Form("d#sigma/d%s (fb%s)",diffvariables_names_list(diffvariable).Data(),get_unit(diffvariable)));
+  xsec_centralvalue->SetMinimum(0);
+  SetFormat(xsec_centralvalue_raw,kRed,20,kDotted);
+  SetFormat(xsec_centralvalue,kBlack,20);
+  xsec_centralvalue->Draw("e1");
+  xsec_centralvalue_raw->Draw("e1 same");
+  xsec_centralvalue->Draw("e1 same");
 
   TLegend *legxsec = (diffvariable!="dphi") ? new TLegend(0.7,0.7,0.9,0.9) : new TLegend(0.1,0.7,0.3,0.9);
-  legxsec->AddEntry(xsec,"Stat. unc. only","l");
-  legxsec->AddEntry(xsec_withsyst,"Stat. + syst. unc.","l");
+  legxsec->AddEntry(xsec_centralvalue_raw,"Raw cross section","l");
+  legxsec->AddEntry(xsec_centralvalue,"Unfolded cross section","l");
   legxsec->SetFillColor(kWhite);
   legxsec->Draw();
 
@@ -2729,143 +2750,50 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   xsec_canv->SaveAs(Form("plots/plot_xsec_%s_%s.pdf", diffvariable.Data(),splitting.Data()));
   
   xsec_canv->SetLogy();
-  xsec->GetYaxis()->UnZoom();
+  xsec_centralvalue_raw->GetYaxis()->UnZoom();
   xsec_canv->SaveAs(Form("plots/plot_xsec_log_%s_%s.png", diffvariable.Data(),splitting.Data()));
   xsec_canv->SaveAs(Form("plots/plot_xsec_log_%s_%s.jpg", diffvariable.Data(),splitting.Data()));
   xsec_canv->SaveAs(Form("plots/plot_xsec_log_%s_%s.root",diffvariable.Data(),splitting.Data()));
   xsec_canv->SaveAs(Form("plots/plot_xsec_log_%s_%s.pdf", diffvariable.Data(),splitting.Data()));
 
-
-  TFile *xsec_file = new TFile(Form("plots/histo_xsec_%s_%s.root", diffvariable.Data(),splitting.Data()),"recreate");
-  xsec_file->cd();
-  xsec->Write();
-  xsec_withsyst->Write();
-  if (xsec_ngammagammayield) xsec_ngammagammayield->Write();
-  fitpull_histo->Write();
-  xsec_file->Close();  
-
-
-  TCanvas *fitpull_canv = new TCanvas("fitpull_canv","fitpull_canv");
-  fitpull_canv->cd();
-
-  gStyle->SetOptFit(1);
-
-  fitpull_histo->SetStats(1);
-  fitpull_histo->SetTitle(Form("Distribution of the fit pull - %s category",splitting.Data()));
-  fitpull_histo->Fit("gaus");
-  fitpull_histo->Draw();
-  fitpull_canv->SaveAs(Form("plots/plot_fitpull_%s_%s.root", diffvariable.Data(),splitting.Data()));
-  fitpull_canv->SaveAs(Form("plots/plot_fitpull_%s_%s.pdf", diffvariable.Data(),splitting.Data()));
-  fitpull_canv->SaveAs(Form("plots/plot_fitpull_%s_%s.png", diffvariable.Data(),splitting.Data()));
-
-  gStyle->SetOptFit(0);
-
-  if (splitting=="inclusive"){
-
-    TFile *out[3];
-    out[0] = new TFile(Form("plots/histo_purity_%s_%s_allbins.root",diffvariable.Data(),"EBEB"));
-    out[1] = new TFile(Form("plots/histo_purity_%s_%s_allbins.root",diffvariable.Data(),"EBEE"));
-    out[2] = new TFile(Form("plots/histo_purity_%s_%s_allbins.root",diffvariable.Data(),"EEEE"));
-
-    TH1F *h[3][4];
-    TH1F *n[3];
-
-    for (int i=0; i<3; i++){
-      out[i]->GetObject("purity_sigsig",h[i][0]);
-      out[i]->GetObject("purity_sigbkg",h[i][1]);
-      out[i]->GetObject("purity_bkgsig",h[i][2]);
-      out[i]->GetObject("purity_bkgbkg",h[i][3]);
-      out[i]->GetObject("eventshisto",n[i]);
-    }
-
-    for (int j=0; j<4; j++) for (int i=0; i<3; i++) h[i][j]->Multiply(n[i]);
-    for (int j=0; j<4; j++) for (int i=1; i<3; i++) h[0][j]->Add(h[i][j]);
-    for (int i=1; i<3; i++) n[0]->Add(n[i]);  
-    for (int j=0; j<4; j++) h[0][j]->Divide(n[0]);
-    h[0][1]->Add(h[0][2]);
-
-    TCanvas *canv = new TCanvas("purity_inclusive");
-    canv->cd();
-    h[0][0]->SetTitle("");
-    h[0][0]->SetStats(0);
-    h[0][0]->SetMinimum(0);
-    h[0][0]->SetMaximum(1);
-    {
-      TString unit = diffvariables_units_list(diffvariable);
-      h[0][0]->GetXaxis()->SetTitle(Form("%s %s",diffvariables_names_list(diffvariable).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data()));
-      h[0][0]->GetYaxis()->SetTitle("Purity fraction");
-    }
-    h[0][0]->GetXaxis()->SetLabelSize(0.038);
-    h[0][0]->GetXaxis()->SetTitleSize(0.038);
-    h[0][0]->GetXaxis()->SetTitleOffset(1.15);
-    h[0][0]->Draw();
-    h[0][3]->Draw("same");
-    h[0][1]->Draw("same");
-    h[0][0]->Draw("same");
-    TLegend *leg = new TLegend(0.55,0.7,0.9,0.9);
-    leg->AddEntry(h[0][0],"prompt - prompt","lp");
-    leg->AddEntry(h[0][1],"prompt - fake","lp");
-    leg->AddEntry(h[0][3],"fake - fake","lp");
-    leg->SetFillColor(kWhite);
-    leg->Draw();
-    TLatex a;
-    a.SetNDC();
-    a.SetTextSize(0.03);
-    a.DrawLatex(0.13,0.83,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
-    canv->Update();
-    canv->SaveAs(Form("plots/plot_purity_%s_%s.root",diffvariable.Data(),"inclusive"));
-    canv->SaveAs(Form("plots/plot_purity_%s_%s.pdf",diffvariable.Data(),"inclusive"));
-    canv->SaveAs(Form("plots/plot_purity_%s_%s.png",diffvariable.Data(),"inclusive"));
-
-
   }
 
-  if (!skipsystematics && splitting!="inclusive"){
+  // write histos for inclusive case
+  {
+  TFile *xsec_file = new TFile(Form("plots/histo_xsec_%s_%s.root", diffvariable.Data(),splitting.Data()),"recreate");
+  xsec_file->cd();
+  if (xsec_centralvalue) xsec_centralvalue->Write();
+  if (ngg_centralvalue) ngg_centralvalue->Write();
+  for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++) if (it->second) it->second->Write();
+  if (xsec_centralvalue_raw) xsec_centralvalue_raw->Write();
+  if (ngg_centralvalue_raw) ngg_centralvalue_raw->Write();
+  for (int i=0; i<4; i++) if (purity[i]) purity[i]->Write();
+  xsec_file->Close();
+  }
+
+  if (splitting!="inclusive"){
 
     TCanvas *systplot_canv = new TCanvas("systplot_canv","systplot_canv");
     systplot_canv->cd();
+
+    TH1F *systplot_tot = (TH1F*)(systplots.begin()->second->Clone("systplot_tot")); systplot_tot->Reset();
+    for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++) systplot_tot->Add(it->second);
     systplot_tot->SetStats(0);
-    systplot_tot->SetTitle(Form("Systematic uncertainties on purity - %s category",splitting.Data()));
+    systplot_tot->SetTitle(Form("Systematic uncertainties on cross-section - %s category",splitting.Data()));
     systplot_tot->SetMinimum(0);
+    SetFormat(systplot_tot,kBlack,20,kDashed);
 
-    systplot_tot->Draw();    
-    systplot_templateshapeMCpromptdrivenEB->Draw("same");
-    systplot_templateshapeMCfakedrivenEB->Draw("same");
-    systplot_templateshapeMCpromptdrivenEE->Draw("same");
-    systplot_templateshapeMCfakedrivenEE->Draw("same");
-    systplot_templateshape2frag->Draw("same");
-    systplot_noise->Draw("same");
-    systplot_purefitbias->Draw("same");
-    systplot_templatestatistics->Draw("same");
-    systplot_zee->Draw("same");
-
-    systplot_templateshapeMCpromptdrivenEB->SetLineColor(kRed);
-    systplot_templateshapeMCfakedrivenEB->SetLineColor(kBlue);
-    systplot_templateshapeMCpromptdrivenEE->SetLineColor(kRed);
-    systplot_templateshapeMCfakedrivenEE->SetLineColor(kBlue);
-    systplot_templateshapeMCpromptdrivenEE->SetLineStyle(kDotted);
-    systplot_templateshapeMCfakedrivenEE->SetLineStyle(kDotted);
-    systplot_templateshape2frag->SetLineColor(kOrange);
-    systplot_noise->SetLineColor(kCyan);
-    systplot_purefitbias->SetLineColor(kGreen);
-    systplot_templatestatistics->SetLineColor(kGray);
-    systplot_zee->SetLineColor(kMagenta);
-    systplot_tot->SetLineColor(kBlack);
+    systplot_tot->Draw();
 
     TLegend *legsystplot = new TLegend(0.6,0.7,0.9,0.9);
-    if (splitting!="EEEE"){
-      legsystplot->AddEntry(systplot_templateshapeMCpromptdrivenEB,"Prompt template shape EB","l");
-      legsystplot->AddEntry(systplot_templateshapeMCfakedrivenEB,"Fakes template shape EB","l");
+
+    for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++){
+      if (splitting=="EEEE") if (it->first=="templateshapeMCpromptdrivenEB" || it->first=="templateshapeMCfakedrivenEB") continue;
+      if (splitting=="EBEB") if (it->first=="templateshapeMCpromptdrivenEE" || it->first=="templateshapeMCfakedrivenEE") continue;
+      SetFormat(it->second,map_systematics_list.at(it->first).color);
+      it->second->Draw("same");
+      legsystplot->AddEntry(it->second,map_systematics_list.at(it->first).name.Data(),"l");
     }
-    if (splitting!="EBEB"){
-      legsystplot->AddEntry(systplot_templateshapeMCpromptdrivenEE,"Prompt template shape EE","l");
-      legsystplot->AddEntry(systplot_templateshapeMCfakedrivenEE,"Fakes template shape EE","l");
-    }
-    legsystplot->AddEntry(systplot_templateshape2frag,"Fragmentation description","l");
-    legsystplot->AddEntry(systplot_noise,"Additional noise in evt. mixing","l");
-    legsystplot->AddEntry(systplot_templatestatistics,"Template stat. fluctuation","l");
-    legsystplot->AddEntry(systplot_purefitbias,"Fit bias","l");
-    legsystplot->AddEntry(systplot_zee,"Zee subtraction ","l");
     legsystplot->AddEntry(systplot_tot,"Total syst. uncertainty","l");
     legsystplot->SetFillColor(kWhite);
     legsystplot->Draw();
@@ -2877,207 +2805,69 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     systplot_canv->SaveAs(Form("plots/plot_systsummary_%s_%s.root",diffvariable.Data(),splitting.Data()));
     systplot_canv->SaveAs(Form("plots/plot_systsummary_%s_%s.pdf", diffvariable.Data(),splitting.Data()));
 
-    systplot_tot->SaveAs(Form("plots/histo_systsummary_%s_%s.root", diffvariable.Data(),splitting.Data()));
-
-    TCanvas *systplot_canv2 = new TCanvas("systplot_canv2","systplot_canv2");
-    systplot_canv2->cd();
-    systplot_totfinal->SetStats(0);
-    systplot_totfinal->SetTitle(Form("Systematic uncertainties on cross-section - %s category",splitting.Data()));
-    systplot_totfinal->SetMinimum(0);
-
-    systplot_totfinal->Draw();    
-    systplot_tot->Draw("same");
-    systplot_efficiency->Draw("same");
-    systplot_unfolding->Draw("same");
-
-    systplot_tot->SetLineColor(kRed);
-    systplot_efficiency->SetLineColor(kRed-7);
-    systplot_unfolding->SetLineColor(kCyan);
-    systplot_totfinal->SetLineColor(kBlack);
-
-    TLegend *legsystplot2 = new TLegend(0.6,0.7,0.9,0.9);
-    legsystplot2->AddEntry(systplot_tot,"Purity uncertainty","l");
-    legsystplot2->AddEntry(systplot_efficiency,"Efficiency uncertainty","l");
-    legsystplot2->AddEntry(systplot_unfolding,"Unfolding uncertainty","l");
-    legsystplot2->AddEntry(systplot_totfinal,"Total syst. uncertainty","l");
-    legsystplot2->SetFillColor(kWhite);
-    legsystplot2->Draw();
-
-    systplot_canv2->Update();
-    
-    systplot_canv2->SaveAs(Form("plots/plot_systsummaryfinal_%s_%s.png", diffvariable.Data(),splitting.Data()));
-    systplot_canv2->SaveAs(Form("plots/plot_systsummaryfinal_%s_%s.jpg", diffvariable.Data(),splitting.Data()));
-    systplot_canv2->SaveAs(Form("plots/plot_systsummaryfinal_%s_%s.root",diffvariable.Data(),splitting.Data()));
-    systplot_canv2->SaveAs(Form("plots/plot_systsummaryfinal_%s_%s.pdf", diffvariable.Data(),splitting.Data()));
 
     TFile *f2 = new TFile(Form("plots/histo_systsummaryfinal_%s_%s.root", diffvariable.Data(),splitting.Data()),"recreate");
     f2->cd();
-
-    systplot_templateshapeMCfakedrivenEB->Write();
-    systplot_templateshapeMCpromptdrivenEB->Write();
-    systplot_templateshapeMCfakedrivenEE->Write();
-    systplot_templateshapeMCpromptdrivenEE->Write();
-    systplot_templateshape2frag->Write();
-    systplot_noise->Write();
-    systplot_purefitbias->Write();
-    systplot_templatestatistics->Write();
-    systplot_zee->Write();
     systplot_tot->Write();
-    systplot_efficiency->Write();
-    systplot_unfolding->Write();
-    systplot_totfinal->Write();
-    systplot_statistic->Write();
-
-    std::vector<TH1F*> toadd_1catcorrelated;
-    toadd_1catcorrelated.push_back(systplot_zee);
-    toadd_1catcorrelated.push_back(systplot_templatestatistics);
-    toadd_1catcorrelated.push_back(systplot_efficiency);
-    toadd_1catcorrelated.push_back(systplot_unfolding);
-
-    systplot_1catcorrelated=AddTHInQuadrature(toadd_1catcorrelated,"systplot_1catcorrelated");
-
-    std::vector<TH1F*> toadd_allcatcorrelated;
-    toadd_allcatcorrelated.push_back(systplot_templateshapeMCfakedrivenEB);
-    toadd_allcatcorrelated.push_back(systplot_templateshapeMCpromptdrivenEB);
-    toadd_allcatcorrelated.push_back(systplot_templateshapeMCfakedrivenEE);
-    toadd_allcatcorrelated.push_back(systplot_templateshapeMCpromptdrivenEE);
-    toadd_allcatcorrelated.push_back(systplot_templateshape2frag);
-    toadd_allcatcorrelated.push_back(systplot_noise);
-
-    systplot_allcatcorrelated=AddTHInQuadrature(toadd_allcatcorrelated,"systplot_allcatcorrelated");
-
-    std::vector<TH1F*> toadd_uncorrelated;
-    toadd_uncorrelated.push_back(systplot_purefitbias);
-
-    systplot_uncorrelated=AddTHInQuadrature(toadd_uncorrelated,"systplot_uncorrelated");
-
-    systplot_1catcorrelated->Write();
-    systplot_allcatcorrelated->Write();
-    systplot_uncorrelated->Write();
-
-
+    for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++) it->second->Write();
     f2->Close();
 
   }
 
-  if (!skipsystematics && splitting=="inclusive"){
+  if (splitting=="inclusive"){
 
-    TH1F *eff[3];
-    {
-      TFile *eff_file = new TFile("plots/Efficiency_WithSysErr.root");
-      std::map<TString,TString> translation;
-      translation.insert(std::pair<TString,TString>(TString("invmass"),TString("mgg")));
-      translation.insert(std::pair<TString,TString>(TString("diphotonpt"),TString("qtgg")));
-      translation.insert(std::pair<TString,TString>(TString("costhetastar"),TString("costhetastar")));
-      translation.insert(std::pair<TString,TString>(TString("dphi"),TString("deltaphi")));
-      translation.insert(std::pair<TString,TString>(TString("dR"),TString("dR")));
-      eff_file->GetObject(Form("h_%s_%s_WithTotErr",translation[diffvariable].Data(),"EBEB"),eff[0]);
-      eff_file->GetObject(Form("h_%s_%s_WithTotErr",translation[diffvariable].Data(),"EBEE"),eff[1]);
-      eff_file->GetObject(Form("h_%s_%s_WithTotErr",translation[diffvariable].Data(),"EEEE"),eff[2]);
-    }
+    const int n_cats = 3;
 
+    std::vector<TH1F*> toadd_statistic[n_cats]; 
+    std::vector<TH1F*> toadd_uncorrelated[n_cats]; 
+    std::vector<TH1F*> toadd_1catcorrelated[n_cats];
+    std::vector<TH1F*> toadd_allcatcorrelated[n_cats];
+    std::vector<TH1F*> toadd_everything[n_cats];
 
     TFile *fsysts[3];
     fsysts[0] = new TFile(Form("plots/histo_systsummaryfinal_%s_EBEB.root", diffvariable.Data()));;
     fsysts[1] = new TFile(Form("plots/histo_systsummaryfinal_%s_EBEE.root", diffvariable.Data()));;
     fsysts[2] = new TFile(Form("plots/histo_systsummaryfinal_%s_EEEE.root", diffvariable.Data()));;
 
-    const int n_cats = 3;
-    const int n_syst_1catcorr = 4;
-    const int n_syst_allcatcorr = 6;
-
-    TH1F *hsysts[3];
-    TH1F *hsysts_1catcorrelated[3][n_syst_1catcorr];
-    TH1F *hsysts_allcatcorrelated[3][n_syst_allcatcorr];
-    TH1F *hsysts_uncorrelated[3];
-    TH1F *hsysts_statistic[3];
-
-    for (int i=0; i<3; i++) fsysts[i]->GetObject("systplot_totfinal",hsysts[i]);
-    for (int i=0; i<3; i++) {
-      fsysts[i]->GetObject("systplot_zee",hsysts_1catcorrelated[i][0]);
-      fsysts[i]->GetObject("systplot_templatestatistics",hsysts_1catcorrelated[i][1]);
-      fsysts[i]->GetObject("systplot_efficiency",hsysts_1catcorrelated[i][2]);
-      fsysts[i]->GetObject("systplot_unfolding",hsysts_1catcorrelated[i][3]);
-    }
-    for (int i=0; i<3; i++) {
-      fsysts[i]->GetObject("systplot_templateshapeMCpromptdrivenEB",hsysts_allcatcorrelated[i][0]);
-      fsysts[i]->GetObject("systplot_templateshapeMCfakedrivenEB",hsysts_allcatcorrelated[i][1]);
-      fsysts[i]->GetObject("systplot_templateshapeMCpromptdrivenEE",hsysts_allcatcorrelated[i][2]);
-      fsysts[i]->GetObject("systplot_templateshapeMCfakedrivenEE",hsysts_allcatcorrelated[i][3]);
-      fsysts[i]->GetObject("systplot_templateshape2frag",hsysts_allcatcorrelated[i][4]);
-      fsysts[i]->GetObject("systplot_noise",hsysts_allcatcorrelated[i][5]);
-    }
-    for (int i=0; i<3; i++) fsysts[i]->GetObject("systplot_uncorrelated",hsysts_uncorrelated[i]);
-    for (int i=0; i<3; i++) fsysts[i]->GetObject("systplot_statistic",hsysts_statistic[i]);
-    for (int i=0; i<3; i++) hsysts[i]->Sumw2();
-
-    TH1F *unfoldnevt[3];
-    std::map<TString,TString> translation2;
-    translation2.insert(std::pair<TString,TString>(TString("invmass"),TString("mgg")));
-    translation2.insert(std::pair<TString,TString>(TString("diphotonpt"),TString("pt")));
-    translation2.insert(std::pair<TString,TString>(TString("costhetastar"),TString("costt")));
-    translation2.insert(std::pair<TString,TString>(TString("dphi"),TString("phi")));
-    translation2.insert(std::pair<TString,TString>(TString("dR"),TString("dR")));
-    TFile *unfoldnevt_file = new TFile("plots/Unfolding_SysErr.root");
-    unfoldnevt_file->GetObject(Form("Unfolding_Nevt_%s_EBEB",translation2[diffvariable].Data()),unfoldnevt[0]);
-    unfoldnevt_file->GetObject(Form("Unfolding_Nevt_%s_EBEE",translation2[diffvariable].Data()),unfoldnevt[1]);
-    unfoldnevt_file->GetObject(Form("Unfolding_Nevt_%s_EEEE",translation2[diffvariable].Data()),unfoldnevt[2]);
-
-    TH1F *unfoldnevt_new[3];
-    for (int i=0; i<3; i++) {
-      unfoldnevt_new[i]=(TH1F*)(hsysts[i]->Clone(Form("unfoldnevt_new_%d",i)));
-      unfoldnevt_new[i]->Reset();
-      unfoldnevt_new[i]->Sumw2();
-      for (int bin=0; bin<bins_to_run; bin++) {
-	unfoldnevt_new[i]->SetBinContent(bin+1,unfoldnevt[i]->GetBinContent(bin+1)/eff[i]->GetBinContent(bin+1));
-	unfoldnevt_new[i]->SetBinError(bin+1,unfoldnevt[i]->GetBinError(bin+1)/eff[i]->GetBinContent(bin+1));
+    for (int i=0; i<n_cats; i++){
+      for (std::map<TString,source_systematic_struct>::const_iterator it = map_systematics_list.begin(); it!=map_systematics_list.end(); it++){
+	TH1F *hist = NULL;
+	fsysts[i]->GetObject(Form("systplot_%s",it->first.Data()),hist);
+	if (!hist) continue;
+	hist->Sumw2();
+	toadd_everything[i].push_back(hist);
+	if (it->first=="statistic") toadd_statistic[i].push_back(hist);
+	else if (it->second.is_uncorrelated) toadd_uncorrelated[i].push_back(hist);
+	else if (it->second.is_1catcorrelated) toadd_1catcorrelated[i].push_back(hist);
+	else if (it->second.is_allcatcorrelated) toadd_allcatcorrelated[i].push_back(hist);
       }
     }
 
-    TH1F *unfoldnevt_tot =(TH1F*)(unfoldnevt_new[0]->Clone("unfoldnevt_tot"));
-    unfoldnevt_tot->Reset();
-    unfoldnevt_tot->Sumw2();
-//    TH1F *hsyst_tot = (TH1F*)(hsysts[0]->Clone("hsyst_tot"));
-//    hsyst_tot->Reset();
-//    hsyst_tot->Sumw2();
-    for (int i=0; i<3; i++) {
-//      hsysts[i]->Multiply(unfoldnevt_new[i]);
-//      hsyst_tot->Add(hsysts[i]);
-      unfoldnevt_tot->Add(unfoldnevt_new[i]);
-    }
-    //    hsyst_tot->Divide(unfoldnevt_tot);
-
-    TH1F* systplot_totfinal_inclusive = (TH1F*)(hsysts[0]->Clone("systplot_totfinal_inclusive"));
-    systplot_totfinal_inclusive->Reset();
-    systplot_totfinal_inclusive->Sumw2();
-    systplot_totfinal_inclusive->SetLineStyle(kDashed);
-    systplot_totfinal_inclusive->SetMinimum(0);
-    systplot_totfinal_inclusive->SetTitle("Total systematic uncertainty on cross-section");
+    const int n_syst_uncorr = toadd_uncorrelated[0].size();
+    const int n_syst_1catcorr = toadd_1catcorrelated[0].size();
+    const int n_syst_allcatcorr = toadd_allcatcorrelated[0].size();
 
     for (int i=0; i<3; i++) {
-      hsysts_statistic[i]->Multiply(unfoldnevt_new[i]);
-      hsysts_uncorrelated[i]->Multiply(unfoldnevt_new[i]);
-      for (int k=0; k<n_syst_1catcorr; k++) hsysts_1catcorrelated[i][k]->Multiply(unfoldnevt_new[i]);
-      for (int k=0; k<n_syst_allcatcorr; k++) hsysts_allcatcorrelated[i][k]->Multiply(unfoldnevt_new[i]);
+      for (std::vector<TH1F*>::iterator it = toadd_everything[i].begin(); it!=toadd_everything[i].end(); it++){
+	(*it)->Multiply(xsec_centralvalue_cat[i]);
+      }
     }
-
     
     float a[n_cats][n_bins];
-    float b[n_cats][n_bins];
+    float b[n_cats][n_syst_uncorr][n_bins];
     float c[n_cats][n_syst_1catcorr][n_bins];
     float d[n_cats][n_syst_allcatcorr][n_bins];
 
 
     for (int i=0; i<n_cats; i++){
       for (int bin = 0; bin<bins_to_run; bin++){
-	a[i][bin]=hsysts_statistic[i]->GetBinContent(bin+1);
-	b[i][bin]=hsysts_uncorrelated[i]->GetBinContent(bin+1);
-	for (int k=0; k<n_syst_1catcorr; k++) c[i][k][bin]=hsysts_1catcorrelated[i][k]->GetBinContent(bin+1);
-	for (int k=0; k<n_syst_allcatcorr; k++) d[i][k][bin]=hsysts_allcatcorrelated[i][k]->GetBinContent(bin+1);
+	assert (toadd_statistic[i].size()==1);
+	a[i][bin]=toadd_statistic[i].at(0)->GetBinContent(bin+1);
+	for (int k=0; k<n_syst_uncorr; k++) b[i][k][bin]=toadd_uncorrelated[i][k]->GetBinContent(bin+1);
+	for (int k=0; k<n_syst_1catcorr; k++) c[i][k][bin]=toadd_1catcorrelated[i][k]->GetBinContent(bin+1);
+	for (int k=0; k<n_syst_allcatcorr; k++) d[i][k][bin]=toadd_allcatcorrelated[i][k]->GetBinContent(bin+1);
       }
     }
-
-
 
     float stat1bin[n_cats][bins_to_run];
     for (int i=0; i<n_cats; i++){
@@ -3090,14 +2880,12 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     for (int i=0; i<n_cats; i++){
       for (int bin = 0; bin<bins_to_run; bin++){
 	float res = 0;
-	res+=pow(b[i][bin],2);
+	for (int k=0; k<n_syst_uncorr; k++) res+=pow(b[i][k][bin],2);
 	for (int k=0; k<n_syst_1catcorr; k++) res+=pow(c[i][k][bin],2);
 	for (int k=0; k<n_syst_allcatcorr; k++) res+=pow(d[i][k][bin],2);
 	syst1bin[i][bin]=sqrt(res);
       }
     }
-
-
 
 
     float statcategory[n_cats];
@@ -3114,8 +2902,10 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       float res = 0;
       float sumc[n_syst_1catcorr];
       float sumd[n_syst_allcatcorr];
-      for (int bin = 0; bin<bins_to_run; bin++){
-	res+=pow(b[i][bin],2);
+      for (int k=0; k<n_syst_uncorr; k++){
+	for (int bin = 0; bin<bins_to_run; bin++){
+	  res+=pow(b[i][k][bin],2);
+	}
       }
       for (int k=0; k<n_syst_1catcorr; k++){
 	sumc[k]=0;
@@ -3144,7 +2934,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     for (int bin = 0; bin<bins_to_run; bin++){
       float res = 0;
       for (int i=0; i<n_cats; i++){
-        res+=pow(b[i][bin],2);
+        for (int k=0; k<n_syst_uncorr; k++) res+=pow(b[i][k][bin],2);
       }
       for (int i=0; i<n_cats; i++){
 	for (int k=0; k<n_syst_1catcorr; k++) res+=pow(c[i][k][bin],2);
@@ -3175,8 +2965,10 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       float sumc[n_cats][n_syst_1catcorr];
       float sumd[n_cats][n_syst_allcatcorr];
       for (int i=0; i<n_cats; i++){
-	for (int bin = 0; bin<bins_to_run; bin++){
-	  res+=pow(b[i][bin],2);
+	for (int k=0; k<n_syst_uncorr; k++) {
+	  for (int bin = 0; bin<bins_to_run; bin++){
+	    res+=pow(b[i][k][bin],2);
+	  }
 	}
 	for (int k=0; k<n_syst_1catcorr; k++){
 	  sumc[i][k]=0;
@@ -3196,16 +2988,9 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       systall=sqrt(res);
     }
 
-    for(int bin = 0; bin<bins_to_run; bin++) {
-      //      float val = 100*sqrt(pow(systcolumn[bin],2)+pow(statcolumn[bin],2))/unfoldnevt_tot->GetBinContent(bin+1);
-      //      (val>=10) ? printf("%.1f\\%%\n\n\n",val) : printf("%.2f\\%%\n\n\n",val);
-      systplot_totfinal_inclusive->SetBinContent(bin+1,systcolumn[bin]/unfoldnevt_tot->GetBinContent(bin+1));
-      systplot_totfinal_inclusive->SetBinError(bin+1,0);
-    }
-
 //    for(int bin = 0; bin<bins_to_run; bin++) {
-//      float val = 100*sqrt(pow(systcolumn[bin],2)+pow(statcolumn[bin],2))/unfoldnevt_tot->GetBinContent(bin+1);
-//      (val>=10) ? printf("%.1f\\%%\n\n\n",val) : printf("%.2f\\%%\n\n\n",val);
+//      systplot_totfinal_inclusive->SetBinContent(bin+1,systcolumn[bin]/xsec_centralvalue->GetBinContent(bin+1));
+//      systplot_totfinal_inclusive->SetBinError(bin+1,0);
 //    }
 
 
@@ -3217,36 +3002,34 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       std::cout << "Category " << i << ":" << std::endl;
       std::cout << std::endl;
       std::cout << "CENTRAL VALUE" << std::endl;
-      std::cout << unfoldnevt_new[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
+      std::cout << xsec_centralvalue_cat[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
       
       std::cout << "STAT UNCERTAINTY" << std::endl;
-      std::cout << statcategory[i]/unfoldnevt_new[i]->Integral() << " relative" << std::endl;
+      std::cout << statcategory[i]/xsec_centralvalue_cat[i]->Integral() << " relative" << std::endl;
       std::cout << statcategory[i]/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
 
-
       std::cout << "SYST UNCERTAINTY" << std::endl;
-      std::cout << systcategory[i]/unfoldnevt_new[i]->Integral() << " relative" << std::endl;
+      std::cout << systcategory[i]/xsec_centralvalue_cat[i]->Integral() << " relative" << std::endl;
       std::cout << systcategory[i]/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
 
       std::cout << "LUMI UNCERTAINTY" << std::endl;
       float lumi_rel = 2.2e-2;
       std::cout << lumi_rel << " relative" << std::endl;
-      std::cout << lumi_rel*unfoldnevt_new[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
+      std::cout << lumi_rel*xsec_centralvalue_cat[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
 
       std::cout << "TOTAL UNCERTAINTY" << std::endl;
-      float e_stat = statcategory[i]/unfoldnevt_new[i]->Integral();
-      float e_syst = systcategory[i]/unfoldnevt_new[i]->Integral();
+      float e_stat = statcategory[i]/xsec_centralvalue_cat[i]->Integral();
+      float e_syst = systcategory[i]/xsec_centralvalue_cat[i]->Integral();
       float e_lumi = lumi_rel;
       std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2)) << " relative" << std::endl;
-      std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2))*unfoldnevt_new[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
+      std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2))*xsec_centralvalue_cat[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
       
     }
-
 
     std::cout << std::endl;
     std::cout << "---" << std::endl;
@@ -3255,89 +3038,90 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     std::cout << "Full acceptance:" << std::endl;
     std::cout << std::endl;
     std::cout << "CENTRAL VALUE" << std::endl;
-    std::cout << unfoldnevt_tot->Integral()/intlumi/1e3 << " pb" << std::endl;
+    std::cout << xsec_centralvalue->Integral()/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
 
     std::cout << "STAT UNCERTAINTY" << std::endl;
-    std::cout << statall/unfoldnevt_tot->Integral() << " relative" << std::endl;
+    std::cout << statall/xsec_centralvalue->Integral() << " relative" << std::endl;
     std::cout << statall/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
 
 
     std::cout << "SYST UNCERTAINTY" << std::endl;
-    std::cout << systall/unfoldnevt_tot->Integral() << " relative" << std::endl;
+    std::cout << systall/xsec_centralvalue->Integral() << " relative" << std::endl;
     std::cout << systall/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
 
     std::cout << "LUMI UNCERTAINTY" << std::endl;
     float lumi_rel = 2.2e-2;
     std::cout << lumi_rel << " relative" << std::endl;
-    std::cout << lumi_rel*unfoldnevt_tot->Integral()/intlumi/1e3 << " pb" << std::endl;
+    std::cout << lumi_rel*xsec_centralvalue->Integral()/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
 
     std::cout << "TOTAL UNCERTAINTY" << std::endl;
-    float e_stat = statall/unfoldnevt_tot->Integral();
-    float e_syst = systall/unfoldnevt_tot->Integral();
+    float e_stat = statall/xsec_centralvalue->Integral();
+    float e_syst = systall/xsec_centralvalue->Integral();
     float e_lumi = lumi_rel;
     std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2)) << " relative" << std::endl;
-    std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2))*unfoldnevt_tot->Integral()/intlumi/1e3 << " pb" << std::endl;
+    std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2))*xsec_centralvalue->Integral()/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
-
+  
     TCanvas *canv3 = new TCanvas();
     canv3->cd();
-    systplot_totfinal_inclusive->Draw();
+    //    systplot_totfinal_inclusive->Draw();
     canv3->SaveAs(Form("plots/histo_systsummaryfinal_%s_inclusive.jpg", diffvariable.Data()));
     canv3->SaveAs(Form("plots/histo_systsummaryfinal_%s_inclusive.png", diffvariable.Data()));
     canv3->SaveAs(Form("plots/histo_systsummaryfinal_%s_inclusive.root", diffvariable.Data()));
     canv3->SaveAs(Form("plots/histo_systsummaryfinal_%s_inclusive.pdf", diffvariable.Data()));
 
-    TH1F *histo_uncorrelated_allcat;
-    {
+
+    TH1F *histo_uncorrelated_allcat[n_syst_uncorr];
+    for (int k=0; k<n_syst_uncorr; k++){
       std::vector<TH1F*> toadd_uncorrelated_allcat;
-      for (int i=0; i<n_cats; i++) toadd_uncorrelated_allcat.push_back(hsysts_uncorrelated[i]);
-      histo_uncorrelated_allcat = AddTHInQuadrature(toadd_uncorrelated_allcat,Form("%s_allcat",hsysts_uncorrelated[0]->GetName()));  
-      histo_uncorrelated_allcat->Divide(unfoldnevt_tot);
-      for (int bin=0; bin<bins_to_run; bin++) histo_uncorrelated_allcat->SetBinError(bin+1,0);
+      for (int i=0; i<n_cats; i++) toadd_uncorrelated_allcat.push_back(toadd_uncorrelated[i].at(k));
+      histo_uncorrelated_allcat[k] = AddTHInQuadrature(toadd_uncorrelated_allcat,Form("%s_allcat",toadd_uncorrelated[0][k]->GetName()));  
+      histo_uncorrelated_allcat[k]->Divide(xsec_centralvalue);
+      for (int bin=0; bin<bins_to_run; bin++) histo_uncorrelated_allcat[k]->SetBinError(bin+1,0);
     }
     TH1F *histo_1catcorrelated_allcat[n_syst_1catcorr];
     for (int k=0; k<n_syst_1catcorr; k++){
       std::vector<TH1F*> toadd_1catcorrelated_allcat;
-      for (int i=0; i<n_cats; i++) toadd_1catcorrelated_allcat.push_back(hsysts_1catcorrelated[i][k]);
-      histo_1catcorrelated_allcat[k] = AddTHInQuadrature(toadd_1catcorrelated_allcat,Form("%s_allcat",hsysts_1catcorrelated[0][k]->GetName()));
-      histo_1catcorrelated_allcat[k]->Divide(unfoldnevt_tot);
+      for (int i=0; i<n_cats; i++) toadd_1catcorrelated_allcat.push_back(toadd_1catcorrelated[i][k]);
+      histo_1catcorrelated_allcat[k] = AddTHInQuadrature(toadd_1catcorrelated_allcat,Form("%s_allcat",toadd_1catcorrelated[0][k]->GetName()));
+      histo_1catcorrelated_allcat[k]->Divide(xsec_centralvalue);
       for (int bin=0; bin<bins_to_run; bin++) histo_1catcorrelated_allcat[k]->SetBinError(bin+1,0);
     }
     TH1F *histo_allcatcorrelated_allcat[n_syst_allcatcorr];
     for (int k=0; k<n_syst_allcatcorr; k++){
-      histo_allcatcorrelated_allcat[k] = (TH1F*)(hsysts_allcatcorrelated[0][k]->Clone(Form("%s_allcat",hsysts_allcatcorrelated[0][k]->GetName())));
+      histo_allcatcorrelated_allcat[k] = (TH1F*)(toadd_allcatcorrelated[0][k]->Clone(Form("%s_allcat",toadd_allcatcorrelated[0][k]->GetName())));
       histo_allcatcorrelated_allcat[k]->Reset();
-      for (int i=0; i<n_cats; i++) histo_allcatcorrelated_allcat[k]->Add(hsysts_allcatcorrelated[i][k]);
-      histo_allcatcorrelated_allcat[k]->Divide(unfoldnevt_tot);
+      for (int i=0; i<n_cats; i++) histo_allcatcorrelated_allcat[k]->Add(toadd_allcatcorrelated[i][k]);
+      histo_allcatcorrelated_allcat[k]->Divide(xsec_centralvalue);
       for (int bin=0; bin<bins_to_run; bin++) histo_allcatcorrelated_allcat[k]->SetBinError(bin+1,0);
     }
 
     TCanvas *canv3b = new TCanvas();
     canv3b->cd();
-    systplot_totfinal_inclusive->SetMinimum(0);
-    systplot_totfinal_inclusive->Draw();
-    histo_uncorrelated_allcat->Draw("same");
-    for (int k=0; k<n_syst_1catcorr; k++) histo_1catcorrelated_allcat[k]->Draw("same");
-    for (int k=0; k<n_syst_allcatcorr; k++) histo_allcatcorrelated_allcat[k]->Draw("same");
-    TLegend *leg_canv3b = new TLegend(0.6,0.7,0.9,0.9);
-    leg_canv3b->AddEntry(histo_uncorrelated_allcat,"Fit bias","l");
-    leg_canv3b->AddEntry(histo_1catcorrelated_allcat[0],"Zee subtraction","l");
-    leg_canv3b->AddEntry(histo_1catcorrelated_allcat[1],"Template stat. fluctuation","l");
-    leg_canv3b->AddEntry(histo_1catcorrelated_allcat[2],"Efficiency uncertainty","l");
-    leg_canv3b->AddEntry(histo_1catcorrelated_allcat[3],"Unfolding uncertainty","l");
-    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[0],"Prompt template shape EB","l");
-    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[1],"Fakes template shape EB","l");
-    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[2],"Prompt template shape EE","l");
-    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[3],"Fakes template shape EE","l");
-    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[4],"Fragmentation description","l");
-    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[5],"Additional noise in evt. mixing","l");
-    leg_canv3b->AddEntry(systplot_totfinal_inclusive,"Total syst. uncertainty","l");
-    leg_canv3b->Draw();
-    systplot_totfinal_inclusive->GetYaxis()->SetRangeUser(0,systplot_totfinal_inclusive->GetBinContent(systplot_totfinal_inclusive->GetMaximumBin())*1.05);
+//    systplot_totfinal_inclusive->SetMinimum(0);
+//    systplot_totfinal_inclusive->Draw();
+//    histo_uncorrelated_allcat->Draw("same");
+//    for (int k=0; k<n_syst_1catcorr; k++) histo_1catcorrelated_allcat[k]->Draw("same");
+//    for (int k=0; k<n_syst_allcatcorr; k++) histo_allcatcorrelated_allcat[k]->Draw("same");
+//    TLegend *leg_canv3b = new TLegend(0.6,0.7,0.9,0.9);
+//    leg_canv3b->AddEntry(histo_uncorrelated_allcat,"Fit bias","l");
+//    leg_canv3b->AddEntry(histo_1catcorrelated_allcat[0],"Zee subtraction","l");
+//    leg_canv3b->AddEntry(histo_1catcorrelated_allcat[1],"Template stat. fluctuation","l");
+//    leg_canv3b->AddEntry(histo_1catcorrelated_allcat[2],"Efficiency uncertainty","l");
+//    leg_canv3b->AddEntry(histo_1catcorrelated_allcat[3],"Unfolding uncertainty","l");
+//    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[0],"Prompt template shape EB","l");
+//    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[1],"Fakes template shape EB","l");
+//    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[2],"Prompt template shape EE","l");
+//    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[3],"Fakes template shape EE","l");
+//    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[4],"Fragmentation description","l");
+//    leg_canv3b->AddEntry(histo_allcatcorrelated_allcat[5],"Additional noise in evt. mixing","l");
+//    leg_canv3b->AddEntry(systplot_totfinal_inclusive,"Total syst. uncertainty","l");
+//    leg_canv3b->Draw();
+//    systplot_totfinal_inclusive->GetYaxis()->SetRangeUser(0,systplot_totfinal_inclusive->GetBinContent(systplot_totfinal_inclusive->GetMaximumBin())*1.05);
     canv3b->Update();
 
     canv3b->SaveAs(Form("plots/histo_systsummaryfinal_splitted_%s_inclusive.jpg", diffvariable.Data()));
@@ -3347,16 +3131,14 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
 
 
-      
-
-    TH1F *histo_finalxs_fortheorycomp = (TH1F*)(systplot_totfinal_inclusive->Clone(Form("histo_finalxs_fortheorycomp_%s",diffvariable.Data())));
+    TH1F *histo_finalxs_fortheorycomp = (TH1F*)(xsec_centralvalue->Clone(Form("histo_finalxs_fortheorycomp_%s",diffvariable.Data())));
     histo_finalxs_fortheorycomp->SetTitle("Cross section (unfolding+efficiency) (stat.+syst.+lumi.)");
     histo_finalxs_fortheorycomp->Reset();
     histo_finalxs_fortheorycomp->GetYaxis()->UnZoom();
-    histo_finalxs_fortheorycomp->SetLineStyle(1);
+    SetFormat(histo_finalxs_fortheorycomp);
     for (int bin=0; bin<bins_to_run; bin++){
-      float xs = unfoldnevt_tot->GetBinContent(bin+1)/intlumi/1e3/unfoldnevt_tot->GetBinWidth(bin+1);
-      float relerr = sqrt(pow(systcolumn[bin]/unfoldnevt_tot->GetBinContent(bin+1),2)+pow(statcolumn[bin]/unfoldnevt_tot->GetBinContent(bin+1),2)+pow(lumi_rel,2));
+      float xs = xsec_centralvalue->GetBinContent(bin+1)/1e3;
+      float relerr = sqrt(pow(systcolumn[bin]/xsec_centralvalue->GetBinContent(bin+1),2)+pow(statcolumn[bin]/xsec_centralvalue->GetBinContent(bin+1),2)+pow(lumi_rel,2));
       histo_finalxs_fortheorycomp->SetBinContent(bin+1,xs);
       histo_finalxs_fortheorycomp->SetBinError(bin+1,relerr*xs);
       std::cout << "Bin " << bin << " " << xs << " +/- " << 100*relerr << " % (stat.+syst.+lumi.)" << std::endl;
@@ -3367,14 +3149,14 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
     histo_finalxs_fortheorycomp->SaveAs(Form("plots/%s.root",histo_finalxs_fortheorycomp->GetName()));
 
-    TH1F *histo_finalxsnolumi_fortheorycomp = (TH1F*)(systplot_totfinal_inclusive->Clone(Form("histo_finalxsnolumi_fortheorycomp_%s",diffvariable.Data())));
+    TH1F *histo_finalxsnolumi_fortheorycomp = (TH1F*)(xsec_centralvalue->Clone(Form("histo_finalxsnolumi_fortheorycomp_%s",diffvariable.Data())));
     histo_finalxsnolumi_fortheorycomp->SetTitle("Cross section (unfolding+efficiency) (stat.+syst.)");
     histo_finalxsnolumi_fortheorycomp->Reset();
     histo_finalxsnolumi_fortheorycomp->GetYaxis()->UnZoom();
-    histo_finalxsnolumi_fortheorycomp->SetLineStyle(1);
+    SetFormat(histo_finalxsnolumi_fortheorycomp);
     for (int bin=0; bin<bins_to_run; bin++){
-      float xs = unfoldnevt_tot->GetBinContent(bin+1)/intlumi/1e3/unfoldnevt_tot->GetBinWidth(bin+1);
-      float relerr = sqrt(pow(systcolumn[bin]/unfoldnevt_tot->GetBinContent(bin+1),2)+pow(statcolumn[bin]/unfoldnevt_tot->GetBinContent(bin+1),2));
+      float xs = xsec_centralvalue->GetBinContent(bin+1)/1e3;
+      float relerr = sqrt(pow(systcolumn[bin]/xsec_centralvalue->GetBinContent(bin+1),2)+pow(statcolumn[bin]/xsec_centralvalue->GetBinContent(bin+1),2));
       histo_finalxsnolumi_fortheorycomp->SetBinContent(bin+1,xs);
       histo_finalxsnolumi_fortheorycomp->SetBinError(bin+1,relerr*xs);
       std::cout << "Bin " << bin << " " << xs << " +/- " << 100*relerr << " % (stat.+syst.)" << std::endl;
@@ -3382,7 +3164,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     TCanvas *canv5 = new TCanvas();
     canv5->cd();
     histo_finalxsnolumi_fortheorycomp->Draw("e1");
-
     histo_finalxsnolumi_fortheorycomp->SaveAs(Form("plots/%s.root",histo_finalxsnolumi_fortheorycomp->GetName()));
 
   }
@@ -4626,3 +4407,34 @@ void get_roodset_from_ttree(TDirectoryFile *f, TString treename, RooDataSet* &ro
   roodset->Print();
 
 }
+
+
+float get_ttree_sumofweights(TDirectoryFile *f, TString treename){
+
+  TTree *t = NULL;
+  f->GetObject(treename.Data(),t);
+  assert (t);
+  t->SetBranchStatus("*",0);
+
+  float v_rooweight;
+  TBranch *b_rooweight;
+
+  float* ptrs[1]={&v_rooweight};
+  TBranch** branches[1]={&b_rooweight};
+  RooArgSet args;
+
+  TString name="rooweight";
+  int i=0;
+  t->SetBranchStatus(name.Data(),1);
+  t->SetBranchAddress(name.Data(),ptrs[i],branches[i]);
+
+  float totw=0;
+
+  for (int j=0; j<t->GetEntries(); j++){
+    t->GetEntry(j);
+    totw+=*(ptrs[i]);
+  }
+
+  return totw;
+
+};

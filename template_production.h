@@ -179,6 +179,7 @@ public :
 
    Bool_t gen_in_acc;
    Bool_t reco_in_acc;
+   Bool_t matched;
    
    // List of branches
    TBranch        *b_event_fileuuid;   //!
@@ -296,6 +297,7 @@ public :
 
    TBranch *b_gen_in_acc;
    TBranch *b_reco_in_acc;
+   TBranch *b_matched;
 
 
    template_production(TTree *tree=0);
@@ -367,6 +369,7 @@ public :
    TString get_name_true_purity_isnotpp(int region, TString diffvariable);
    TString get_name_template2d_roodset(int region, TString sigorbkg);
    TString get_name_responsematrix_effunf(int region, TString diffvariable);
+   TString get_name_zeehisto(int region, TString diffvariable);
 
    Float_t pholead_outvar;
    Float_t photrail_outvar;
@@ -391,8 +394,12 @@ public :
    Bool_t do2ftemplate;
    Bool_t doeffunf;
 
+   TH2F *histo_zee_scalefactor;
+   TH1F *histo_zuug_scalefactor;
+
    map<TString,roounfoldmatrices_struct> responsematrix_effunf;
    map<TString,RooUnfoldResponse*> calculated_responsematrix_effunf;
+   map<TString,TH1F*> histo_zee_yieldtosubtract;
 
    int whichnewtemplate;
 
@@ -405,6 +412,7 @@ public :
    float getpuenergy(int reg, float eta);
    float geteffarea(int reg, float eta);
    std::pair<float,float> getscalefactor_foreffunf(float pho1_pt, float pho2_pt, float pho1_eta, float pho2_eta, float pho1_r9, float pho2_r9);
+   std::pair<float,float> getscalefactor_forzeesubtraction(int ev_ok_for_dset);
 
    TFile *out;
 
@@ -433,6 +441,9 @@ template_production::template_production(TTree *tree)
    do2ftemplate = false;
    do_event_mixing = false;
    doeffunf = false;
+
+   histo_zee_scalefactor = NULL;
+   histo_zuug_scalefactor = NULL;
 
    whichnewtemplate = -1;
 
@@ -588,10 +599,13 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
     for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
       for (int i=0; i<3; i++) {
 	roounfoldmatrices_struct a;
-	a.htruth = new TH1F("htruth","htruth",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
-	a.hreco = new TH1F("hreco","hreco",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
-	a.hmatched = new TH2F("hmatched","hmatched",diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	a.htruth = new TH1F(Form("htruth_%s_%d",diffvariable->Data(),i),Form("htruth_%s_%d",diffvariable->Data(),i),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	a.hreco = new TH1F(Form("hreco_%s_%d",diffvariable->Data(),i),Form("hreco_%s_%d",diffvariable->Data(),i),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
+	a.hmatched = new TH2F(Form("hmatched_%s_%d",diffvariable->Data(),i),Form("hmatched_%s_%d",diffvariable->Data(),i),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
 	responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = a;
+	TString reg;
+	if (i==0) reg="EBEB"; else if (i==1) reg="EBEE"; else if (i==2) reg="EEEE";
+	histo_zee_yieldtosubtract[get_name_zeehisto(i,*diffvariable)] = new TH1F(Form("histo_zee_yieldtosubtract_%s_%s",diffvariable->Data(),reg.Data()),Form("histo_zee_yieldtosubtract_%s_%s",diffvariable->Data(),reg.Data()),diffvariables_nbins_list(*diffvariable)-1,diffvariables_binsdef_list(*diffvariable));
       }
     }
   }
@@ -764,6 +778,7 @@ void template_production::Init()
 
    fChain->SetBranchAddress("gen_in_acc",&gen_in_acc,&b_gen_in_acc);
    fChain->SetBranchAddress("reco_in_acc",&reco_in_acc,&b_reco_in_acc);
+   fChain->SetBranchAddress("matched",&matched,&b_matched);
 
    Notify();
 }
@@ -850,6 +865,10 @@ void template_production::WriteOutput(){
 	TString title = get_name_responsematrix_effunf(i,*diffvariable);
 	calculated_responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)] = new RooUnfoldResponse(a.hreco,a.htruth,a.hmatched,title.Data(),title.Data());
 	calculated_responsematrix_effunf[get_name_responsematrix_effunf(i,*diffvariable)]->Write();
+	a.hreco->Write();
+	a.htruth->Write();
+	a.hmatched->Write();
+	histo_zee_yieldtosubtract[get_name_zeehisto(i,*diffvariable)]->Write();
       }
     }
   }
@@ -987,6 +1006,14 @@ TString template_production::get_name_template2d_roodset(int region, TString sig
 
 TString template_production::get_name_responsematrix_effunf(int region, TString diffvariable){
   TString name_signal="responsematrix_effunf";
+  TString reg;
+  if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
+  TString t=Form("%s_%s_%s",name_signal.Data(),reg.Data(),diffvariable.Data());
+  return t;
+};
+
+TString template_production::get_name_zeehisto(int region, TString diffvariable){
+  TString name_signal="histo_zee_yieldtosubtract";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
   TString t=Form("%s_%s_%s",name_signal.Data(),reg.Data(),diffvariable.Data());
