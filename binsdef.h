@@ -273,7 +273,8 @@ source_systematic_struct __systematics__[]={
   ConstructSystematic("templateshapeMCpromptdrivenEE","Prompt template shape EE",1,0,0,0,1,kRed,kDotted),
   ConstructSystematic("templateshapeMCfakedrivenEE","Fake template shape EE",1,0,0,0,1,kBlue,kDotted),
   ConstructSystematic("templateshape2frag","Fragmentation effect on template",1,0,0,0,1,kOrange),
-  ConstructSystematic("noise_mixing","Event mixing effect on template",1,0,0,0,1,kCyan)
+  ConstructSystematic("noise_mixing","Event mixing effect on template",1,0,0,0,1,kCyan),
+  ConstructSystematic("statistic","Statistical uncertainty",1,0,1,0,0,kBlack,kDashed)
 };
 std::vector<source_systematic_struct> systematics_list (__systematics__, __systematics__ + sizeof(__systematics__) / sizeof(source_systematic_struct) );
 

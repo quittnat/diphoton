@@ -2389,6 +2389,8 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       }      
     }
 
+    cout << "Integral of subtraction: " << histo_zee_subtraction->Integral() << " ev. = xsec " << histo_zee_subtraction->Integral()/intlumi/1e3 << " pb" << endl;
+
     // prepare central value raw yield
     for (int bin=0; bin<bins_to_run; bin++) {
       float pp = 	       purity[0]->GetBinContent(bin+1);
@@ -2408,12 +2410,17 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       float err=sqrt(pow(pp_err/pp,2)+pow(errpoiss,2));
 
       ngg_centralvalue_raw->SetBinError(bin+1,err*ngg_centralvalue_raw->GetBinContent(bin+1));
-      ngg_centralvalue_raw->Add(histo_zee_subtraction,-1);
-
-      xsec_centralvalue_raw->SetBinContent(bin+1,ngg_centralvalue_raw->GetBinContent(bin+1)/intlumi/xsec_centralvalue_raw->GetBinWidth(bin+1));      
-      xsec_centralvalue_raw->SetBinError(bin+1,xsec_centralvalue_raw->GetBinContent(bin+1)/ngg_centralvalue_raw->GetBinContent(bin+1)*ngg_centralvalue_raw->GetBinError(bin+1));
 
     }
+    
+    ngg_centralvalue_raw->Add(histo_zee_subtraction,-1);
+    
+    for (int bin=0; bin<bins_to_run; bin++) {
+      xsec_centralvalue_raw->SetBinContent(bin+1,ngg_centralvalue_raw->GetBinContent(bin+1)/intlumi/xsec_centralvalue_raw->GetBinWidth(bin+1));      
+      xsec_centralvalue_raw->SetBinError(bin+1,xsec_centralvalue_raw->GetBinContent(bin+1)/ngg_centralvalue_raw->GetBinContent(bin+1)*ngg_centralvalue_raw->GetBinError(bin+1));
+    }
+    
+    
     }
 
 
@@ -2719,13 +2726,14 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   {
   TCanvas *xsec_canv = new TCanvas("xsec_canv","xsec_canv");
   xsec_canv->cd();
-  xsec_centralvalue_raw->SetStats(0);
-  //  xsec_centralvalue_raw->SetTitle(Form("Differential cross section - %s category",splitting.Data()));
-  xsec_centralvalue_raw->GetYaxis()->SetTitle(Form("d#sigma/d%s (fb%s)",diffvariables_names_list(diffvariable).Data(),get_unit(diffvariable)));
-  xsec_centralvalue_raw->SetMinimum(0);
+  xsec_centralvalue->SetStats(0);
+  //  xsec_centralvalue->SetTitle(Form("Differential cross section - %s category",splitting.Data()));
+  xsec_centralvalue->GetYaxis()->SetTitle(Form("d#sigma/d%s (fb%s)",diffvariables_names_list(diffvariable).Data(),get_unit(diffvariable)));
+  xsec_centralvalue->SetMinimum(0);
   SetFormat(xsec_centralvalue_raw,kRed,20,kDotted);
   SetFormat(xsec_centralvalue,kBlack,20);
-  xsec_centralvalue_raw->Draw("e1");
+  xsec_centralvalue->Draw("e1");
+  xsec_centralvalue_raw->Draw("e1 same");
   xsec_centralvalue->Draw("e1 same");
 
   TLegend *legxsec = (diffvariable!="dphi") ? new TLegend(0.7,0.7,0.9,0.9) : new TLegend(0.1,0.7,0.3,0.9);
@@ -2754,15 +2762,14 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   {
   TFile *xsec_file = new TFile(Form("plots/histo_xsec_%s_%s.root", diffvariable.Data(),splitting.Data()),"recreate");
   xsec_file->cd();
-  xsec_centralvalue->Write();
-  ngg_centralvalue->Write();
-  for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++) it->second->Write();
-  xsec_centralvalue_raw->Write();
-  ngg_centralvalue_raw->Write();
+  if (xsec_centralvalue) xsec_centralvalue->Write();
+  if (ngg_centralvalue) ngg_centralvalue->Write();
+  for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++) if (it->second) it->second->Write();
+  if (xsec_centralvalue_raw) xsec_centralvalue_raw->Write();
+  if (ngg_centralvalue_raw) ngg_centralvalue_raw->Write();
   for (int i=0; i<4; i++) if (purity[i]) purity[i]->Write();
-  xsec_file->Close();  
+  xsec_file->Close();
   }
-
 
   if (splitting!="inclusive"){
 
@@ -2825,7 +2832,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     for (int i=0; i<n_cats; i++){
       for (std::map<TString,source_systematic_struct>::const_iterator it = map_systematics_list.begin(); it!=map_systematics_list.end(); it++){
 	TH1F *hist = NULL;
-	fsysts[i]->GetObject(it->first.Data(),hist);
+	fsysts[i]->GetObject(Form("systplot_%s",it->first.Data()),hist);
 	if (!hist) continue;
 	hist->Sumw2();
 	toadd_everything[i].push_back(hist);
