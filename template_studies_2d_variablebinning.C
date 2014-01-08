@@ -2624,16 +2624,19 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       axsec_file[i]->GetObject("xsec_centralvalue",axsec[i]);
       axsec_file[i]->GetObject("xsec_centralvalue_raw",axsec_raw[i]);
       axsec_file[i]->GetObject("ngg_centralvalue",angg[i]);
+      angg[i]->Print();
+      cout << sp[i].Data() << " " << angg[i]->Integral() << " -> " << angg[i]->Integral()/intlumi/1e3 << " pb" << endl;
       xsec_centralvalue_cat[i] = (TH1F*)(axsec[i]->Clone(Form("xsec_centralvalue_%s",splitting.Data())));
     }
     for (int i=1; i<3; i++) {
       axsec[0]->Add(axsec[i]);
-      axsec[0]->Add(axsec_raw[i]);
+      axsec_raw[0]->Add(axsec_raw[i]);
       angg[0]->Add(angg[i]);
     }
     xsec_centralvalue=axsec[0];
     xsec_centralvalue_raw=axsec_raw[0];
     ngg_centralvalue=angg[0];
+    cout << "incl " << ngg_centralvalue->Integral() << " -> " << ngg_centralvalue->Integral()/intlumi/1e3 << " pb" << endl;
 
     TH1F *h[3][4];
     for (int i=0; i<3; i++){
@@ -2646,17 +2649,21 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     TH1F *totev[3];
     TH1F *ev[3][4];
 
-    for (int i=0; i<3; i++) {totev[i] = (TH1F*)(angg[i]->Clone()); totev[i]->Divide(h[i][0]);}
-    for (int j=0; j<4; j++) for (int i=0; i<3; i++) {ev[i][j] = (TH1F*)(totev[i]->Clone()); ev[i][j]->Multiply(h[i][j]);} 
+    for (int i=0; i<3; i++) {totev[i] = (TH1F*)(angg[i]->Clone(Form("totev_%d",i))); totev[i]->Divide(h[i][0]);}
+    for (int j=0; j<4; j++) for (int i=0; i<3; i++) {ev[i][j] = (TH1F*)(totev[i]->Clone(Form("ev_%d_%d",i,j))); ev[i][j]->Multiply(h[i][j]);} 
     for (int j=0; j<4; j++) for (int i=1; i<3; i++) ev[0][j]->Add(ev[i][j]);
     for (int i=1; i<3; i++) totev[0]->Add(totev[i]);  
     for (int j=0; j<4; j++) ev[0][j]->Divide(totev[0]);
     ev[0][1]->Add(ev[0][2]);
 
-    purity[0] = ev[0][0];
-    purity[1] = ev[0][1];
+    ev[0][0]->Print();
+    ev[0][1]->Print();
+    ev[0][3]->Print();
+
+    purity[0] = ev[0][0]; purity[0]->SetName("purity_sigsig");
+    purity[1] = ev[0][1]; purity[1]->SetName("purity_sigbkg");
     purity[2] = (TH1F*)(purity[1]->Clone("purity_bkgsig_donotuse")); purity[2]->Reset();
-    purity[3] = ev[0][3];
+    purity[3] = ev[0][3]; purity[3]->SetName("purity_bkgbkg");
 
   }
 
@@ -2732,7 +2739,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   xsec_canv->cd();
   xsec_centralvalue->SetStats(0);
   //  xsec_centralvalue->SetTitle(Form("Differential cross section - %s category",splitting.Data()));
-  xsec_centralvalue->GetYaxis()->SetTitle(Form("d#sigma/d%s (fb%s)",diffvariables_names_list(diffvariable).Data(),get_unit(diffvariable)));
+  xsec_centralvalue->GetYaxis()->SetTitle(Form("d#sigma/d%s (pb%s)",diffvariables_names_list(diffvariable).Data(),get_unit(diffvariable)));
   xsec_centralvalue->SetMinimum(0);
   SetFormat(xsec_centralvalue_raw,kRed,20,kDotted);
   SetFormat(xsec_centralvalue,kBlack,20);
@@ -3042,32 +3049,32 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     std::cout << "Full acceptance:" << std::endl;
     std::cout << std::endl;
     std::cout << "CENTRAL VALUE" << std::endl;
-    std::cout << xsec_centralvalue->Integral()/intlumi/1e3 << " pb" << std::endl;
+    std::cout << ngg_centralvalue->Integral()/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
 
     std::cout << "STAT UNCERTAINTY" << std::endl;
-    std::cout << statall/xsec_centralvalue->Integral() << " relative" << std::endl;
+    std::cout << statall/ngg_centralvalue->Integral() << " relative" << std::endl;
     std::cout << statall/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
 
 
     std::cout << "SYST UNCERTAINTY" << std::endl;
-    std::cout << systall/xsec_centralvalue->Integral() << " relative" << std::endl;
+    std::cout << systall/ngg_centralvalue->Integral() << " relative" << std::endl;
     std::cout << systall/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
 
     std::cout << "LUMI UNCERTAINTY" << std::endl;
     float lumi_rel = 2.2e-2;
     std::cout << lumi_rel << " relative" << std::endl;
-    std::cout << lumi_rel*xsec_centralvalue->Integral()/intlumi/1e3 << " pb" << std::endl;
+    std::cout << lumi_rel*ngg_centralvalue->Integral()/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
 
     std::cout << "TOTAL UNCERTAINTY" << std::endl;
-    float e_stat = statall/xsec_centralvalue->Integral();
-    float e_syst = systall/xsec_centralvalue->Integral();
+    float e_stat = statall/ngg_centralvalue->Integral();
+    float e_syst = systall/ngg_centralvalue->Integral();
     float e_lumi = lumi_rel;
     std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2)) << " relative" << std::endl;
-    std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2))*xsec_centralvalue->Integral()/intlumi/1e3 << " pb" << std::endl;
+    std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2))*ngg_centralvalue->Integral()/intlumi/1e3 << " pb" << std::endl;
     std::cout << std::endl;
   
     TCanvas *canv3 = new TCanvas();
