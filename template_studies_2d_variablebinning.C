@@ -2340,8 +2340,9 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
   // objects for plots, to be filled
   TH1F *xsec_centralvalue = NULL;
-  TH1F *xsec_centralvalue_cat[3] = {NULL,NULL,NULL};
   TH1F *ngg_centralvalue = NULL;
+  TH1F *xsec_centralvalue_cat[3] = {NULL,NULL,NULL};
+  TH1F *ngg_centralvalue_cat[3] = {NULL,NULL,NULL};
   std::map<TString,TH1F*> systplots;
   TH1F *xsec_centralvalue_raw = NULL;
   TH1F *ngg_centralvalue_raw = NULL;
@@ -2627,6 +2628,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       angg[i]->Print();
       cout << sp[i].Data() << " " << angg[i]->Integral() << " -> " << angg[i]->Integral()/intlumi/1e3 << " pb" << endl;
       xsec_centralvalue_cat[i] = (TH1F*)(axsec[i]->Clone(Form("xsec_centralvalue_%s",splitting.Data())));
+      ngg_centralvalue_cat[i] = (TH1F*)(angg[i]->Clone(Form("ngg_centralvalue_%s",splitting.Data())));
     }
     for (int i=1; i<3; i++) {
       axsec[0]->Add(axsec[i]);
@@ -2860,7 +2862,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
     for (int i=0; i<3; i++) {
       for (std::vector<TH1F*>::iterator it = toadd_everything[i].begin(); it!=toadd_everything[i].end(); it++){
-	(*it)->Multiply(xsec_centralvalue_cat[i]);
+	(*it)->Multiply(ngg_centralvalue_cat[i]);
       }
     }
     
@@ -3013,31 +3015,31 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       std::cout << "Category " << i << ":" << std::endl;
       std::cout << std::endl;
       std::cout << "CENTRAL VALUE" << std::endl;
-      std::cout << xsec_centralvalue_cat[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
+      std::cout << ngg_centralvalue_cat[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
       
       std::cout << "STAT UNCERTAINTY" << std::endl;
-      std::cout << statcategory[i]/xsec_centralvalue_cat[i]->Integral() << " relative" << std::endl;
+      std::cout << statcategory[i]/ngg_centralvalue_cat[i]->Integral() << " relative" << std::endl;
       std::cout << statcategory[i]/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
 
       std::cout << "SYST UNCERTAINTY" << std::endl;
-      std::cout << systcategory[i]/xsec_centralvalue_cat[i]->Integral() << " relative" << std::endl;
+      std::cout << systcategory[i]/ngg_centralvalue_cat[i]->Integral() << " relative" << std::endl;
       std::cout << systcategory[i]/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
 
       std::cout << "LUMI UNCERTAINTY" << std::endl;
       float lumi_rel = 2.2e-2;
       std::cout << lumi_rel << " relative" << std::endl;
-      std::cout << lumi_rel*xsec_centralvalue_cat[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
+      std::cout << lumi_rel*ngg_centralvalue_cat[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
 
       std::cout << "TOTAL UNCERTAINTY" << std::endl;
-      float e_stat = statcategory[i]/xsec_centralvalue_cat[i]->Integral();
-      float e_syst = systcategory[i]/xsec_centralvalue_cat[i]->Integral();
+      float e_stat = statcategory[i]/ngg_centralvalue_cat[i]->Integral();
+      float e_syst = systcategory[i]/ngg_centralvalue_cat[i]->Integral();
       float e_lumi = lumi_rel;
       std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2)) << " relative" << std::endl;
-      std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2))*xsec_centralvalue_cat[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
+      std::cout << sqrt(pow(e_stat,2)+pow(e_syst,2)+pow(e_lumi,2))*ngg_centralvalue_cat[i]->Integral()/intlumi/1e3 << " pb" << std::endl;
       std::cout << std::endl;
       
     }
