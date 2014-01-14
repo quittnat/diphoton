@@ -1390,6 +1390,9 @@ std::pair<float,float> template_production::getscalefactor_foreffunf(float pho1_
 
   // DEBUG XXX da aggiungere sf uncertainties e come gestirle nel seguito
 
+  pho1_eta = fabs(pho1_eta);
+  pho2_eta = fabs(pho2_eta);
+
   if (!histo_zee_scalefactor) {
     TFile *file_histo_zee_scalefactor = new TFile("histo_scalefactor_Zee_totaluncertainty.root");
     file_histo_zee_scalefactor->GetObject("histo_withsyst",histo_zee_scalefactor);
@@ -1416,10 +1419,26 @@ std::pair<float,float> template_production::getscalefactor_foreffunf(float pho1_
   else sf *= (pho1_r9>r9_threshold && pho2_r9>r9_threshold) ? trig_eff_notEBEB_highr9 :trig_eff_notEBEB_lowr9;
 
   // Efficiency data/mc scale factors
-  sf*=histo_zee_scalefactor->GetBinContent(histo_zee_scalefactor->FindBin(pho1_pt,fabs(pho1_eta)));
-  sf*=histo_zee_scalefactor->GetBinContent(histo_zee_scalefactor->FindBin(pho2_pt,fabs(pho2_eta)));
-  sf*=histo_zuug_scalefactor->GetBinContent(histo_zuug_scalefactor->FindBin(fabs(pho1_eta)));
-  sf*=histo_zuug_scalefactor->GetBinContent(histo_zuug_scalefactor->FindBin(fabs(pho2_eta)));
+  {
+    int binx;
+    int biny;
+    binx = histo_zee_scalefactor->GetXaxis()->FindBin(pho1_pt);
+    biny = histo_zee_scalefactor->GetYaxis()->FindBin(pho1_eta);
+    if (binx>histo_zee_scalefactor->GetNbinsX()) binx=histo_zee_scalefactor->GetNbinsX(); 
+    if (biny>histo_zee_scalefactor->GetNbinsY()) biny=histo_zee_scalefactor->GetNbinsY(); 
+    sf*=histo_zee_scalefactor->GetBinContent(binx,biny);
+    binx = histo_zee_scalefactor->GetXaxis()->FindBin(pho2_pt);
+    biny = histo_zee_scalefactor->GetYaxis()->FindBin(pho2_eta);
+    if (binx>histo_zee_scalefactor->GetNbinsX()) binx=histo_zee_scalefactor->GetNbinsX(); 
+    if (biny>histo_zee_scalefactor->GetNbinsY()) biny=histo_zee_scalefactor->GetNbinsY(); 
+    sf*=histo_zee_scalefactor->GetBinContent(binx,biny);
+  }
+  {
+    int bin;
+    bin = histo_zuug_scalefactor->GetXaxis()->FindBin(pho1_eta);
+    if (bin>histo_zuug_scalefactor->GetNbinsX()) bin=histo_zuug_scalefactor->GetNbinsX();
+    sf*=histo_zuug_scalefactor->GetBinContent(bin);
+  }
 
   return std::pair<float,float>(sf,sferr);
 
@@ -1433,11 +1452,11 @@ std::pair<float,float> template_production::getscalefactor_forzeesubtraction(int
   sf*=3048./2475.;
 
   // p(e->g) efficiency scale factor
-  if (ev_ok_for_dset==0) sf*=pow(0.979,2);
-  else if (ev_ok_for_dset==1) sf*=0.979*0.985;
-  else if (ev_ok_for_dset==2) sf*=pow(0.985,2);
+  if (ev_ok_for_dset==0) sf*=pow(1.372,2);
+  else if (ev_ok_for_dset==1) sf*=1.372*1.096;
+  else if (ev_ok_for_dset==2) sf*=pow(1.096,2);
   
-  
+  // DEBUG XXX: TO BE REDERIVED!!!
   // fitted pp purity fraction in Zee events
   if (ev_ok_for_dset==0) sf*=8.6542e-01;
   else if (ev_ok_for_dset==1) sf*=7.9537e-01;
