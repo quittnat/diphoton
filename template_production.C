@@ -1,12 +1,12 @@
-#ifndef template_production_cxx
-#define template_production_cxx
+#ifndef template_production_class_cxx
+#define template_production_class_cxx
 #include "template_production.h"
 
 #include <algorithm>
 
 using namespace std;
 
-void template_production::Loop(int maxevents)
+void template_production_class::Loop(int maxevents)
 {
 
   int counter_selection = 0;
@@ -287,7 +287,6 @@ void template_production::Loop(int maxevents)
     //    if (jentry==1e+4) break;
 
     // initial kinematic selection
-    //    if (dodistribution) if (pholead_pt<40 || photrail_pt<30 || dipho_mgg_photon<80) continue;
     if (dodistribution) if (pholead_pt<40 || photrail_pt<25) continue;
     if (do2dtemplate) if (pholead_pt<40 || photrail_pt<25) continue;
     float cutpt = (mode=="muon") ? 10 : 25;
@@ -301,26 +300,10 @@ void template_production::Loop(int maxevents)
       if (dipho_mgg_photon<60 || dipho_mgg_photon>150) continue;
     }
 
-    //    if (mode=="background") if (pholead_PhoMCmatchexitcode!=3) continue;
-
-    //    if (mode=="background") if (pholead_PhoMCmatchexitcode!=1 && pholead_PhoMCmatchexitcode!=2) continue;
-
-    //    if (mode=="background") if (pholead_PhoMCmatchexitcode!=0) continue;  
-
-    //    if (isdata && event_CSCTightHaloID>0) continue;
-    //if (mode!="muon" && event_NMuons>0) continue;
-    //if (mode!="muon" && event_NMuonsTot>0) continue;
-    //    if (!isdata && (event_PUOOTnumInteractionsEarly<20 && event_PUOOTnumInteractionsLate<20)) continue;
-    //    if (!isdata && event_PUOOTnumInteractionsEarly>3) continue;
-
     if (mode=="fragmentation") if (pholead_PhoMCmatchexitcode!=1) continue;
     if (mode=="nofragmentation") if (pholead_PhoMCmatchexitcode!=2) continue;
 
     if (mode=="cutPFchargediso_signal" || mode=="cutPFchargediso_background" || mode=="cutPFchargediso_randomcone" || mode=="cutPFchargediso_sieiesideband") if (pholead_PhoSCRemovalPFIsoCharged>0.1) continue;
-
-
-
-
 
     Int_t event_ok_for_dataset=-1;
 
@@ -469,6 +452,7 @@ void template_production::Loop(int maxevents)
 
     roorho=event_rho;
     roosigma=event_sigma;
+    roonvtx=event_nRecVtx;
 
     pholead_outvar-=getpuenergy(reg_lead,pholead_SCeta);
     if (dodistribution) photrail_outvar-=getpuenergy(reg_trail,photrail_SCeta);
@@ -803,6 +787,7 @@ void template_production::Loop(int maxevents)
 	    roopt2=fillpt2;
 	    roorho=fillrho;
 	    roosigma=fillsigma;
+	    roonvtx=-999; // DEBUG XXX TO FIX
 	    if (n1==0 && n2==0) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigsig")]->Fill();
 	    else if (n1==0 && n2==1) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"sigbkg")]->Fill();
 	    else if (n1==1 && n2==0) newtempl_roodset[get_name_newtempl_roodset(event_ok_for_dataset_local,*diffvariable,bin_couple,"bkgsig")]->Fill();
@@ -1085,7 +1070,7 @@ void template_production::Loop(int maxevents)
 
 #endif
 
-void gen_templates(TString filename="input.root", TString mode="", bool isdata=1, const char* outfile="out.root", TString differentialvariable="photoniso", int maxevents=-1,bool do_event_mixing=false,TString filenameEXTRA=""){
+void template_production(TString filename="input.root", TString mode="", bool isdata=1, const char* outfile="out.root", TString differentialvariable="photoniso", int maxevents=-1,bool do_event_mixing=false,TString filenameEXTRA=""){
   
   TFile *outF = TFile::Open(outfile,"recreate");
   outF->Close();
@@ -1159,7 +1144,7 @@ void gen_templates(TString filename="input.root", TString mode="", bool isdata=1
 
   std::cout << "Processing selection " << treename_chosen.Data() << std::endl;
   
-  template_production *temp = new template_production(t);
+  template_production_class *temp = new template_production_class(t);
   temp->outputfilename=outfile;
   temp->Setup(isdata,mode,differentialvariable,do_event_mixing);
   temp->inputfilename=filename;
@@ -1196,7 +1181,7 @@ void get_eff_area(TString filename, bool doEB, TString comp){
   std::vector<std::vector<TProfile*> > output;
 
   file[0]->GetObject(treename.Data(),t);
-  template_production *temp = new template_production(t);
+  template_production_class *temp = new template_production_class(t);
   output=temp->GetPUScaling(doEB,comp);
 
 //  output[0]->Print();
@@ -1239,7 +1224,7 @@ void get_eff_area(TString filename, bool doEB, TString comp){
 
 };
 
-std::vector<std::vector<TProfile*> > template_production::GetPUScaling(bool doEB, TString diffvar){
+std::vector<std::vector<TProfile*> > template_production_class::GetPUScaling(bool doEB, TString diffvar){
 
   TProfile *prof_iso[n_bins];
   TProfile *prof_rho[n_bins];
@@ -1359,7 +1344,7 @@ std::vector<std::vector<TProfile*> > template_production::GetPUScaling(bool doEB
 
 };
 
-float template_production::getpuenergy(int reg, float eta){
+float template_production_class::getpuenergy(int reg, float eta){
 
   int bin = Choose_bin_eta(fabs(eta),reg);
   float eff_area;
@@ -1370,7 +1355,7 @@ float template_production::getpuenergy(int reg, float eta){
 
 };
 
-float template_production::geteffarea(int reg, float eta){
+float template_production_class::geteffarea(int reg, float eta){
 
   int bin = Choose_bin_eta(fabs(eta),reg);
   float eff_area;
@@ -1381,7 +1366,7 @@ float template_production::geteffarea(int reg, float eta){
 
 };
 
-std::pair<float,float> template_production::getscalefactor_foreffunf(float pho1_pt, float pho2_pt, float pho1_eta, float pho2_eta, float pho1_r9, float pho2_r9){
+std::pair<float,float> template_production_class::getscalefactor_foreffunf(float pho1_pt, float pho2_pt, float pho1_eta, float pho2_eta, float pho1_r9, float pho2_r9){
 
   // This is the scale factor to be applied to reconstructed MC events when filling the unfolding matrices
   // In order for the response matrix to correct for efficiency, bin migration and Zee contamination, it should already include:
@@ -1444,23 +1429,23 @@ std::pair<float,float> template_production::getscalefactor_foreffunf(float pho1_
 
 };
 
-std::pair<float,float> template_production::getscalefactor_forzeesubtraction(int ev_ok_for_dset){
+std::pair<float,float> template_production_class::getscalefactor_forzeesubtraction(int ev_ok_for_dset){
 
   float sf = 1;
   float sferr = 0;
 
   sf*=3048./2475.;
 
-  // p(e->g) efficiency scale factor
-  if (ev_ok_for_dset==0) sf*=pow(1.372,2);
-  else if (ev_ok_for_dset==1) sf*=1.372*1.096;
-  else if (ev_ok_for_dset==2) sf*=pow(1.096,2);
+//  // p(e->g) efficiency scale factor DEBUG XXX: do not make any sense (correlation)
+//  if (ev_ok_for_dset==0) sf*=pow(1.372,2);
+//  else if (ev_ok_for_dset==1) sf*=1.372*1.096;
+//  else if (ev_ok_for_dset==2) sf*=pow(1.096,2);
   
-  // DEBUG XXX: TO BE REDERIVED!!!
-  // fitted pp purity fraction in Zee events
-  if (ev_ok_for_dset==0) sf*=8.6542e-01;
-  else if (ev_ok_for_dset==1) sf*=7.9537e-01;
-  else if (ev_ok_for_dset==2) sf*=8.5493e-01;
+//  // DEBUG XXX: NOT TO BE APPLIED IF MATCHING
+//  // fitted pp purity fraction in Zee events
+//  if (ev_ok_for_dset==0) sf*=8.6542e-01;
+//  else if (ev_ok_for_dset==1) sf*=7.9537e-01;
+//  else if (ev_ok_for_dset==2) sf*=8.5493e-01;
   
   return std::pair<float,float>(sf,sferr);
   

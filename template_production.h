@@ -5,8 +5,8 @@
 // found on file: mc_inclusive.root
 //////////////////////////////////////////////////////////
 
-#ifndef template_production_h
-#define template_production_h
+#ifndef template_production_class_h
+#define template_production_class_h
 
 #include "binsdef.h"
 
@@ -57,7 +57,7 @@ typedef struct {
   TH2F *hmatched;
 } roounfoldmatrices_struct;
 
-class template_production {
+class template_production_class {
 public :
 
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
@@ -300,8 +300,8 @@ public :
    TBranch *b_matched;
 
 
-   template_production(TTree *tree=0);
-   virtual ~template_production();
+   template_production_class(TTree *tree=0);
+   virtual ~template_production_class();
    /* virtual Int_t    Cut(Long64_t entry); */
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
@@ -338,6 +338,7 @@ public :
   Float_t rooeta2;
   Float_t roorho;
   Float_t roosigma;
+  Float_t roonvtx;
   Float_t rooweight;
 
   std::map<TString,Float_t*> roovars_index1;
@@ -421,8 +422,8 @@ public :
 
 #endif
 
-#ifdef template_production_cxx
-template_production::template_production(TTree *tree)
+#ifdef template_production_class_cxx
+template_production_class::template_production_class(TTree *tree)
 {
 
   TH1F::SetDefaultSumw2(kTRUE);
@@ -450,7 +451,7 @@ template_production::template_production(TTree *tree)
 
 }
 
-void template_production::Setup(Bool_t _isdata, TString _mode, TString _differentialvariable, bool _do_event_mixing){
+void template_production_class::Setup(Bool_t _isdata, TString _mode, TString _differentialvariable, bool _do_event_mixing){
 
   isdata=_isdata;
   mode=_mode;
@@ -485,6 +486,7 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
   roosieie2 = -999;
   roorho = -999;
   roosigma = -999;
+  roonvtx = -999;
   rooweight = -999;
 
   for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
@@ -503,6 +505,7 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
 
   roovars_common["roorho"] = &roorho;
   roovars_common["roosigma"] = &roosigma;
+  roovars_common["roonvtx"] = &roonvtx;
   roovars_common["rooweight"] = &rooweight;
 
   out = new TFile(outputfilename.Data(),"recreate");
@@ -620,7 +623,7 @@ void template_production::Setup(Bool_t _isdata, TString _mode, TString _differen
 };
 
 
-template_production::~template_production()
+template_production_class::~template_production_class()
 {
    if (!fChain) return;
    delete fChain->GetCurrentFile();
@@ -629,14 +632,14 @@ template_production::~template_production()
 
 }
 
-Int_t template_production::GetEntry(Long64_t entry)
+Int_t template_production_class::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
 
-Long64_t template_production::LoadTree(Long64_t entry)
+Long64_t template_production_class::LoadTree(Long64_t entry)
 {
 // Set the environment to read one entry
    if (!fChain) return -5;
@@ -649,7 +652,7 @@ Long64_t template_production::LoadTree(Long64_t entry)
    return centry;
 }
 
-void template_production::Init()
+void template_production_class::Init()
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -788,7 +791,7 @@ void template_production::Init()
    Notify();
 }
 
-Bool_t template_production::Notify()
+Bool_t template_production_class::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -799,7 +802,7 @@ Bool_t template_production::Notify()
    return kTRUE;
 }
 
-void template_production::Show(Long64_t entry)
+void template_production_class::Show(Long64_t entry)
 {
 // Print contents of entry.
 // If entry is not specified, print current entry
@@ -807,7 +810,7 @@ void template_production::Show(Long64_t entry)
    fChain->Show(entry);
 }
 
-/* Int_t template_production::Cut(Long64_t entry) */
+/* Int_t template_production_class::Cut(Long64_t entry) */
 /* { */
 /* // This function may be called from Loop. */
 /* // returns  1 if entry is accepted. */
@@ -815,7 +818,7 @@ void template_production::Show(Long64_t entry)
 /*    return 1; */
 /* } */
 
-void template_production::WriteOutput(){
+void template_production_class::WriteOutput(){
 
   if (dosignaltemplate || dobackgroundtemplate || do2dtemplate || dodistribution){
     out->mkdir("roofit");
@@ -962,7 +965,7 @@ void template_production::WriteOutput(){
 
 
 
-TString template_production::get_name_obs_roodset(int region, TString diffvariable, int bin){
+TString template_production_class::get_name_obs_roodset(int region, TString diffvariable, int bin){
   TString name_signal="obs_roodset";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
@@ -970,7 +973,7 @@ TString template_production::get_name_obs_roodset(int region, TString diffvariab
   return t;
 };
 
-TString template_production::get_name_newtempl_roodset(int region, TString diffvariable, int bin, TString sigbkg){
+TString template_production_class::get_name_newtempl_roodset(int region, TString diffvariable, int bin, TString sigbkg){
   TString name_signal="newtempl_roodset";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
@@ -978,7 +981,7 @@ TString template_production::get_name_newtempl_roodset(int region, TString diffv
   return t;
 };
 
-TString template_production::get_name_true_purity(int region, TString diffvariable){
+TString template_production_class::get_name_true_purity(int region, TString diffvariable){
   TString name_signal="true_purity";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
@@ -986,7 +989,7 @@ TString template_production::get_name_true_purity(int region, TString diffvariab
   return t;
 };
 
-TString template_production::get_name_true_purity_ispp(int region, TString diffvariable){
+TString template_production_class::get_name_true_purity_ispp(int region, TString diffvariable){
   TString name_signal="ispp_true_purity";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
@@ -994,7 +997,7 @@ TString template_production::get_name_true_purity_ispp(int region, TString diffv
   return t;
 };
 
-TString template_production::get_name_true_purity_isnotpp(int region, TString diffvariable){
+TString template_production_class::get_name_true_purity_isnotpp(int region, TString diffvariable){
   TString name_signal="isnotpp_true_purity";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
@@ -1002,7 +1005,7 @@ TString template_production::get_name_true_purity_isnotpp(int region, TString di
   return t;
 };
 
-TString template_production::get_name_template2d_roodset(int region, TString sigorbkg){
+TString template_production_class::get_name_template2d_roodset(int region, TString sigorbkg){
   TString name_signal="template_roodset";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
@@ -1010,7 +1013,7 @@ TString template_production::get_name_template2d_roodset(int region, TString sig
   return t;
 };
 
-TString template_production::get_name_responsematrix_effunf(int region, TString diffvariable){
+TString template_production_class::get_name_responsematrix_effunf(int region, TString diffvariable){
   TString name_signal="responsematrix_effunf";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
@@ -1018,7 +1021,7 @@ TString template_production::get_name_responsematrix_effunf(int region, TString 
   return t;
 };
 
-TString template_production::get_name_zeehisto(int region, TString diffvariable){
+TString template_production_class::get_name_zeehisto(int region, TString diffvariable){
   TString name_signal="histo_zee_yieldtosubtract";
   TString reg;
   if (region==0) reg="EBEB"; else if (region==1) reg="EBEE"; else if (region==2) reg="EEEE"; else if (region==3) reg="EEEB";
@@ -1026,7 +1029,7 @@ TString template_production::get_name_zeehisto(int region, TString diffvariable)
   return t;
 };
 
-Int_t template_production::Choose_bin(TString diff_, float val_){
+Int_t template_production_class::Choose_bin(TString diff_, float val_){
 
   int index = diffvariables_nbins_list(diff_);
   float *cuts=diffvariables_binsdef_list(diff_);
@@ -1050,7 +1053,7 @@ Int_t template_production::Choose_bin(TString diff_, float val_){
 };
 
 
-Int_t template_production::Choose_bin_pt(float pt){
+Int_t template_production_class::Choose_bin_pt(float pt){
 
   int index;
 
@@ -1076,7 +1079,7 @@ Int_t template_production::Choose_bin_pt(float pt){
 
 };
 
-Int_t template_production::Choose_bin_eta(float eta, int region){
+Int_t template_production_class::Choose_bin_eta(float eta, int region){
 
   eta=fabs(eta);
 
@@ -1105,7 +1108,7 @@ Int_t template_production::Choose_bin_eta(float eta, int region){
 };
 
 
-Int_t template_production::Choose_bin_sieie(float sieie, int region){
+Int_t template_production_class::Choose_bin_sieie(float sieie, int region){
 
   if (region==1) return 0;
 
@@ -1120,7 +1123,7 @@ Int_t template_production::Choose_bin_sieie(float sieie, int region){
 
 };
 
-float template_production::AbsDeltaPhi(double phi1, double phi2){
+float template_production_class::AbsDeltaPhi(double phi1, double phi2){
   // From cmssw reco::deltaPhi()
   double result = phi1 - phi2;
   while( result >   TMath::Pi() ) result -= TMath::TwoPi();
@@ -1128,13 +1131,13 @@ float template_production::AbsDeltaPhi(double phi1, double phi2){
   return TMath::Abs(result);
 }
 
-void template_production::AddVariablesToTree(TTree *t, std::map<TString,Float_t*> &mymap){
+void template_production_class::AddVariablesToTree(TTree *t, std::map<TString,Float_t*> &mymap){
   for (std::map<TString,Float_t*>::const_iterator it = mymap.begin(); it!=mymap.end(); it++){
     t->Branch(it->first.Data(),it->second,Form("%s/F",it->first.Data()));
   }
 };
 
-void template_production::FillDiffVariables(bool dogen){ // WARNING: THIS FUNCTION MUST ***NOT*** USE THE INFORMATION ABOUT WHICH PHOTON IS CALLED 1 AND 2
+void template_production_class::FillDiffVariables(bool dogen){ // WARNING: THIS FUNCTION MUST ***NOT*** USE THE INFORMATION ABOUT WHICH PHOTON IS CALLED 1 AND 2
 
   // REMEMBER: *ALL* VARIABLES SHOULD ALWAYS BE FILLED (with very large number if variable is not applicable to a certain event)
 
@@ -1266,6 +1269,6 @@ void template_production::FillDiffVariables(bool dogen){ // WARNING: THIS FUNCTI
 };
 
 
-#endif // #ifdef template_production_cxx
+#endif // #ifdef template_production_class_cxx
 
 
