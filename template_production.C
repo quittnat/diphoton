@@ -1375,57 +1375,59 @@ std::pair<float,float> template_production_class::getscalefactor_foreffunf(float
 
   // DEBUG XXX da aggiungere sf uncertainties e come gestirle nel seguito
 
-  pho1_eta = fabs(pho1_eta);
-  pho2_eta = fabs(pho2_eta);
-
-  if (!histo_zee_scalefactor) {
-    TFile *file_histo_zee_scalefactor = new TFile("histo_scalefactor_Zee_totaluncertainty.root");
-    file_histo_zee_scalefactor->GetObject("histo_withsyst",histo_zee_scalefactor);
-    assert(histo_zee_scalefactor);
-  }
-  if (!histo_zuug_scalefactor) {
-    TFile *file_histo_zuug_scalefactor = new TFile("histo_scalefactor_Zuug_totaluncertainty.root");
-    file_histo_zuug_scalefactor->GetObject("h_zuug",histo_zuug_scalefactor);
-    assert(histo_zuug_scalefactor);
-  }
-
-  float sf = 1;
-  float sferr = 0;
-
-  // Trigger efficiency
-  const float trig_eff_EBEB_highr9 = 1.;
-  const float trig_eff_EBEB_lowr9 = 0.993;
-  const float trig_eff_notEBEB_highr9 = 1.;
-  const float trig_eff_notEBEB_lowr9 = 0.988;
-  const float r9_threshold = 0.94;
-
-  // Trigger efficiency
-  if (fabs(pho1_eta)<1.5 && fabs(pho2_eta)<1.5) sf *= (pho1_r9>r9_threshold && pho2_r9>r9_threshold) ? trig_eff_EBEB_highr9 : trig_eff_EBEB_lowr9;
-  else sf *= (pho1_r9>r9_threshold && pho2_r9>r9_threshold) ? trig_eff_notEBEB_highr9 :trig_eff_notEBEB_lowr9;
-
-  // Efficiency data/mc scale factors
-  {
-    int binx;
-    int biny;
-    binx = histo_zee_scalefactor->GetXaxis()->FindBin(pho1_pt);
-    biny = histo_zee_scalefactor->GetYaxis()->FindBin(pho1_eta);
-    if (binx>histo_zee_scalefactor->GetNbinsX()) binx=histo_zee_scalefactor->GetNbinsX(); 
-    if (biny>histo_zee_scalefactor->GetNbinsY()) biny=histo_zee_scalefactor->GetNbinsY(); 
-    sf*=histo_zee_scalefactor->GetBinContent(binx,biny);
-    binx = histo_zee_scalefactor->GetXaxis()->FindBin(pho2_pt);
-    biny = histo_zee_scalefactor->GetYaxis()->FindBin(pho2_eta);
-    if (binx>histo_zee_scalefactor->GetNbinsX()) binx=histo_zee_scalefactor->GetNbinsX(); 
-    if (biny>histo_zee_scalefactor->GetNbinsY()) biny=histo_zee_scalefactor->GetNbinsY(); 
-    sf*=histo_zee_scalefactor->GetBinContent(binx,biny);
-  }
-  {
-    int bin;
-    bin = histo_zuug_scalefactor->GetXaxis()->FindBin(pho1_eta);
-    if (bin>histo_zuug_scalefactor->GetNbinsX()) bin=histo_zuug_scalefactor->GetNbinsX();
-    sf*=histo_zuug_scalefactor->GetBinContent(bin);
-  }
-
-  return std::pair<float,float>(sf,sferr);
+  return std::pair<float,float>(1,1);
+//
+//  pho1_eta = fabs(pho1_eta);
+//  pho2_eta = fabs(pho2_eta);
+//
+//  if (!histo_zee_scalefactor) {
+//    TFile *file_histo_zee_scalefactor = new TFile("histo_scalefactor_Zee_totaluncertainty.root");
+//    file_histo_zee_scalefactor->GetObject("histo_withsyst",histo_zee_scalefactor);
+//    assert(histo_zee_scalefactor);
+//  }
+//  if (!histo_zuug_scalefactor) {
+//    TFile *file_histo_zuug_scalefactor = new TFile("histo_scalefactor_Zuug_totaluncertainty.root");
+//    file_histo_zuug_scalefactor->GetObject("h_zuug",histo_zuug_scalefactor);
+//    assert(histo_zuug_scalefactor);
+//  }
+//
+//  float sf = 1;
+//  float sferr = 0;
+//
+//  // Trigger efficiency
+//  const float trig_eff_EBEB_highr9 = 1.;
+//  const float trig_eff_EBEB_lowr9 = 0.993;
+//  const float trig_eff_notEBEB_highr9 = 1.;
+//  const float trig_eff_notEBEB_lowr9 = 0.988;
+//  const float r9_threshold = 0.94;
+//
+//  // Trigger efficiency
+//  if (fabs(pho1_eta)<1.5 && fabs(pho2_eta)<1.5) sf *= (pho1_r9>r9_threshold && pho2_r9>r9_threshold) ? trig_eff_EBEB_highr9 : trig_eff_EBEB_lowr9;
+//  else sf *= (pho1_r9>r9_threshold && pho2_r9>r9_threshold) ? trig_eff_notEBEB_highr9 :trig_eff_notEBEB_lowr9;
+//
+//  // Efficiency data/mc scale factors
+//  {
+//    int binx;
+//    int biny;
+//    binx = histo_zee_scalefactor->GetXaxis()->FindBin(pho1_pt);
+//    biny = histo_zee_scalefactor->GetYaxis()->FindBin(pho1_eta);
+//    if (binx>histo_zee_scalefactor->GetNbinsX()) binx=histo_zee_scalefactor->GetNbinsX(); 
+//    if (biny>histo_zee_scalefactor->GetNbinsY()) biny=histo_zee_scalefactor->GetNbinsY(); 
+//    sf*=histo_zee_scalefactor->GetBinContent(binx,biny);
+//    binx = histo_zee_scalefactor->GetXaxis()->FindBin(pho2_pt);
+//    biny = histo_zee_scalefactor->GetYaxis()->FindBin(pho2_eta);
+//    if (binx>histo_zee_scalefactor->GetNbinsX()) binx=histo_zee_scalefactor->GetNbinsX(); 
+//    if (biny>histo_zee_scalefactor->GetNbinsY()) biny=histo_zee_scalefactor->GetNbinsY(); 
+//    sf*=histo_zee_scalefactor->GetBinContent(binx,biny);
+//  }
+//  {
+//    int bin;
+//    bin = histo_zuug_scalefactor->GetXaxis()->FindBin(pho1_eta);
+//    if (bin>histo_zuug_scalefactor->GetNbinsX()) bin=histo_zuug_scalefactor->GetNbinsX();
+//    sf*=histo_zuug_scalefactor->GetBinContent(bin);
+//  }
+//
+//  return std::pair<float,float>(sf,sferr);
 
 };
 

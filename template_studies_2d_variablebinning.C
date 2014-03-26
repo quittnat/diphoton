@@ -1,7 +1,7 @@
-bool global_doplots = false;
-bool doxcheckstemplates = false;
-bool dolightcomparisonwithstandardselsig = true;
-bool dolightcomparisonwithstandardselbkg = false;
+bool global_doplots = 0;
+bool doxcheckstemplates = 0;
+bool dolightcomparisonwithstandardselsig = 0;
+bool dolightcomparisonwithstandardselbkg = 0;
 
 #include <assert.h>
 
@@ -171,8 +171,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
 
   bool doplots_b = doplots;
   bool doplots_ub = doplots;
-//  bool doplots_b = true;
-//  bool doplots_ub = false;
 
   TH1F::SetDefaultSumw2(kTRUE);
 
@@ -486,133 +484,107 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   RooDataSet *dset_zee_s = NULL;
   RooDataSet *dset_mctrue_b = NULL;
   RooDataSet *dset_mcrcone_b = NULL;
-//  RooDataSet *dset_mctrue_noEM = NULL;
-//  RooDataSet *dset_mcrcone_noEM = NULL;
   RooDataSet *dset_datarcone_s = NULL;
   RooDataSet *dset_datarcone_b = NULL;
 
   if (doxcheckstemplates || dolightcomparisonwithstandardselsig || dolightcomparisonwithstandardselbkg) {
 
+    // TODO: REWRITE ALL WITH LESS DUPLICATION
+
     if (dolightcomparisonwithstandardselsig || dolightcomparisonwithstandardselbkg) if (splitting=="EBEE") return NULL;
 
-//    TFile *fdatarcone_s = new TFile("outphoton_data_rcone.root","read");
-//    get_roodset_from_ttree(fdatarcone_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_datarcone_s);
-//    assert(dset_datarcone_s);
-// 
-//    TFile *fdatarcone_b = new TFile("outphoton_data_sieiesideband.root","read");
-//    get_roodset_from_ttree(fdatarcone_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_datarcone_b);
-//    assert(dset_datarcone_b);
+    TFile *fdatarcone_s = new TFile("outphoton_data_randomcone.root","read");
+    get_roodset_from_ttree(fdatarcone_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_datarcone_s);
+ 
+    TFile *fdatarcone_b = new TFile("outphoton_data_sieiesideband.root","read");
+    get_roodset_from_ttree(fdatarcone_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_datarcone_b);
 
-    TFile *fmctrue_s = new TFile("outphoton_allmc_sig.root","read");
+    TFile *fmctrue_s = new TFile("outphoton_allmc_signal.root","read");
     get_roodset_from_ttree(fmctrue_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mctrue_s);
-    assert(dset_mctrue_s);
 
-//    TFile *fmcfrag_s = new TFile("outphoton_allmc_frag.root","read");
-//    get_roodset_from_ttree(fmcfrag_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcfrag_s);
-//    assert(dset_mcfrag_s);
-//  
-//    TFile *fmcnofrag_s = new TFile("outphoton_allmc_nofrag.root","read");
-//    get_roodset_from_ttree(fmcnofrag_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcnofrag_s);
-//    assert(dset_mcnofrag_s);
+    TFile *fmcfrag_s = new TFile("outphoton_allmc_frag.root","read");
+    get_roodset_from_ttree(fmcfrag_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcfrag_s);
   
-    TFile *fmcrcone_s = new TFile("outphoton_allmc_rcone.root","read");
+    TFile *fmcnofrag_s = new TFile("outphoton_allmc_nofrag.root","read");
+    get_roodset_from_ttree(fmcnofrag_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcnofrag_s);
+  
+    TFile *fmcrcone_s = new TFile("outphoton_allmc_randomcone.root","read");
     get_roodset_from_ttree(fmcrcone_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcrcone_s);
-    assert(dset_mcrcone_s);
   
-//    TFile *fzee_s = new TFile("outphoton_data_zee.root","read");
-//    RooDataSet *dset_zee_s_2d = NULL;
-//    get_roodset_from_ttree(fzee_s,Form("roofit/template_roodset_%s_sigsig",splitting.Data()),dset_zee_s_2d);
-//    assert(dset_zee_s_2d);
-//    dset_zee_s = (RooDataSet*)(dset_zee_s_2d->reduce(Name("dset_zee_s"),SelectVars(RooArgList(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma,*roonvtx))));
-//    assert(dset_zee_s);
-//
-//    TFile *fmctrue_b = new TFile("outphoton_allmc_bkg.root","read");
-//    get_roodset_from_ttree(fmctrue_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_b);
-//    assert(dset_mctrue_b);
+    TFile *fzee_s = new TFile("outphoton_data_zee.root","read");
+    RooDataSet *dset_zee_s_2d = NULL;
+    get_roodset_from_ttree(fzee_s,Form("roofit/template_roodset_%s_sigsig",splitting.Data()),dset_zee_s_2d);
+    dset_zee_s = (RooDataSet*)(dset_zee_s_2d->reduce(Name("dset_zee_s"),SelectVars(RooArgList(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma,*roonvtx))));
 
-//    TFile *fmcrcone_b = new TFile("outphoton_allmc_sieiesideband.root","read");
-//    get_roodset_from_ttree(fmcrcone_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mcrcone_b);
-//    assert(dset_mcrcone_b);
+    TFile *fmctrue_b = new TFile("outphoton_allmc_background.root","read");
+    get_roodset_from_ttree(fmctrue_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_b);
 
-//    TFile *fmctrue_noEM = new TFile("outphoton_allmc_bkg_noEMenr.root","read");
-//    get_roodset_from_ttree(fmctrue_noEM,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_noEM);
-//    assert(dset_mctrue_noEM);
-//
-//    TFile *fmcrcone_noEM = new TFile("outphoton_allmc_sieiesideband_noEMenr.root","read");
-//    get_roodset_from_ttree(fmcrcone_noEM,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mcrcone_noEM);
-//    assert(dset_mcrcone_noEM);
+    TFile *fmcrcone_b = new TFile("outphoton_allmc_sieiesideband.root","read");
+    get_roodset_from_ttree(fmcrcone_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mcrcone_b);
+
+
   
 
-    dset_mctrue_s = (RooDataSet*)(dset_mctrue_s->reduce(Name("dset_mctrue_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-//    dset_mcfrag_s = (RooDataSet*)(dset_mcfrag_s->reduce(Name("dset_mcfrag_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-//    dset_mcnofrag_s = (RooDataSet*)(dset_mcnofrag_s->reduce(Name("dset_mcnofrag_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-    dset_mcrcone_s = (RooDataSet*)(dset_mcrcone_s->reduce(Name("dset_mcrcone_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-//    dset_mctrue_b = (RooDataSet*)(dset_mctrue_b->reduce(Name("dset_mctrue_b"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-//    dset_mcrcone_b = (RooDataSet*)(dset_mcrcone_b->reduce(Name("dset_mcrcone_b"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-//    dset_mctrue_noEM = (RooDataSet*)(dset_mctrue_noEM->reduce(Name("dset_mctrue_noEM"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-//    dset_mcrcone_noEM = (RooDataSet*)(dset_mcrcone_noEM->reduce(Name("dset_mcrcone_noEM"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-//    dset_zee_s = (RooDataSet*)(dset_zee_s->reduce(Name("dset_zee_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-//    dset_datarcone_s = (RooDataSet*)(dset_datarcone_s->reduce(Name("dset_datarcone_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
-//    dset_datarcone_b = (RooDataSet*)(dset_datarcone_b->reduce(Name("dset_datarcone_b"),Cut(Form("roovar1<%f",rightrange-1e-5))));
+    if (dset_mctrue_s) dset_mctrue_s = (RooDataSet*)(dset_mctrue_s->reduce(Name("dset_mctrue_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
+    if (dset_mcfrag_s) dset_mcfrag_s = (RooDataSet*)(dset_mcfrag_s->reduce(Name("dset_mcfrag_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
+    if (dset_mcnofrag_s) dset_mcnofrag_s = (RooDataSet*)(dset_mcnofrag_s->reduce(Name("dset_mcnofrag_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
+    if (dset_mcrcone_s) dset_mcrcone_s = (RooDataSet*)(dset_mcrcone_s->reduce(Name("dset_mcrcone_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
+    if (dset_mctrue_b) dset_mctrue_b = (RooDataSet*)(dset_mctrue_b->reduce(Name("dset_mctrue_b"),Cut(Form("roovar1<%f",rightrange-1e-5))));
+    if (dset_mcrcone_b) dset_mcrcone_b = (RooDataSet*)(dset_mcrcone_b->reduce(Name("dset_mcrcone_b"),Cut(Form("roovar1<%f",rightrange-1e-5))));
+    if (dset_zee_s) dset_zee_s = (RooDataSet*)(dset_zee_s->reduce(Name("dset_zee_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
+    if (dset_datarcone_s) dset_datarcone_s = (RooDataSet*)(dset_datarcone_s->reduce(Name("dset_datarcone_s"),Cut(Form("roovar1<%f",rightrange-1e-5))));
+    if (dset_datarcone_b) dset_datarcone_b = (RooDataSet*)(dset_datarcone_b->reduce(Name("dset_datarcone_b"),Cut(Form("roovar1<%f",rightrange-1e-5))));
 
 
-    std::cout << "MC datasets" << std::endl;
-    dset_mctrue_s->Print();
-    //    dset_mcfrag_s->Print();
-//    dset_mcnofrag_s->Print();
-    dset_mcrcone_s->Print();
-//    dset_zee_s->Print();
-//    dset_mctrue_b->Print();
-//    dset_mcrcone_b->Print();
-////    dset_mctrue_noEM->Print();
-////    dset_mcrcone_noEM->Print();
-//    dset_datarcone_s->Print();
-//    dset_datarcone_b->Print();
+//    std::cout << "MC datasets" << std::endl;
+//    dset_mctrue_s->Print();
+//    //    dset_mcfrag_s->Print();
+////    dset_mcnofrag_s->Print();
+//    dset_mcrcone_s->Print();
+////    dset_zee_s->Print();
+////    dset_mctrue_b->Print();
+////    dset_mcrcone_b->Print();
+////    dset_datarcone_s->Print();
+////    dset_datarcone_b->Print();
 
-/*
+
 
     reweight_rhosigma(&dset_mctrue_s,dataset_axis1);
-//    reweight_rhosigma(&dset_mcfrag_s,dataset_axis1);
-//    reweight_rhosigma(&dset_mcnofrag_s,dataset_axis1);
+    reweight_rhosigma(&dset_mcfrag_s,dataset_axis1);
+    reweight_rhosigma(&dset_mcnofrag_s,dataset_axis1);
     reweight_rhosigma(&dset_mcrcone_s,dataset_axis1);
-//    reweight_rhosigma(&dset_zee_s,dataset_axis1);
-//    reweight_rhosigma(&dset_datarcone_s,dataset_axis1);
-//    reweight_rhosigma(&dset_datarcone_b,dataset_axis1);
+    reweight_rhosigma(&dset_zee_s,dataset_axis1);
+    reweight_rhosigma(&dset_datarcone_s,dataset_axis1);
+    reweight_rhosigma(&dset_datarcone_b,dataset_axis1);
     reweight_eta_1d(&dset_mctrue_s,dataset_axis1,1);
-//    reweight_eta_1d(&dset_mcfrag_s,dataset_axis1,1);
-//    reweight_eta_1d(&dset_mcnofrag_s,dataset_axis1,1);
+    reweight_eta_1d(&dset_mcfrag_s,dataset_axis1,1);
+    reweight_eta_1d(&dset_mcnofrag_s,dataset_axis1,1);
     reweight_eta_1d(&dset_mcrcone_s,dataset_axis1,1);
-//    reweight_eta_1d(&dset_zee_s,dataset_axis1,1);
-//    reweight_eta_1d(&dset_datarcone_s,dataset_axis1,1);
-//    reweight_eta_1d(&dset_datarcone_b,dataset_axis1,1);
+    reweight_eta_1d(&dset_zee_s,dataset_axis1,1);
+    reweight_eta_1d(&dset_datarcone_s,dataset_axis1,1);
+    reweight_eta_1d(&dset_datarcone_b,dataset_axis1,1);
     reweight_pt_1d(&dset_mctrue_s,dataset_axis1,1);
-//    reweight_pt_1d(&dset_mcfrag_s,dataset_axis1,1);
-//    reweight_pt_1d(&dset_mcnofrag_s,dataset_axis1,1);
-//    //reweight_pt_1d(&dset_mcrcone_s,dataset_axis1,1);
-//    reweight_pt_1d(&dset_zee_s,dataset_axis1,1);
-//    //reweight_pt_1d(&dset_datarcone_s,dataset_axis1,1);
-//    reweight_pt_1d(&dset_datarcone_b,dataset_axis1,1);
+    reweight_pt_1d(&dset_mcfrag_s,dataset_axis1,1);
+    reweight_pt_1d(&dset_mcnofrag_s,dataset_axis1,1);
+    //reweight_pt_1d(&dset_mcrcone_s,dataset_axis1,1);
+    reweight_pt_1d(&dset_zee_s,dataset_axis1,1);
+    //reweight_pt_1d(&dset_datarcone_s,dataset_axis1,1);
+    reweight_pt_1d(&dset_datarcone_b,dataset_axis1,1);
     reweight_rhosigma(&dset_mctrue_b,dataset_axis1);
     reweight_rhosigma(&dset_mcrcone_b,dataset_axis1);
-////    reweight_rhosigma(&dset_mctrue_noEM,dataset_axis1);
-////    reweight_rhosigma(&dset_mcrcone_noEM,dataset_axis1);
     reweight_eta_1d(&dset_mctrue_b,dataset_axis1,1);
     reweight_eta_1d(&dset_mcrcone_b,dataset_axis1,1);
-////    reweight_eta_1d(&dset_mctrue_noEM,dataset_axis1,1);
-////    reweight_eta_1d(&dset_mcrcone_noEM,dataset_axis1,1);
     reweight_pt_1d(&dset_mctrue_b,dataset_axis1,1);
     reweight_pt_1d(&dset_mcrcone_b,dataset_axis1,1);
-////    reweight_pt_1d(&dset_mctrue_noEM,dataset_axis1,1);
-//    reweight_pt_1d(&dset_mcrcone_noEM,dataset_axis1,1);
 
-*/
 
-//    reweight_rhosigma(&dset_mcrcone_s,dset_mctrue_s);
-    reweight_nvtx(&dset_mctrue_s,dataset_axis1);
-    reweight_nvtx(&dset_mcrcone_s,dataset_axis1);
-    reweight_eta_1d(&dset_mctrue_s,dataset_axis1,1);
-    reweight_eta_1d(&dset_mcrcone_s,dataset_axis1,1);
-    validate_reweighting(dset_mctrue_s,dset_mcrcone_s,1); 
+
+////    reweight_rhosigma(&dset_mcrcone_s,dset_mctrue_s);
+//    reweight_nvtx(&dset_mctrue_s,dataset_axis1);
+//    reweight_nvtx(&dset_mcrcone_s,dataset_axis1);
+//    reweight_eta_1d(&dset_mctrue_s,dataset_axis1,1);
+//    reweight_eta_1d(&dset_mcrcone_s,dataset_axis1,1);
+//    validate_reweighting(dset_mctrue_s,dset_mcrcone_s,1); 
 
     RooDataSet *dset_mcrcone_b1 = NULL;
     RooDataSet *dset_mcrcone_b2 = NULL;
@@ -696,14 +668,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     str_dset_mcrcone_b.dset = dset_mcrcone_b;
     str_dset_mcrcone_b.legend = "Sieie sideband in MC";
     str_dset_mcrcone_b.color = kBlue;
-//    plot_dataset_struct str_dset_mctrue_noEM;
-//    str_dset_mctrue_noEM.dset = dset_mctrue_noEM;
-//    str_dset_mctrue_noEM.legend = "Photon Iso in MC fakes, no EM enr.";
-//    str_dset_mctrue_noEM.color = kOrange;
-//    plot_dataset_struct str_dset_mcrcone_noEM;
-//    str_dset_mcrcone_noEM.dset = dset_mcrcone_noEM;
-//    str_dset_mcrcone_noEM.legend = "Sieie sideband in MC, no EM enr.";
-//    str_dset_mcrcone_noEM.color = kMagenta;
     plot_dataset_struct str_dset_mcrcone_b1;
     str_dset_mcrcone_b1.dset = dset_mcrcone_b1;
     str_dset_mcrcone_b1.legend = "Sieie sideband in MC / left";
@@ -797,8 +761,6 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     std::vector<plot_dataset_struct> vec;
     vec.push_back(str_dset_mctrue_b);
     vec.push_back(str_dset_mcrcone_b);
-//    vec.push_back(str_dset_mctrue_noEM);
-//    vec.push_back(str_dset_mcrcone_noEM);
     plot_datasets_axis1(vec,Form("plots/histo_template_bkg_onlyMC_%s_log",s1.Data()),Form("Background template %s",s1.Data()),false);
     plot_datasets_axis1(vec,Form("plots/histo_template_bkg_onlyMC_%s_lin",s1.Data()),Form("Background template %s",s1.Data()),true,true);
     }
@@ -832,7 +794,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
 
   if (do_syst_string==TString("savepdfMCtrue1D") || do_syst_string==TString("templateshapeMCpromptdrivenEB") || do_syst_string==TString("templateshapeMCfakedrivenEB") || do_syst_string==TString("templateshapeMCpromptdrivenEE") || do_syst_string==TString("templateshapeMCfakedrivenEE") || do_syst_string==TString("templateshape2frag")) {
 
-    TFile *fmctrue_s = new TFile("outphoton_allmc_sig.root","read");
+    TFile *fmctrue_s = new TFile("outphoton_allmc_signal.root","read");
     get_roodset_from_ttree(fmctrue_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mctrue_s_rv1);
     get_roodset_from_ttree(fmctrue_s,Form("roofit/roodset_signal_%s_rv2",s2.Data()),dset_mctrue_s_rv2);
     assert(dset_mctrue_s_rv1);
@@ -844,13 +806,13 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
       get_roodset_from_ttree(fmcrcone_s,Form("roofit/roodset_signal_%s_rv2",s2.Data()),dset_mcrcone_s_rv2);
     }
     else {
-      fmcrcone_s = new TFile("outphoton_allmc_rcone.root","read");
+      fmcrcone_s = new TFile("outphoton_allmc_randomcone.root","read");
       get_roodset_from_ttree(fmcrcone_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcrcone_s_rv1);
       get_roodset_from_ttree(fmcrcone_s,Form("roofit/roodset_signal_%s_rv2",s2.Data()),dset_mcrcone_s_rv2);
     }
     assert(dset_mcrcone_s_rv1);
     assert(dset_mcrcone_s_rv2);
-    TFile *fmctrue_b = new TFile("outphoton_allmc_bkg.root","read");
+    TFile *fmctrue_b = new TFile("outphoton_allmc_background.root","read");
     get_roodset_from_ttree(fmctrue_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_b_rv1);
     get_roodset_from_ttree(fmctrue_b,Form("roofit/roodset_background_%s_rv2",s2.Data()),dset_mctrue_b_rv2);
     assert(dset_mctrue_b_rv1);
