@@ -3,3 +3,7 @@ outphoton_*root
 *.root
 *.d
 *.so
+AutoDict*
+.*
+plots*
+RooUnfold-1.1.1
