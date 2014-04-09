@@ -1070,7 +1070,7 @@ void template_production_class::Loop(int maxevents)
 
 #endif
 
-void template_production(TString filename="input.root", TString mode="", bool isdata=1, const char* outfile="out.root", TString differentialvariable="photoniso", int maxevents=-1,bool do_event_mixing=false,TString filenameEXTRA=""){
+void template_production(TString filename="input.root", TString mode="", bool isdata=1, const char* outfile="out.root", TString differentialvariable="photoniso", int maxevents=-1,bool do_event_mixing=false,TString filenameEXTRA="",TString effunf_dotreeforsyst="Default"){
   
   TFile *outF = TFile::Open(outfile,"recreate");
   outF->Close();
@@ -1138,7 +1138,7 @@ void template_production(TString filename="input.root", TString mode="", bool is
   if (mode=="1pgen1fside") treename_chosen=treename[17];
   if (mode=="1pgen1fside_2frag") treename_chosen=treename[17];
 
-  if (mode=="effunf") treename_chosen = "LightTreeGenReco";
+  if (mode=="effunf") treename_chosen = Form("LightTreeGenReco_%s",effunf_dotreeforsyst.Data());
 
   file->GetObject(treename_chosen.Data(),t);
 
