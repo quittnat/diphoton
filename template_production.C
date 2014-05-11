@@ -981,7 +981,7 @@ void template_production_class::Loop(int maxevents)
     ////////////////////////////////////////////////////////////////////
 
 
-    if (doeffunf && (dataset_id<0 || dataset_id==dy_dataset_id)){
+    if (doeffunf){
 
       int event_ok_for_dataset_local = event_ok_for_dataset;
       if (!reco_in_acc) event_ok_for_dataset_local = -1;
@@ -1034,18 +1034,17 @@ void template_production_class::Loop(int maxevents)
 	if (bin_reco==diffvariables_nbins_list(*diffvariable)-1) reco_in_acc_local=false;
 	if (bin_gen==diffvariables_nbins_list(*diffvariable)-1) gen_in_acc_local=false;
 	
-	if (reco_in_acc_local) reco_in_acc_local = reco_in_acc_local && matched;
+	if (!isdata && reco_in_acc_local) reco_in_acc_local = reco_in_acc_local && matched;
 
-	if (dataset_id<0){
-	float sf = (reco_in_acc_local) ? getscalefactor_foreffunf(pholead_pt,photrail_pt,pholead_eta,photrail_eta,pholead_r9,photrail_r9).first : 1;
-	if (reco_in_acc_local && gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hmatched->Fill(mydiff_reco[*diffvariable],mydiff_gen[*diffvariable],weight*sf);
-	if (reco_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hreco->Fill(mydiff_reco[*diffvariable],weight*sf);
-	if (gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local_gen,*diffvariable)].htruth->Fill(mydiff_gen[*diffvariable],weight);
-	}
-
-	if (dataset_id==dy_dataset_id){
+ 	if (effunf_dotreeforsyst==TString("DiElectron") && dataset_id==dy_dataset_id) {
 	  float sf = getscalefactor_forzeesubtraction(event_ok_for_dataset_local).first;
 	  if (reco_in_acc_local) histo_zee_yieldtosubtract[get_name_zeehisto(event_ok_for_dataset_local,*diffvariable)]->Fill(mydiff_reco[*diffvariable],weight*sf);
+	}
+	else {
+	  float sf = (reco_in_acc_local && !isdata) ? getscalefactor_foreffunf(pholead_pt,photrail_pt,pholead_eta,photrail_eta,pholead_r9,photrail_r9).first : 1;
+	  if (reco_in_acc_local && gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hmatched->Fill(mydiff_reco[*diffvariable],mydiff_gen[*diffvariable],weight*sf);
+	  if (reco_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local,*diffvariable)].hreco->Fill(mydiff_reco[*diffvariable],weight*sf);
+	  if (gen_in_acc_local) responsematrix_effunf[get_name_responsematrix_effunf(event_ok_for_dataset_local_gen,*diffvariable)].htruth->Fill(mydiff_gen[*diffvariable],weight);
 	}
 
       }
@@ -1149,6 +1148,7 @@ void template_production(TString filename="input.root", TString mode="", bool is
   temp->Setup(isdata,mode,differentialvariable,do_event_mixing);
   temp->inputfilename=filename;
   temp->inputfilenameEXTRA=filenameEXTRA;
+  temp->effunf_dotreeforsyst=effunf_dotreeforsyst;
 
 
   if (maxevents>0) temp->Loop(maxevents); else temp->Loop();

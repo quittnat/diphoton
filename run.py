@@ -2,8 +2,8 @@
 
 ##################################################################
 
-file='./gg_minitree_data_030903p1_28dec/Photon-Run2011AB-21Jun2013-v1-AOD.root'
-modes=['sigsig','sigbkg','bkgbkg','standard','randomcone','sieiesideband']
+file='./gg_minitree_data_030903p1_06apr/Photon-Run2011AB-21Jun2013-v1-AOD.root'
+modes=['sigsig','sigbkg','bkgbkg','standard']
 isdata=1
 number=5e5
 

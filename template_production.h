@@ -327,6 +327,7 @@ public :
    TString inputfilename;
    TString inputfilenameEXTRA;
    TString outputfilename;
+   TString effunf_dotreeforsyst;
 
   Float_t roovar1;
   Float_t roovar2;
@@ -603,7 +604,6 @@ void template_production_class::Setup(Bool_t _isdata, TString _mode, TString _di
     }
 
   if (doeffunf) {
-    assert(!isdata);
     for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
       for (int i=0; i<3; i++) {
 	roounfoldmatrices_struct a;
