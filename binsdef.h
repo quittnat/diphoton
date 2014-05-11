@@ -82,12 +82,12 @@ TString("")\
 
 static const int n_bins=30;
 int __nbins__[] = { // this should always be the effective length of mybinsdef_ array minus 1 (last number there is for overflow)
-  //  16,25,13,26,22,5,10,13,14,14,13,5,4,5,5,5,5,5,5
-  18,25,13,26,22,5,10,13,14,14,13,5,4,5,5,5,5,5,5
+  16,25,13,26,22,5,10,13,14,14,13,5,4,5,5,5,5,5,5
+  //  18,25,13,26,22,5,10,13,14,14,13,5,4,5,5,5,5,5,5
 };
 
-//float mybinsdef_invmass[n_bins+1]={0,40,60,70,75,80,85,90,95,100,110,120,150,250,400,800,800.01};
-float mybinsdef_invmass[n_bins+1]={0,40,60,68,72,76,80,84,88,92,96,100,108,116,132,168,228,800,800.01};
+float mybinsdef_invmass[n_bins+1]={0,40,60,70,75,80,85,90,95,100,110,120,150,250,400,800,800.01};
+//float mybinsdef_invmass[n_bins+1]={0,40,60,68,72,76,80,84,88,92,96,100,108,116,132,168,228,800,800.01};
 float mybinsdef_diphotonpt[n_bins+1]={0,5,7,9,11,13,15,16,17,19,21,23,25,27,30,33,36,40,45,51,59,67,75,85,200,200.01};
 float mybinsdef_costhetastar[n_bins+1]={0,0.15,0.185,0.215,0.24,0.265,0.29,0.32,0.36,0.415,0.784999,0.944999,1,1.01};
 float mybinsdef_dphi[n_bins+1]={0,0.518363,0.84823,1.27235,1.68075,1.9635,2.1677,2.34049,2.46615,2.5604,2.63894,2.70177,2.7646,2.81173,2.85885,2.89027,2.92168,2.9531,2.98451,3.01593,3.04735,3.06305,3.07876,3.09447,3.11018,3.14159,3.15159};
@@ -179,7 +179,9 @@ float* diffvariables_binsdef_list(TString diffvariable){
 
 const char* get_unit(TString dvar){
   TString unit = diffvariables_units_list(dvar);
-  return TString(Form("%s %s",diffvariables_names_list(dvar).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data())).Data();
+  TString out = TString(Form("%s %s",diffvariables_names_list(dvar).Data(),unit!=TString("") ? (TString("(").Append(unit.Append(")"))).Data() : TString("").Data())).Data();
+  cout << "DEBUG " << out.Data() << endl;
+  return out.Data();
 };
 
 

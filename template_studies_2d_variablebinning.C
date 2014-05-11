@@ -1416,7 +1416,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
       TLatex a;
       a.SetNDC();
       a.SetTextSize(0.03);
-      a.DrawLatex(0.58,0.65,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
+      a.DrawLatex(0.58,0.65,"#splitline{CMS Internal}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
 
       c1_ub->cd(2);
       RooPlot *frame2bla = roovar2->frame(Title(""));
@@ -1430,7 +1430,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
       frame2bla->Draw();
       //    c1_ub->GetPad(2)->SetLogy(1);
       leg->Draw();
-      a.DrawLatex(0.58,0.65,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
+      a.DrawLatex(0.58,0.65,"#splitline{CMS Internal}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
 
       model_axis1_unbinned->Print();
       model_axis2_unbinned->Print();
@@ -1662,7 +1662,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     TLatex a;
     a.SetNDC();
     a.SetTextSize(0.03);
-    a.DrawLatex(0.58,0.55,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
+    a.DrawLatex(0.58,0.55,"#splitline{CMS Internal}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
 
       c2_ub->cd(2);
       RooPlot *frame2bla = roovar2->frame(Title(""));
@@ -1685,7 +1685,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
       leg2->AddEntry("plot_bkgbkg_axis2_unbinned","fake-fake","l");
       leg2->SetFillColor(kWhite);
       leg2->Draw();
-      a.DrawLatex(0.58,0.55,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
+      a.DrawLatex(0.58,0.55,"#splitline{CMS Internal}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
 
       c2_ub->SaveAs(Form("plots/fittingplot2unbinned_%s_%s_b%d.png",splitting.Data(),diffvariable.Data(),bin));   
       c2_ub->SaveAs(Form("plots/fittingplot2unbinned_%s_%s_b%d.jpg",splitting.Data(),diffvariable.Data(),bin));   
@@ -2702,7 +2702,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   TLatex a;
   a.SetNDC();
   a.SetTextSize(0.03);
-  a.DrawLatex(0.13,0.83,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
+  a.DrawLatex(0.13,0.83,"#splitline{CMS Internal}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
 
   output_canv->Update();
   output_canv->SaveAs(Form("plots/plot_purity_%s_%s.png", diffvariable.Data(),splitting.Data()));
@@ -2725,8 +2725,13 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   TCanvas *xsec_canv = new TCanvas("xsec_canv","xsec_canv");
   xsec_canv->cd();
   xsec_centralvalue->SetStats(0);
+  xsec_centralvalue->GetYaxis()->SetLabelSize(0.03);
   //  xsec_centralvalue->SetTitle(Form("Differential cross section - %s category",splitting.Data()));
-  xsec_centralvalue->GetYaxis()->SetTitle(Form("d#sigma/d%s (pb%s)",diffvariables_names_list(diffvariable).Data(),get_unit(diffvariable)));
+  xsec_centralvalue->SetTitle(Form("d#sigma/d%s",diffvariables_names_list(diffvariable).Data()));
+  xsec_centralvalue->SetTitleSize(0.02);
+  xsec_centralvalue->GetYaxis()->SetTitle(Form("d#sigma/d%s (pb/%s)",diffvariables_names_list(diffvariable).Data(),diffvariables_units_list(diffvariable).Data()));
+  xsec_centralvalue->GetXaxis()->SetTitle(get_unit(diffvariable));
+  xsec_centralvalue->GetXaxis()->SetTitleSize(0.04);
   xsec_centralvalue->SetMinimum(0);
   SetFormat(xsec_centralvalue_raw,kRed,20,kDotted);
   SetFormat(xsec_centralvalue,kBlack,20);
@@ -3760,8 +3765,8 @@ void plot_datasets_2D(std::vector<plot_dataset_struct> dsets, TString outname, b
   //  TLatex a;
   //  a.SetNDC();
   //  a.SetTextSize(0.03);
-  //  if (legendup)  a.DrawLatex(0.63,0.6,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
-  //  else a.DrawLatex(0.63,0.85,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
+  //  if (legendup)  a.DrawLatex(0.63,0.6,"#splitline{CMS Internal}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
+  //  else a.DrawLatex(0.63,0.85,"#splitline{CMS Internal}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
   //
 
   comp->SaveAs(Form("plots/%s.%s",outname.Data(),"root"));
@@ -3828,8 +3833,8 @@ void plot_datasets_axis1(std::vector<plot_dataset_struct> dsets, TString outname
   TLatex a;
   a.SetNDC();
   a.SetTextSize(0.03);
-  if (legendup)  a.DrawLatex(0.63,0.6,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
-  else a.DrawLatex(0.63,0.85,"#splitline{CMS Preliminary}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
+  if (legendup)  a.DrawLatex(0.63,0.6,"#splitline{CMS Internal}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
+  else a.DrawLatex(0.63,0.85,"#splitline{CMS Internal}{#sqrt{s} = 7 TeV L = 5.0 fb^{-1}}");
 
   comp->SaveAs(Form("%s.%s",outname.Data(),"root"));
   comp->SaveAs(Form("%s.%s",outname.Data(),"pdf"));
@@ -4332,7 +4337,7 @@ float find_repetition_eventsintemplates(RooDataSet *dset, int axis){
     float eta = dset->get(i)->getRealValue(eta_n);
     float pt = dset->get(i)->getRealValue(pt_n);
 
-    vec.push_back(make_pair<float,float>(eta,pt));
+    vec.push_back(make_pair<float,float>(float(eta),float(pt)));
 
   }
 
@@ -4346,7 +4351,7 @@ float find_repetition_eventsintemplates(RooDataSet *dset, int axis){
     long leta = ((long)(eta*prec));
     long lpt = ((long)(pt*prec));
 
-    vec2.push_back(make_pair<long,long>(leta,lpt));
+    vec2.push_back(make_pair<long,long>(long(leta),long(lpt)));
 
   }
 
