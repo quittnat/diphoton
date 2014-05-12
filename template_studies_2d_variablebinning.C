@@ -2361,7 +2361,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     TFile *file_zee_subtraction = NULL;
     const bool do_zee_subtraction = true;
     if (do_zee_subtraction){
-      file_zee_subtraction = new TFile("effunf.root");
+      file_zee_subtraction = new TFile("outphoton_effunf_dy_DiElectron.root");
       TH1F *hist = NULL;
       file_zee_subtraction->GetObject(Form("effunf/histo_zee_yieldtosubtract_%s_%s",diffvariable.Data(),splitting.Data()),hist);
       for (int bin=0; bin<bins_to_run; bin++){
