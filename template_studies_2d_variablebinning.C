@@ -2376,12 +2376,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     for (int bin=0; bin<bins_to_run; bin++) {
       float pp = 	       purity[0]->GetBinContent(bin+1);
       float pp_err =           purity[0]->GetBinError(bin+1);
-      //    float pf = 	       purity[1]->GetBinContent(bin+1);
-      //    float pf_err =     purity[1]->GetBinError(bin+1);
-      //    float fp = 	       purity[2]->GetBinContent(bin+1);
-      //    float fp_err =     purity[2]->GetBinError(bin+1);
-      //    float ff = 	       purity[3]->GetBinContent(bin+1);
-      //    float ff_err =     purity[3]->GetBinError(bin+1);
       float tot_events = eventshisto->GetBinContent(bin+1);
 
       ngg_centralvalue_raw->SetBinContent(bin+1,pp*tot_events);
@@ -2413,7 +2407,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
     RooUnfoldResponse *responsematrix_centralvalue=NULL;
     { //--- construct central response matrix
-      TFile *effunf_file = new TFile("effunf.root");
+      TFile *effunf_file = new TFile("outphoton_effunf_sig_Default.root");
       effunf_file->GetObject(Form("effunf/responsematrix_effunf_%s_%s",splitting.Data(),diffvariable.Data()),responsematrix_centralvalue);
       cout << Form("responsematrix_effunf_%s_%s",splitting.Data(),diffvariable.Data()) << endl;
       assert (responsematrix_centralvalue!=NULL);
@@ -2448,6 +2442,10 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     TH1F *histo_bias_templateshapeMCpromptdrivenEE = histos_systematics.at("templateshapeMCpromptdrivenEE");
     TH1F *histo_bias_templateshapeMCfakedrivenEE =   histos_systematics.at("templateshapeMCfakedrivenEE");
     TH1F *histo_bias_templateshape2frag = histos_systematics.at("templateshape2frag");
+    TH1F *histo_JECup = histos_systematics.at("JECup");
+    TH1F *histo_JECdown = histos_systematics.at("JECdown");
+    TH1F *histo_ESCALEup = histos_systematics.at("ESCALEup");
+    TH1F *histo_ESCALEdown = histos_systematics.at("ESCALEdown");
     if (!skipsystematics){
       TFile *file_bias_purefitbias  = new TFile(Form("plots/histo_bias_purefitbias_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
       file_bias_purefitbias->GetObject("histo_bias_purefitbias",histo_bias_purefitbias);
@@ -2470,6 +2468,18 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       TFile *file_bias_templateshape2frag = new TFile(Form("plots/histo_bias_templateshape2frag_%s_%s_allbins.root",diffvariable.Data(),splitting.Data()));
       file_bias_templateshape2frag->GetObject("histo_bias_templateshape2frag",histo_bias_templateshape2frag);
       name_file_for2events_decision = "outphoton_data_standard.root";
+      TFile *file_JECup = new TFile("plots/ratiosyst_JECup.root");
+      file_JECup->GetObject(Form("hreco_%s_%s_ratiosyst",diffvariable.Data(),splitting.Data()),histo_JECup);
+      assert(histo_JECup);
+      TFile *file_JECdown = new TFile("plots/ratiosyst_JECdown.root");
+      file_JECdown->GetObject(Form("hreco_%s_%s_ratiosyst",diffvariable.Data(),splitting.Data()),histo_JECdown);
+      assert(histo_JECdown);
+      TFile *file_ESCALEup = new TFile("plots/ratiosyst_ESCALEup.root");
+      file_ESCALEup->GetObject(Form("hreco_%s_%s_ratiosyst",diffvariable.Data(),splitting.Data()),histo_ESCALEup);
+      assert(histo_ESCALEup);
+      TFile *file_ESCALEdown = new TFile("plots/ratiosyst_ESCALEdown.root");
+      file_ESCALEdown->GetObject(Form("hreco_%s_%s_ratiosyst",diffvariable.Data(),splitting.Data()),histo_ESCALEdown);
+      assert(histo_ESCALEdown);
     }
     else {
       for (std::map<TString,TH1F*>::iterator it = histos_systematics.begin(); it!=histos_systematics.end(); it++){
@@ -2518,13 +2528,34 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,get_noise_systematic(name_file_for2events_decision.Data(),diffvariable,splitting,bin));
 	}
 	else if (syst.name=="zee"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->Reset();
+	  cout << "FIXME" << endl;
 	  // TO BE FIXED: THIS IS AN UNCERTAINTY!!!
 	  //	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_zee_subtraction->GetBinContent(bin+1));
 	}
+	else if (syst.name=="JECup"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_JECup->GetBinContent(bin+1)-1);
+	}
+	else if (syst.name=="JECdown"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_JECdown->GetBinContent(bin+1)-1);
+	}
+	else if (syst.name=="ESCALEup"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_ESCALEup->GetBinContent(bin+1)-1);
+	}
+	else if (syst.name=="ESCALEdown"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_ESCALEdown->GetBinContent(bin+1)-1);
+	}
+	else if (syst.name=="statistic"){
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,ngg_centralvalue->GetBinError(bin+1)/ngg_centralvalue->GetBinContent(bin+1));
+	}
 	else {
+	  cout << syst.name.Data() << endl;
 	  assert(false);
 	}
-
+	
+	/// TO BE FIXED!!!
+	cout << "FIX up/down double uncertainty!!!" << endl;
+	
       }
 
       TH1F *ngg_syst_raw = (TH1F*)(ngg_centralvalue_raw->Clone(Form("ngg_syst_raw_%s",syst.name.Data())));
@@ -2569,8 +2600,8 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       if (skipsystematics) unfolded = (TH1F*)(ngg_centralvalue->Clone("unfolded"));
       else {
 	RooUnfoldResponse *responsematrix_syst=NULL;
-	TFile *effunf_file = new TFile("effunf.root");
-	effunf_file->GetObject(Form("effunf_syst_%s/responsematrix_effunf_%s_%s",syst.name.Data(),splitting.Data(),diffvariable.Data()),responsematrix_syst);
+	TFile *effunf_file = new TFile(Form("outphoton_effunf_sig_%s.root",syst.name.Data()));
+	effunf_file->GetObject(Form("effunf/responsematrix_effunf_%s_%s",splitting.Data(),diffvariable.Data()),responsematrix_syst);
 	assert (responsematrix_syst!=NULL);
 	unfolded = run_unfolding(responsematrix_syst,ngg_centralvalue_raw);
       }
@@ -2779,10 +2810,14 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     TCanvas *systplot_canv = new TCanvas("systplot_canv","systplot_canv");
     systplot_canv->cd();
 
-    TH1F *systplot_tot = (TH1F*)(systplots.begin()->second->Clone("systplot_tot")); systplot_tot->Reset();
-    for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++) systplot_tot->Add(it->second);
+    TH1F *systplot_tot = NULL;
+    {
+      vector<TH1F*> temp;
+      for (std::map<TString,TH1F*>::const_iterator it = systplots.begin(); it!=systplots.end(); it++) temp.push_back(it->second);
+      systplot_tot = AddTHInQuadrature(temp,"systplot_tot");
+    }
     systplot_tot->SetStats(0);
-    systplot_tot->SetTitle(Form("Systematic uncertainties on cross-section - %s category",splitting.Data()));
+    systplot_tot->SetTitle(Form("Uncertainties on cross-section - %s category",splitting.Data()));
     systplot_tot->SetMinimum(0);
     SetFormat(systplot_tot,kBlack,20,kDashed);
 
@@ -2797,7 +2832,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       it->second->Draw("same");
       legsystplot->AddEntry(it->second,map_systematics_list.at(it->first).name.Data(),"l");
     }
-    legsystplot->AddEntry(systplot_tot,"Total syst. uncertainty","l");
+    legsystplot->AddEntry(systplot_tot,"Total uncertainty","l");
     legsystplot->SetFillColor(kWhite);
     legsystplot->Draw();
 
@@ -3181,7 +3216,8 @@ void post_process_all(bool skipsystematics = false, TString var=""){
     post_process(it->Data(),"EEEE",skipsystematics);
     post_process(it->Data(),"inclusive",skipsystematics);
   }
-}
+};
+
 
 void reweight_rhosigma(RooDataSet **dset, RooDataSet *dsetdestination, bool deleteold){
 

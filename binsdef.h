@@ -288,6 +288,14 @@ source_systematic_struct __systematics__[]={
   ConstructSystematic("templateshapeMCpromptdrivenEE","Prompt template shape EE",1,0,0,0,1,kRed,kDotted),
   ConstructSystematic("templateshapeMCfakedrivenEE","Fake template shape EE",1,0,0,0,1,kBlue,kDotted),
   ConstructSystematic("templateshape2frag","Fragmentation effect on template",1,0,0,0,1,kOrange),
+  ConstructSystematic("JECup","JES up",1,0,0,0,1,kRed+1),
+  ConstructSystematic("JERup","JER up",0,1,0,0,1,kRed+2),
+  ConstructSystematic("ESCALEup","Energy scale up",1,0,0,1,0,kRed+3),
+  ConstructSystematic("ESMEARup","Energy smearing up",0,1,0,1,0,kRed+4),
+  ConstructSystematic("JECdown","JES down",1,0,0,0,1,kRed+1,9),
+  ConstructSystematic("JERdown","JER down",0,1,0,0,1,kRed+2,9),
+  ConstructSystematic("ESCALEdown","Energy scale down",1,0,0,1,0,kRed+3,9),
+  ConstructSystematic("ESMEARdown","Energy smearing down",0,1,0,1,0,kRed+4,9),
   ConstructSystematic("noise_mixing","Event mixing effect on template",1,0,0,0,1,kCyan),
   ConstructSystematic("statistic","Statistical uncertainty",1,0,1,0,0,kBlack,kDashed)
 };
