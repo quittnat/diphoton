@@ -2534,16 +2534,21 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 	  //	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_zee_subtraction->GetBinContent(bin+1));
 	}
 	else if (syst.name=="JECup"){
-	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_JECup->GetBinContent(bin+1)-1);
+	  // THIS IS AN UGLY HACK
+	  //	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_JECup->GetBinContent(bin+1)-1);
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,0.5*fabs(histo_JECup->GetBinContent(bin+1)-histo_JECdown->GetBinContent(bin+1)));
 	}
 	else if (syst.name=="JECdown"){
-	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_JECdown->GetBinContent(bin+1)-1);
+	  //	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_JECdown->GetBinContent(bin+1)-1);
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,0);
 	}
 	else if (syst.name=="ESCALEup"){
-	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_ESCALEup->GetBinContent(bin+1)-1);
+	  //	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_ESCALEup->GetBinContent(bin+1)-1);
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,0.5*fabs(histo_ESCALEup->GetBinContent(bin+1)-histo_ESCALEdown->GetBinContent(bin+1)));
 	}
 	else if (syst.name=="ESCALEdown"){
-	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_ESCALEdown->GetBinContent(bin+1)-1);
+	  //	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_ESCALEdown->GetBinContent(bin+1)-1);
+	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,0);
 	}
 	else if (syst.name=="statistic"){
 	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,ngg_centralvalue->GetBinError(bin+1)/ngg_centralvalue->GetBinContent(bin+1));
@@ -2552,9 +2557,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 	  cout << syst.name.Data() << endl;
 	  assert(false);
 	}
-	
-	/// TO BE FIXED!!!
-	cout << "FIX up/down double uncertainty!!!" << endl;
 	
       }
 
@@ -2619,15 +2621,33 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
       }
 
+    }
+
+    // THIS IS AN UGLY HACK
+    systplots["JERup"]->Add(systplots["JERup"],systplots["JERdown"],0.5,-0.5);
+    systplots["JERdown"]->Reset();
+    ngg_syst_histos["JERup"] = (TH1F*)(ngg_centralvalue->Clone(ngg_syst_histos["JERup"]->GetName()));
+    ngg_syst_histos["JERup"]->Multiply(systplots["JERup"]);
+    ngg_syst_histos["JERup"]->Add(ngg_centralvalue);
+    ngg_syst_histos["JERdown"]->Add(ngg_syst_histos["JERdown"],ngg_centralvalue,0,1);
+    xsec_syst_histos["JERup"] = (TH1F*)(xsec_centralvalue->Clone(xsec_syst_histos["JERup"]->GetName()));
+    xsec_syst_histos["JERup"]->Multiply(systplots["JERup"]);
+    xsec_syst_histos["JERup"]->Add(xsec_centralvalue);
+    xsec_syst_histos["JERdown"]->Add(xsec_syst_histos["JERdown"],xsec_centralvalue,0,1);
+    
+    for (size_t k=0; k<systematics_list.size(); k++) for (int bin=0; bin<bins_to_run; bin++) systplots[systematics_list.at(k).name]->SetBinContent(bin+1,fabs(systplots[systematics_list.at(k).name]->GetBinContent(bin+1)));
+    for (size_t k=0; k<systematics_list.size(); k++) for (int bin=0; bin<bins_to_run; bin++) ngg_syst_histos[systematics_list.at(k).name]->SetBinContent(bin+1,fabs(ngg_syst_histos[systematics_list.at(k).name]->GetBinContent(bin+1)));
+    for (size_t k=0; k<systematics_list.size(); k++) for (int bin=0; bin<bins_to_run; bin++) xsec_syst_histos[systematics_list.at(k).name]->SetBinContent(bin+1,fabs(xsec_syst_histos[systematics_list.at(k).name]->GetBinContent(bin+1)));
+
+    for (size_t k=0; k<systematics_list.size(); k++){
       // format systplot
-      TH1F *systplot = systplots.at(syst.name);
-      systplot->SetLineStyle(kDashed);
+      TH1F *systplot = systplots.at(systematics_list.at(k).name);
+      systplot->SetLineStyle(systematics_list.at(k).style);
       systplot->SetLineWidth(2);
       systplot->GetXaxis()->SetTitle(get_unit(diffvariable));
       systplot->GetYaxis()->SetTitle("Relative uncertainty");
-
     }
- 
+
   } // end splitting!=inclusive
 
   else if (splitting=="inclusive"){
