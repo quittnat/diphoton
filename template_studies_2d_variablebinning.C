@@ -2366,7 +2366,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
       file_zee_subtraction->GetObject(Form("effunf/histo_zee_yieldtosubtract_%s_%s",diffvariable.Data(),splitting.Data()),hist);
       for (int bin=0; bin<bins_to_run; bin++){
 	histo_zee_subtraction->SetBinContent(bin+1,hist->GetBinContent(bin+1)*intlumi); // event counts are normalized to 1/fb by default
-	histo_zee_subtraction->SetBinError(bin+1,0); // TO BE FIXED
+	histo_zee_subtraction->SetBinError(bin+1,hist->GetBinError(bin+1)*intlumi);
       }      
     }
 
@@ -2530,8 +2530,6 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 	else if (syst.name=="zee"){
 	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->Reset();
 	  cout << "FIXME" << endl;
-	  // TO BE FIXED: THIS IS AN UNCERTAINTY!!!
-	  //	  for (int bin=0; bin<bins_to_run; bin++) histo_syst->SetBinContent(bin+1,histo_zee_subtraction->GetBinContent(bin+1));
 	}
 	else if (syst.name=="JECup"){
 	  // THIS IS AN UGLY HACK
@@ -3196,7 +3194,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     SetFormat(histo_finalxs_fortheorycomp);
     for (int bin=0; bin<bins_to_run; bin++){
       float xs = xsec_centralvalue->GetBinContent(bin+1)/1e3;
-      float relerr = sqrt(pow(systcolumn[bin]/xsec_centralvalue->GetBinContent(bin+1),2)+pow(statcolumn[bin]/xsec_centralvalue->GetBinContent(bin+1),2)+pow(lumi_rel,2));
+      float relerr = sqrt(pow(systcolumn[bin]/ngg_centralvalue->GetBinContent(bin+1),2)+pow(statcolumn[bin]/ngg_centralvalue->GetBinContent(bin+1),2)+pow(lumi_rel,2));
       histo_finalxs_fortheorycomp->SetBinContent(bin+1,xs);
       histo_finalxs_fortheorycomp->SetBinError(bin+1,relerr*xs);
       std::cout << "Bin " << bin << " " << xs << " +/- " << 100*relerr << " % (stat.+syst.+lumi.)" << std::endl;
@@ -3214,7 +3212,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     SetFormat(histo_finalxsnolumi_fortheorycomp);
     for (int bin=0; bin<bins_to_run; bin++){
       float xs = xsec_centralvalue->GetBinContent(bin+1)/1e3;
-      float relerr = sqrt(pow(systcolumn[bin]/xsec_centralvalue->GetBinContent(bin+1),2)+pow(statcolumn[bin]/xsec_centralvalue->GetBinContent(bin+1),2));
+      float relerr = sqrt(pow(systcolumn[bin]/ngg_centralvalue->GetBinContent(bin+1),2)+pow(statcolumn[bin]/ngg_centralvalue->GetBinContent(bin+1),2));
       histo_finalxsnolumi_fortheorycomp->SetBinContent(bin+1,xs);
       histo_finalxsnolumi_fortheorycomp->SetBinError(bin+1,relerr*xs);
       std::cout << "Bin " << bin << " " << xs << " +/- " << 100*relerr << " % (stat.+syst.)" << std::endl;
