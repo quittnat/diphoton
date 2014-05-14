@@ -36,6 +36,13 @@ counter=0
 for cat in lista_cats:
     for i in range(len(lista_vars)):
         for j in range(lista_nbins[i]-1):
+            skip=false
+            if (option=='templateshapeMCpromptdrivenEB' || option=='templateshapeMCfakedrivenEB'):
+                if (cat=='EEEE'):
+                    continue
+            if (option=='templateshapeMCpromptdrivenEE' || option=='templateshapeMCfakedrivenEE'):
+                if (cat=='EBEB'):
+                    continue
             os.system('qsub -q short.q -o /dev/null -e /dev/null /shome/peruzzi/shape_studies/run_fits.sh ' + lista_vars[i] + ' ' + cat + ' ' + str(j) + option)
             counter=counter+1
 
