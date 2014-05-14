@@ -25,10 +25,8 @@ lista_vars=[
 "2jet_dphi_gg_jj"
 ]
 
-#lista_vars=["invmass"]
 
-lista_nbins=[16,25,13,26,22,5,10,13,14,14,13,5,4,5,5,5,5,5,5]
-#lista_nbins=[18,25,13,26,22,5,10,13,14,14,13,5,4,5,5,5,5,5,5]
+lista_nbins=[16,25,13,26,22,5,9,13,14,14,13,5,3,5,5,5,5,5,5]
 
 option='' # default
 #option='newtemplates_1event'
