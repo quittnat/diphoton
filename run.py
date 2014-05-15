@@ -1,25 +1,42 @@
 #!/usr/bin/python
 
+from subprocess import Popen
+from time import sleep
+import sys
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('what', help='data/mc/data_step2')
+args = parser.parse_args()
+
 ##################################################################
 
-file='./gg_minitree_data_030903p1_06apr/Photon-Run2011AB-21Jun2013-v1-AOD.root'
-modes=['sigsig','sigbkg','bkgbkg','standard']
-isdata=1
-number=5e5
-
-
-#file='./gg_minitree_mc_030903p1_22mar/allmc.root'
-#modes=['signal','randomcone','background','sieiesideband','sigsig','sigbkg','bkgbkg','standard']
-#isdata=0
-#number=5e5
-
+if (args.what=='data'):
+    file='./gg_minitree_data_030903p1_14may/Photon-Run2011AB-21Jun2013-v1-AOD.root'
+    modes=['sigsig','sigbkg','bkgbkg','standard']
+    activate12events=False
+    isdata=1
+    number=-1
+elif (args.what=='mc'):
+    file='./gg_minitree_mc_030903p1_14may/allmc.root'
+    modes=['signal','randomcone','background','sieiesideband','sigsig','sigbkg','bkgbkg','standard']
+    activate12events=False
+    isdata=0
+    number=1e6
+elif (args.what=='data_step2'):
+    file='./gg_minitree_data_030903p1_14may_step2/Photon-Run2011AB-21Jun2013-v1-AOD-step2.root'
+    modes=['standard_newtemplates_sigsig','standard_newtemplates_sigbkg','standard_newtemplates_bkgbkg']
+    activate12events=True
+    isdata=1
+    number=-1
+else:
+    print 'Wrong usage, exiting.'
+    sys.exit()
+    
 ##################################################################
 
 spawn=4
 lista_processi=[]
 
-from subprocess import Popen
-from time import sleep
 
 def wait_processes():
     sleep(1)
@@ -41,9 +58,15 @@ for mode in modes:
     thisnumber = number
     if (mode.rfind('standard')>=0):
         thisnumber = -1
-    args = ['root','-q','-b','-l','template_production.C+O("'+file+'","'+mode+'",'+str(isdata)+',"outphoton_'+strdata+'_'+mode+'.root","photoniso",'+str(thisnumber)+');']
-#    print 'Running root'+args
-    lista_processi.append(Popen(args))
+    if (activate12events):
+        args = ['root','-q','-b','-l','template_production.C+O("'+file+'","'+mode+'",'+str(isdata)+',"outphoton_'+strdata+'_'+mode+'_1event.root","photoniso",'+str(thisnumber)+',false);']
+        lista_processi.append(Popen(args))
+        wait_processes()
+        args = ['root','-q','-b','-l','template_production.C+O("'+file+'","'+mode+'",'+str(isdata)+',"outphoton_'+strdata+'_'+mode+'_2events.root","photoniso",'+str(thisnumber)+',true);']
+        lista_processi.append(Popen(args))
+    else:
+        args = ['root','-q','-b','-l','template_production.C+O("'+file+'","'+mode+'",'+str(isdata)+',"outphoton_'+strdata+'_'+mode+'.root","photoniso",'+str(thisnumber)+');']
+        lista_processi.append(Popen(args))
 
 for i in lista_processi:
     i.wait()

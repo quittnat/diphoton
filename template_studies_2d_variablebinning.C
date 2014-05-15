@@ -252,15 +252,15 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     inputfilename_d     = "outphoton_allmc_standard.root";
   }  
   else if (do_syst_string=="newtemplates_1event") {
-    inputfilename_t2p   = "outphoton_data_sigsig_step2_1event.root";
-    inputfilename_t1p1f = "outphoton_data_sigbkg_step2_1event.root";
-    inputfilename_t2f   = "outphoton_data_bkgbkg_step2_1event.root";
+    inputfilename_t2p   = "outphoton_data_standard_newtemplates_sigsig_step2_1event.root";
+    inputfilename_t1p1f = "outphoton_data_standard_newtemplates_sigbkg_step2_1event.root";
+    inputfilename_t2f   = "outphoton_data_standard_newtemplates_bkgbkg_step2_1event.root";
     inputfilename_d     = "outphoton_data_standard.root";
   }  
   else if (do_syst_string=="newtemplates_2events") {
-    inputfilename_t2p   = "outphoton_data_sigsig_step2_2events.root";
-    inputfilename_t1p1f = "outphoton_data_sigbkg_step2_2events.root";
-    inputfilename_t2f   = "outphoton_data_bkgbkg_step2_2events.root";
+    inputfilename_t2p   = "outphoton_data_standard_newtemplates_sigsig_step2_2events.root";
+    inputfilename_t1p1f = "outphoton_data_standard_newtemplates_sigbkg_step2_2events.root";
+    inputfilename_t2f   = "outphoton_data_standard_newtemplates_bkgbkg_step2_2events.root";
     inputfilename_d     = "outphoton_data_standard.root";
   }  
   else if (do_syst_string=="oldtemplates"){
@@ -271,10 +271,10 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
   }  
   else {
     inputfilename_d     = "outphoton_data_standard.root";
-    inputfilename_t2p   = "outphoton_data_sigsig_step2_1event.root";
-    inputfilename_t1p1f = "outphoton_data_sigbkg_step2_1event.root";
+    inputfilename_t2p   = "outphoton_data_standard_newtemplates_sigsig_1event.root";
+    inputfilename_t1p1f = "outphoton_data_standard_newtemplates_sigbkg_1event.root";
     bool is2ev = is_2events_bin(inputfilename_d,diffvariable,splitting,bin);
-    inputfilename_t2f = (is2ev) ? "outphoton_data_bkgbkg_step2_2events.root" : "outphoton_data_bkgbkg_step2_1event.root";
+    inputfilename_t2f = (is2ev) ? "outphoton_data_standard_newtemplates_bkgbkg_2events.root" : "outphoton_data_standard_newtemplates_bkgbkg_1event.root";
   }  
 
   if ((!inputfile_t2p)   ||  (TString(inputfile_t2p->GetName())   != TString(inputfilename_t2p)  )) {inputfile_t2p = TFile::Open(inputfilename_t2p);     dir_t2p=NULL;  }
@@ -3642,7 +3642,7 @@ void plot_template_dependency_axis1(RooDataSet *dset, TString variable, float mi
     if (variable=="sieie") var = args.getRealValue("roosieie1");
     if (var>=max) var=max-1e-5;
     if (var<min) var=min;
-    int bin = (var-min)/(max-min)*bins;
+    int bin = (int)((var-min)/(max-min)*bins);
     //    std::cout << var << " " << bin << " " << args.getRealValue("roovar1") << std::endl;
     if (!dobinned) histo[bin]->Fill(args.getRealValue("roovar1"),w);
     else histo[bin]->Fill(args.getRealValue("binning_roovar1"),w);
@@ -4182,7 +4182,7 @@ void print_mem(){
   gSystem->GetProcInfo(&procinfo); 
   std::cout << "Resident mem (kB): " << procinfo.fMemResident << std::endl; 
   std::cout << "Virtual mem (kB):  " << procinfo.fMemVirtual << std::endl; 
-  gSystem->Sleep(1e3);
+  gSystem->Sleep((UInt_t)1e3);
 };
 
 bool myfunc_sortonfirst(pair<float,float> a, pair<float,float> b) { return (a.first<b.first); };
@@ -4401,7 +4401,7 @@ float find_repetition_eventsintemplates(RooDataSet *dset, int axis){
     float eta = dset->get(i)->getRealValue(eta_n);
     float pt = dset->get(i)->getRealValue(pt_n);
 
-    const long prec = 1e5;
+    const long prec = (long)1e5;
     long leta = ((long)(eta*prec));
     long lpt = ((long)(pt*prec));
 
