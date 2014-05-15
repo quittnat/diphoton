@@ -61,9 +61,10 @@ for mode in modes:
     if (activate12events):
         args = ['root','-q','-b','-l','template_production.C+O("'+file+'","'+mode+'",'+str(isdata)+',"outphoton_'+strdata+'_'+mode+'_1event.root","photoniso",'+str(thisnumber)+',false);']
         lista_processi.append(Popen(args))
-        wait_processes()
-        args = ['root','-q','-b','-l','template_production.C+O("'+file+'","'+mode+'",'+str(isdata)+',"outphoton_'+strdata+'_'+mode+'_2events.root","photoniso",'+str(thisnumber)+',true);']
-        lista_processi.append(Popen(args))
+        if (mode=='standard_newtemplates_bkgbkg'):
+            wait_processes()
+            args = ['root','-q','-b','-l','template_production.C+O("'+file+'","'+mode+'",'+str(isdata)+',"outphoton_'+strdata+'_'+mode+'_2events.root","photoniso",'+str(thisnumber)+',true);']
+            lista_processi.append(Popen(args))
     else:
         args = ['root','-q','-b','-l','template_production.C+O("'+file+'","'+mode+'",'+str(isdata)+',"outphoton_'+strdata+'_'+mode+'.root","photoniso",'+str(thisnumber)+');']
         lista_processi.append(Popen(args))
