@@ -2327,7 +2327,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
   TH1F *ngg_centralvalue_raw = NULL;
   TH1F *purity[4] = {NULL,NULL,NULL,NULL};
 
-  std::map<TString,source_systematic_struct> map_systematics_list;
+  std::map<TString,systematics_element> map_systematics_list;
   for (size_t i = 0; i<systematics_list.size(); i++) map_systematics_list[systematics_list.at(i).name] = systematics_list.at(i);
 
   if (splitting!="inclusive") { // start splitting!="inclusive"
@@ -2494,7 +2494,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
 
     for (size_t k=0; k<systematics_list.size(); k++){
 
-      source_systematic_struct syst = systematics_list.at(k);
+      systematics_element syst = systematics_list.at(k);
 
       if (syst.is_on_raw) {   // do systematics on raw yield
 
@@ -2886,7 +2886,7 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     fsysts[2] = new TFile(Form("plots/histo_systsummaryfinal_%s_EEEE.root", diffvariable.Data()));;
 
     for (int i=0; i<n_cats; i++){
-      for (std::map<TString,source_systematic_struct>::const_iterator it = map_systematics_list.begin(); it!=map_systematics_list.end(); it++){
+      for (std::map<TString,systematics_element>::const_iterator it = map_systematics_list.begin(); it!=map_systematics_list.end(); it++){
 	TH1F *hist = NULL;
 	fsysts[i]->GetObject(Form("systplot_%s",it->first.Data()),hist);
 	if (!hist) continue;
