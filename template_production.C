@@ -292,6 +292,9 @@ void template_production_class::Loop(int maxevents)
     float cutpt = (mode=="muon") ? 10 : 25;
     if (dosignaltemplate || dobackgroundtemplate) if (pholead_pt<cutpt) continue;
 
+    bool pholead_issig = (pholead_PhoMCmatchexitcode==1 || pholead_PhoMCmatchexitcode==2) && pholead_GenPhotonIsoDR04<5;
+    bool photrail_issig = (photrail_PhoMCmatchexitcode==1 || photrail_PhoMCmatchexitcode==2) && photrail_GenPhotonIsoDR04<5;
+
     if (mode=="zee") {
       if (fabs(dipho_mgg_photon-91.2)>10) continue;
     }
@@ -515,6 +518,7 @@ void template_production_class::Loop(int maxevents)
 	rooeta1=fabs(pholead_SCeta);
 	rooeta2=fabs(pholead_SCeta);
 	rooweight=weight;
+	if (!isdata) rooissigcont = (pholead_issig);
 	roodset_background[reg_lead][0]->Fill();
 	roodset_background[reg_lead][1]->Fill();
 	if (do_scan_cone) for (int k=0; k<50; k++) scan_cone_histos[reg_lead][k]->Fill(pholead_test_rotatedphotoniso[k]-getpuenergy(reg_lead,pholead_SCeta),weight);
@@ -535,6 +539,8 @@ void template_production_class::Loop(int maxevents)
 	float sieiein2=photrail_sieie;	
 	float etain1=fabs(pholead_SCeta);
 	float etain2=fabs(photrail_SCeta);
+	int issigin1=(pholead_issig);
+	int issigin2=(photrail_issig);
 
 	bool doswap = false;
 	if ((event_ok_for_dataset_local==0 || event_ok_for_dataset_local==2) && (randomgen->Uniform()>0.5)) doswap=true;
@@ -547,6 +553,7 @@ void template_production_class::Loop(int maxevents)
 	  temp=ptin1; ptin1=ptin2; ptin2=temp;
 	  temp=sieiein1; sieiein1=sieiein2; sieiein2=temp;
 	  temp=etain1; etain1=etain2; etain2=temp;
+	  temp=issigin1; issigin1=issigin2; issigin2=temp;
 	  event_pass12whoissiglike=!event_pass12whoissiglike;
 	}
 
@@ -565,6 +572,7 @@ void template_production_class::Loop(int maxevents)
 	rooeta1=etain1;
 	rooeta2=etain2;
 	rooweight=weight;
+	if (!isdata && do1p1ftemplate) rooissigcont = (event_pass12whoissiglike==0) ? issigin2 : issigin1;
 	FillDiffVariables(); // WARNING: WORKS ONLY IF DIFF VARIABLES ARE NOT SENSITIVE TO SWAPPING 1 WITH 2
 	template2d_roodset[get_name_template2d_roodset(event_ok_for_dataset_local,sigorbkg)]->Fill();
 
@@ -797,7 +805,7 @@ void template_production_class::Loop(int maxevents)
 
 	if (!isdata){
 	  int isppevent = 0;
-	  if ( ((pholead_PhoMCmatchexitcode==1 || pholead_PhoMCmatchexitcode==2) && pholead_GenPhotonIsoDR04<5) && ((photrail_PhoMCmatchexitcode==1 || photrail_PhoMCmatchexitcode==2) && photrail_GenPhotonIsoDR04<5) ) isppevent=1;
+	  if ( (pholead_issig) && (photrail_issig) ) isppevent=1;
 	  true_purity[get_name_true_purity(event_ok_for_dataset_local,*diffvariable)]->Fill(value_diffvariable,isppevent,weight);
 	  if (isppevent) true_purity_isppevent[get_name_true_purity_ispp(event_ok_for_dataset_local,*diffvariable)]->Fill(value_diffvariable,weight);
 	  else true_purity_isnotppevent[get_name_true_purity_isnotpp(event_ok_for_dataset_local,*diffvariable)]->Fill(value_diffvariable,weight);

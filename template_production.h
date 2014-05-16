@@ -341,10 +341,12 @@ public :
   Float_t roosigma;
   Float_t roonvtx;
   Float_t rooweight;
+  Float_t rooissigcont;
 
   std::map<TString,Float_t*> roovars_index1;
   std::map<TString,Float_t*> roovars_index2;
   std::map<TString,Float_t*> roovars_common;
+  std::map<TString,Float_t*> roovars_sigcont;
   std::map<TString,Float_t*> roovardiff;
 
   void AddVariablesToTree(TTree *t, std::map<TString,Float_t*> &mymap);
@@ -489,6 +491,7 @@ void template_production_class::Setup(Bool_t _isdata, TString _mode, TString _di
   roosigma = -999;
   roonvtx = -999;
   rooweight = -999;
+  rooissigcont = -999;
 
   for (std::vector<TString>::const_iterator diffvariable = diffvariables_list.begin(); diffvariable!=diffvariables_list.end(); diffvariable++){
     roovardiff[*diffvariable] = new Float_t(-999);
@@ -508,6 +511,8 @@ void template_production_class::Setup(Bool_t _isdata, TString _mode, TString _di
   roovars_common["roosigma"] = &roosigma;
   roovars_common["roonvtx"] = &roonvtx;
   roovars_common["rooweight"] = &rooweight;
+
+  roovars_sigcont["rooissigcont"] = &rooissigcont;
 
   out = new TFile(outputfilename.Data(),"recreate");
 
@@ -533,10 +538,12 @@ void template_production_class::Setup(Bool_t _isdata, TString _mode, TString _di
       roodset_background[i][0] = new TTree(t2.Data(),t2.Data());
       AddVariablesToTree(roodset_background[i][0],roovars_index1);
       AddVariablesToTree(roodset_background[i][0],roovars_common);
+      AddVariablesToTree(roodset_background[i][0],roovars_sigcont);
       t2=Form("roodset_%s_%s_rv%d",name_background.Data(),reg.Data(),2);
       roodset_background[i][1] = new TTree(t2.Data(),t2.Data());
       AddVariablesToTree(roodset_background[i][1],roovars_index2);
       AddVariablesToTree(roodset_background[i][1],roovars_common);
+      AddVariablesToTree(roodset_background[i][1],roovars_sigcont);
     }
 
   for (int i=0; i<2; i++){
@@ -601,6 +608,7 @@ void template_production_class::Setup(Bool_t _isdata, TString _mode, TString _di
       AddVariablesToTree(template2d_roodset[t2],roovars_index1);
       AddVariablesToTree(template2d_roodset[t2],roovars_index2);
       AddVariablesToTree(template2d_roodset[t2],roovars_common);
+      AddVariablesToTree(template2d_roodset[t2],roovars_sigcont);
     }
 
   if (doeffunf) {

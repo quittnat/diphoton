@@ -18,7 +18,7 @@ if (args.what=='data'):
     number=-1
 elif (args.what=='mc'):
     file='./gg_minitree_mc_030903p1_14may/allmc.root'
-    modes=['signal','randomcone','background','sieiesideband','sigsig','sigbkg','bkgbkg','standard']
+    modes=['signal','randomcone','background','sieiesideband','sigsig','sigbkg','bkgbkg','standard','2pgen','2fgen','1p1fbothgen','1pgen1fside','1prcone1fgen']
     activate12events=False
     isdata=0
     number=1e6

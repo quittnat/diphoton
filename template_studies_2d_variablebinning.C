@@ -111,6 +111,7 @@ void reweight_rho(RooDataSet **dset, RooDataSet *dsetdestination);
 void reweight_sigma(RooDataSet **dset, RooDataSet *dsetdestination);
 void reweight_nvtx(RooDataSet **dset, RooDataSet *dsetdestination);
 void reweight_rhosigma(RooDataSet **dset, RooDataSet *dsetdestination, bool deleteold = kTRUE);
+void reweight_signalcontamination(RooDataSet **dset, double target_fraction);
 void validate_reweighting(RooDataSet *dset, RooDataSet *dsetdestination, int numvar);
 void plot_datasets_axis1(std::vector<plot_dataset_struct> dsets, TString outname, TString legtitle, bool legendup=true, bool dolin=false);
 void plot_datasets_2D(std::vector<plot_dataset_struct> dsets, TString outname, bool dolin=true, bool binned=false);
@@ -867,6 +868,14 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     reweight_pt_1d(&dset_mctrue_b_rv2,dataset_axis2,2);
     reweight_pt_1d(&dset_mcrcone_b_rv2,dataset_axis2,2);
 
+    int ind1 = -1;
+    int ind2 = -1;
+    if (splitting=="EBEB") {ind1=0;ind2=0;}
+    if (splitting=="EBEE") {ind1=1;ind2=2;}
+    if (splitting=="EEEE") {ind1=3;ind2=3;}
+    reweight_signalcontamination(&dset_mcrcone_b_rv1,sig_contamination_in_templates[ind1]);
+    reweight_signalcontamination(&dset_mcrcone_b_rv2,sig_contamination_in_templates[ind2]);
+    
   }
 
   bool islowstatcat = true;
@@ -4555,5 +4564,50 @@ float get_ttree_sumofweights(TDirectoryFile *f, TString treename){
   }
 
   return totw;
+
+};
+
+void reweight_signalcontamination(RooDataSet **dset, double target_fraction){
+
+  TH1D *hnum = new TH1D("hnum","hnum",2,-0.5,1.5);
+  TH1D *hden = new TH1D("hden","hden",2,-0.5,1.5);
+  hnum->Sumw2();
+  hden->Sumw2();
+
+  const char* scname="rooissigcont";
+
+  for (int i=0; i<(*dset)->numEntries(); i++){
+    hden->Fill(fabs((*dset)->get(i)->getRealValue(scname)),(*dset)->store()->weight(i));
+  }
+  hnum->Fill(0.,1-target_fraction);
+  hnum->Fill(1.,target_fraction);
+
+  hnum->Scale(1.0/hnum->Integral());
+  hden->Scale(1.0/hden->Integral());
+
+  hnum->Divide(hden);
+  TH1D *h = hnum;
+
+  RooDataSet *newdset = new RooDataSet(**dset,Form("%s_sigcontrew",(*dset)->GetName()));
+  newdset->reset();
+  for (int i=0; i<(*dset)->numEntries(); i++){
+    RooArgSet args = *((*dset)->get(i));
+    double oldw = (*dset)->store()->weight(i);
+    double sc = args.getRealValue(scname);
+    double neww = oldw*h->GetBinContent(h->FindBin(fabs(sc)));
+    newdset->add(args,neww);
+  }
+
+
+  newdset->SetName((*dset)->GetName());
+  newdset->SetTitle((*dset)->GetTitle());
+
+  delete hnum; delete hden;
+
+  RooDataSet *old_dset = *dset;
+  *dset=newdset;
+  std::cout << "Sig contamination rew: norm from " << old_dset->sumEntries() << " to " << newdset->sumEntries() << std::endl;
+
+  delete old_dset;
 
 };
