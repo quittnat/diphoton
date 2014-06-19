@@ -503,10 +503,10 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     TFile *fmctrue_s = new TFile("outphoton_allmc_signal.root","read");
     get_roodset_from_ttree(fmctrue_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mctrue_s);
 
-    TFile *fmcfrag_s = new TFile("outphoton_allmc_frag.root","read");
+    TFile *fmcfrag_s = new TFile("outphoton_allmc_fragmentation.root","read");
     get_roodset_from_ttree(fmcfrag_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcfrag_s);
   
-    TFile *fmcnofrag_s = new TFile("outphoton_allmc_nofrag.root","read");
+    TFile *fmcnofrag_s = new TFile("outphoton_allmc_nofragmentation.root","read");
     get_roodset_from_ttree(fmcnofrag_s,Form("roofit/roodset_signal_%s_rv1",s1.Data()),dset_mcnofrag_s);
   
     TFile *fmcrcone_s = new TFile("outphoton_allmc_randomcone.root","read");
@@ -515,7 +515,7 @@ fit_output* fit_dataset(TString diffvariable, TString splitting, int bin, const 
     TFile *fzee_s = new TFile("outphoton_data_zee.root","read");
     RooDataSet *dset_zee_s_2d = NULL;
     get_roodset_from_ttree(fzee_s,Form("roofit/template_roodset_%s_sigsig",splitting.Data()),dset_zee_s_2d);
-    dset_zee_s = (RooDataSet*)(dset_zee_s_2d->reduce(Name("dset_zee_s"),SelectVars(RooArgList(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma,*roonvtx))));
+    if (dset_zee_s) dset_zee_s = (RooDataSet*)(dset_zee_s_2d->reduce(Name("dset_zee_s"),SelectVars(RooArgList(*roovar1,*roopt1,*roosieie1,*rooeta1,*roorho,*roosigma,*roonvtx))));
 
     TFile *fmctrue_b = new TFile("outphoton_allmc_background.root","read");
     get_roodset_from_ttree(fmctrue_b,Form("roofit/roodset_background_%s_rv1",s1.Data()),dset_mctrue_b);
@@ -3248,6 +3248,8 @@ void post_process_all(bool skipsystematics = false, TString var=""){
 
 void reweight_rhosigma(RooDataSet **dset, RooDataSet *dsetdestination, bool deleteold){
 
+  if (!(*dset)) return;
+
   (*dset)->Print();
 
   TH2F *hnum = new TH2F("hnum","hnum",30,0,30,20,0,10);
@@ -3299,7 +3301,7 @@ void reweight_rhosigma(RooDataSet **dset, RooDataSet *dsetdestination, bool dele
 
 void reweight_pt_1d(RooDataSet **dset, RooDataSet *dsetdestination, int numvar){
 
-
+  if (!(*dset)) return;
 
   TH1F *hnum = new TH1F("hnum","hnum",n_ptbins_forreweighting,ptbins_forreweighting);
   TH1F *hden = new TH1F("hden","hden",n_ptbins_forreweighting,ptbins_forreweighting);
@@ -3348,6 +3350,8 @@ void reweight_pt_1d(RooDataSet **dset, RooDataSet *dsetdestination, int numvar){
 };
 
 void reweight_pt_2d(RooDataSet **dset, RooDataSet *dsetdestination){
+
+  if (!(*dset)) return;
 
   TH2F *hnum = new TH2F("hnum","hnum",n_ptbins_forreweighting,ptbins_forreweighting,n_ptbins_forreweighting,ptbins_forreweighting);
   TH2F *hden = new TH2F("hden","hden",n_ptbins_forreweighting,ptbins_forreweighting,n_ptbins_forreweighting,ptbins_forreweighting);
@@ -3398,6 +3402,8 @@ void reweight_pt_2d(RooDataSet **dset, RooDataSet *dsetdestination){
 
 void reweight_eta_1d(RooDataSet **dset, RooDataSet *dsetdestination, int numvar){
 
+  if (!(*dset)) return;
+
   TH1F *hnum = new TH1F("hnum","hnum",25,0,2.5);
   TH1F *hden = new TH1F("hden","hden",25,0,2.5);
   hnum->Sumw2();
@@ -3445,6 +3451,8 @@ void reweight_eta_1d(RooDataSet **dset, RooDataSet *dsetdestination, int numvar)
 };
 
 void reweight_eta_2d(RooDataSet **dset, RooDataSet *dsetdestination){
+
+  if (!(*dset)) return;
 
   TH2F *hnum = new TH2F("hnum","hnum",25,0,2.5,25,0,2.5);
   TH2F *hden = new TH2F("hden","hden",25,0,2.5,25,0,2.5);
@@ -3494,6 +3502,8 @@ void reweight_eta_2d(RooDataSet **dset, RooDataSet *dsetdestination){
 
 void reweight_sigma(RooDataSet **dset, RooDataSet *dsetdestination){
 
+  if (!(*dset)) return;
+
   TH1F *hnum = new TH1F("hnum","hnum",20,0,10);
   TH1F *hden = new TH1F("hden","hden",20,0,10);
   hnum->Sumw2();
@@ -3541,6 +3551,8 @@ void reweight_sigma(RooDataSet **dset, RooDataSet *dsetdestination){
 
 void reweight_nvtx(RooDataSet **dset, RooDataSet *dsetdestination){
 
+  if (!(*dset)) return;
+
   TH1F *hnum = new TH1F("hnum","hnum",50,0,50);
   TH1F *hden = new TH1F("hden","hden",50,0,50);
   hnum->Sumw2();
@@ -3587,6 +3599,8 @@ void reweight_nvtx(RooDataSet **dset, RooDataSet *dsetdestination){
 };
 
 void reweight_rho(RooDataSet **dset, RooDataSet *dsetdestination){
+
+  if (!(*dset)) return;
 
   TH1F *hnum = new TH1F("hnum","hnum",30,0,30);
   TH1F *hden = new TH1F("hden","hden",30,0,30);
@@ -4568,6 +4582,8 @@ float get_ttree_sumofweights(TDirectoryFile *f, TString treename){
 };
 
 void reweight_signalcontamination(RooDataSet **dset, double target_fraction){
+
+  if (!(*dset)) return;
 
   TH1D *hnum = new TH1D("hnum","hnum",2,-0.5,1.5);
   TH1D *hden = new TH1D("hden","hden",2,-0.5,1.5);
