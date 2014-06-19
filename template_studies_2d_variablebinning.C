@@ -2641,6 +2641,28 @@ void post_process(TString diffvariable="", TString splitting="", bool skipsystem
     xsec_syst_histos["JERup"]->Multiply(systplots["JERup"]);
     xsec_syst_histos["JERup"]->Add(xsec_centralvalue);
     xsec_syst_histos["JERdown"]->Add(xsec_syst_histos["JERdown"],xsec_centralvalue,0,1);
+
+    systplots["ESMEARup"]->Add(systplots["ESMEARup"],systplots["ESMEARdown"],0.5,-0.5);
+    systplots["ESMEARdown"]->Reset();
+    ngg_syst_histos["ESMEARup"] = (TH1F*)(ngg_centralvalue->Clone(ngg_syst_histos["ESMEARup"]->GetName()));
+    ngg_syst_histos["ESMEARup"]->Multiply(systplots["ESMEARup"]);
+    ngg_syst_histos["ESMEARup"]->Add(ngg_centralvalue);
+    ngg_syst_histos["ESMEARdown"]->Add(ngg_syst_histos["ESMEARdown"],ngg_centralvalue,0,1);
+    xsec_syst_histos["ESMEARup"] = (TH1F*)(xsec_centralvalue->Clone(xsec_syst_histos["ESMEARup"]->GetName()));
+    xsec_syst_histos["ESMEARup"]->Multiply(systplots["ESMEARup"]);
+    xsec_syst_histos["ESMEARup"]->Add(xsec_centralvalue);
+    xsec_syst_histos["ESMEARdown"]->Add(xsec_syst_histos["ESMEARdown"],xsec_centralvalue,0,1);
+
+    systplots["PUup"]->Add(systplots["PUup"],systplots["PUdown"],0.5,-0.5);
+    systplots["PUdown"]->Reset();
+    ngg_syst_histos["PUup"] = (TH1F*)(ngg_centralvalue->Clone(ngg_syst_histos["PUup"]->GetName()));
+    ngg_syst_histos["PUup"]->Multiply(systplots["PUup"]);
+    ngg_syst_histos["PUup"]->Add(ngg_centralvalue);
+    ngg_syst_histos["PUdown"]->Add(ngg_syst_histos["PUdown"],ngg_centralvalue,0,1);
+    xsec_syst_histos["PUup"] = (TH1F*)(xsec_centralvalue->Clone(xsec_syst_histos["PUup"]->GetName()));
+    xsec_syst_histos["PUup"]->Multiply(systplots["PUup"]);
+    xsec_syst_histos["PUup"]->Add(xsec_centralvalue);
+    xsec_syst_histos["PUdown"]->Add(xsec_syst_histos["PUdown"],xsec_centralvalue,0,1);
     
     for (size_t k=0; k<systematics_list.size(); k++) for (int bin=0; bin<bins_to_run; bin++) systplots[systematics_list.at(k).name]->SetBinContent(bin+1,fabs(systplots[systematics_list.at(k).name]->GetBinContent(bin+1)));
     for (size_t k=0; k<systematics_list.size(); k++) for (int bin=0; bin<bins_to_run; bin++) ngg_syst_histos[systematics_list.at(k).name]->SetBinContent(bin+1,fabs(ngg_syst_histos[systematics_list.at(k).name]->GetBinContent(bin+1)));

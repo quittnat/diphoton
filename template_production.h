@@ -75,6 +75,7 @@ public :
    Float_t         event_rho;
    Float_t         event_sigma;
    Int_t           event_nPU;
+   Int_t           event_nPUtrue;
    Int_t           event_nRecVtx;
    Int_t           event_pass12whoissiglike;
    Float_t         dipho_mgg_photon;
@@ -193,6 +194,7 @@ public :
    TBranch        *b_event_rho;   //!
    TBranch        *b_event_sigma;   //!
    TBranch        *b_event_nPU;   //!
+   TBranch        *b_event_nPUtrue;   //!
    TBranch        *b_event_nRecVtx;   //!
    TBranch        *b_event_pass12whoissiglike;   //!
    TBranch        *b_dipho_mgg_photon;   //!
@@ -421,6 +423,11 @@ public :
 
    TFile *out;
 
+   TH1F *Histo_PUAddWeight_ScaleUp;
+   TH1F *Histo_PUAddWeight_ScaleDown;
+   TH1F *Histo_PUAddWeight_ScaleDef;
+   float GetPUAddWeight_ScaleUpDown(int nPU_true_, bool want_scale_up);
+
 };
 
 #endif
@@ -451,6 +458,10 @@ template_production_class::template_production_class(TTree *tree)
    histo_zuug_scalefactor = NULL;
 
    whichnewtemplate = -1;
+
+   Histo_PUAddWeight_ScaleUp=NULL;
+   Histo_PUAddWeight_ScaleDown=NULL;
+   Histo_PUAddWeight_ScaleDef=NULL;
 
 }
 
@@ -686,6 +697,7 @@ void template_production_class::Init()
    fChain->SetBranchAddress("event_rho", &event_rho, &b_event_rho);
    fChain->SetBranchAddress("event_sigma", &event_sigma, &b_event_sigma);
    fChain->SetBranchAddress("event_nPU", &event_nPU, &b_event_nPU);
+   fChain->SetBranchAddress("event_nPUtrue", &event_nPUtrue, &b_event_nPUtrue);
    fChain->SetBranchAddress("event_nRecVtx", &event_nRecVtx, &b_event_nRecVtx);
    fChain->SetBranchAddress("event_pass12whoissiglike", &event_pass12whoissiglike, &b_event_pass12whoissiglike);
    fChain->SetBranchAddress("dipho_mgg_photon", &dipho_mgg_photon, &b_dipho_mgg_photon);
@@ -1283,6 +1295,33 @@ void template_production_class::FillDiffVariables(bool dogen){ // WARNING: THIS 
 
 };
 
+float template_production_class::GetPUAddWeight_ScaleUpDown(int nPU_true_, bool want_scale_up){
+
+  if (!Histo_PUAddWeight_ScaleUp) {
+    TString fupname("pileup_data_030903p1_golden_true_UPvar.root");
+    TFile *fup = new TFile(fupname.Data());
+    Histo_PUAddWeight_ScaleUp = (TH1F*)(fup->Get("pileup"));
+    Histo_PUAddWeight_ScaleUp->Scale(1./Histo_PUAddWeight_ScaleUp->Integral());
+  }
+  if (!Histo_PUAddWeight_ScaleDown) {
+    TString fdownname("pileup_data_030903p1_golden_true_DOWNvar.root");
+    TFile *fdown = new TFile(fdownname.Data());
+    Histo_PUAddWeight_ScaleDown = (TH1F*)(fdown->Get("pileup"));
+    Histo_PUAddWeight_ScaleDown->Scale(1./Histo_PUAddWeight_ScaleDown->Integral());
+  }
+  if (!Histo_PUAddWeight_ScaleDef) {
+    TString fdefname("pileup_data_030903p1_golden_true.root");
+    TFile *fdef = new TFile(fdefname.Data());
+    Histo_PUAddWeight_ScaleDef = (TH1F*)(fdef->Get("pileup"));
+    Histo_PUAddWeight_ScaleDef->Scale(1./Histo_PUAddWeight_ScaleDef->Integral());
+  }
+
+  float num = (want_scale_up) ? Histo_PUAddWeight_ScaleUp->GetBinContent(nPU_true_) : Histo_PUAddWeight_ScaleDown->GetBinContent(nPU_true_);
+  float den = Histo_PUAddWeight_ScaleDef->GetBinContent(nPU_true_);
+  if (den==0) return 0; // not perfect...
+  return num/den;
+
+};
 
 #endif // #ifdef template_production_class_cxx
 

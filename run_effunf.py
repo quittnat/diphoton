@@ -7,13 +7,13 @@ modes=[]
 isdata=[]
 
 # DATA (do not swap with mc)
-file.append('./gg_minitree_data_030903p1_14may/Photon-Run2011AB-21Jun2013-v1-AOD.root')
+file.append('./gg_minitree_data_030903p1_17jun14/Photon-Run2011AB-21Jun2013-v1-AOD.root')
 modes.append(['Default','ESCALEup','ESCALEdown','JECup','JECdown'])
 isdata.append(1)
 
 # MC (do not swap with data)
-file.append('./gg_minitree_mc_030903p1_14may/sig.root')
-modes.append(['Default','ESMEARup','ESMEARdown','JERup','JERdown'])
+file.append('./gg_minitree_mc_030903p1_17jun14/sig.root')
+modes.append(['Default','ESMEARup','ESMEARdown','JERup','JERdown','PUup','PUdown'])
 isdata.append(0)
 
 

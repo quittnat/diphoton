@@ -305,6 +305,8 @@ class systematics_handler {
     store.push_back(systematics_element("ESMEARdown","Energy smearing down",0,1,0,1,0,kRed+4,9));
     store.push_back(systematics_element("noise_mixing","Event mixing effect on template",1,0,0,0,1,kCyan));
     store.push_back(systematics_element("statistic","Statistical uncertainty",1,0,1,0,0,kBlack,kDashed));
+    store.push_back(systematics_element("PUup","PU rew up",0,1,0,0,1,kRed+5));
+    store.push_back(systematics_element("PUdown","PU rew down",0,1,0,0,1,kRed+6));
   };
   ~systematics_handler(){};
 

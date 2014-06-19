@@ -480,8 +480,11 @@ void template_production_class::Loop(int maxevents)
     }
 
     Float_t weight=event_luminormfactor*event_Kfactor*event_weight;
-
-
+    if (mode=="effunf"){
+      if (effunf_dotreeforsyst=="PUup") weight*=GetPUAddWeight_ScaleUpDown(event_nPUtrue,true);
+      if (effunf_dotreeforsyst=="PUdown") weight*=GetPUAddWeight_ScaleUpDown(event_nPUtrue,false);
+    }
+    
     if (mode=="standard_2frag" || mode=="2pgen_2frag" || mode=="1p1fbothgen_2frag" || mode=="1pgen1fside_2frag") {
       if (pholead_PhoMCmatchexitcode==1 && pholead_GenPhotonIsoDR04<5) weight*=2;
       if (photrail_PhoMCmatchexitcode==1 && photrail_GenPhotonIsoDR04<5) weight*=2;
@@ -1146,6 +1149,7 @@ void template_production(TString filename="input.root", TString mode="", bool is
   if (mode=="1pgen1fside_2frag") treename_chosen=treename[17];
 
   if (mode=="effunf") treename_chosen = Form("LightTreeGenReco_%s",effunf_dotreeforsyst.Data());
+  if (mode=="effunf" && (effunf_dotreeforsyst=="PUup" || effunf_dotreeforsyst=="PUdown")) treename_chosen = "LightTreeGenReco_Default";
 
   file->GetObject(treename_chosen.Data(),t);
 
