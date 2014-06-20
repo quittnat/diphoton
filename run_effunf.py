@@ -6,14 +6,24 @@ file=[]
 modes=[]
 isdata=[]
 
+# DO NOT CHANGE THE ORDER OF WHAT FOLLOWS
+
 # DATA (do not swap with mc)
 file.append('./gg_minitree_data_030903p1_17jun14/Photon-Run2011AB-21Jun2013-v1-AOD.root')
 modes.append(['Default','ESCALEup','ESCALEdown','JECup','JECdown'])
 isdata.append(1)
 
 # MC (do not swap with data)
-file.append('./gg_minitree_mc_030903p1_17jun14/sig.root')
-modes.append(['Default','ESMEARup','ESMEARdown','JERup','JERdown','PUup','PUdown'])
+file.append('./gg_minitree_mc_030903p1_17jun14_lightforPU/sig.root')
+modes.append(['Default','ESMEARup','ESMEARdown','JERup','JERdown'])
+isdata.append(0)
+
+# MC pileup rew up/down
+file.append('./gg_minitree_mc_030903p1_17jun14_lightforPU_UPvar/sig.root')
+modes.append(['Default'])
+isdata.append(0)
+file.append('./gg_minitree_mc_030903p1_17jun14_lightforPU_DOWNvar/sig.root')
+modes.append(['Default'])
 isdata.append(0)
 
 
@@ -37,7 +47,7 @@ def wait_processes():
         return
 
 
-for i in xrange(2):
+for i in xrange(4):
     if (isdata[i]==0):
         strdata='sig'
     else:
@@ -45,9 +55,12 @@ for i in xrange(2):
     for mode in modes[i]:
         wait_processes()
         thisnumber = number
-        if (mode.rfind('standard')>=0):
-            thisnumber = -1
-        args = ['root','-q','-b','-l','template_production.C+O("'+file[i]+'","effunf",'+str(isdata[i])+',"outphoton_effunf_'+strdata+'_'+mode+'.root","photoniso",'+str(thisnumber)+',false,"","'+mode+'");']
+        tag=mode
+        if (i==2):
+            tag='PUup'
+        if (i==3):
+            tag='PUdown'
+        args = ['root','-q','-b','-l','template_production.C+O("'+file[i]+'","effunf",'+str(isdata[i])+',"outphoton_effunf_'+strdata+'_'+tag+'.root","photoniso",'+str(thisnumber)+',false,"","'+mode+'");']
         #    print 'Running root'+args
         lista_processi.append(Popen(args))
             

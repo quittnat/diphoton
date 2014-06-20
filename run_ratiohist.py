@@ -10,7 +10,7 @@ modes.append(['ESCALEup','ESCALEdown','JECup','JECdown'])
 isdata.append(1)
 
 # MC (do not swap with data)
-modes.append(['ESMEARup','ESMEARdown','JERup','JERdown'])
+modes.append(['ESMEARup','ESMEARdown','JERup','JERdown','PUup','PUdown'])
 isdata.append(0)
 
 
