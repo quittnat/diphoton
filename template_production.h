@@ -1297,6 +1297,9 @@ void template_production_class::FillDiffVariables(bool dogen){ // WARNING: THIS 
 
 float template_production_class::GetPUAddWeight_ScaleUpDown(int nPU_true_, bool want_scale_up){
 
+  cout << "SOMETHING IS WRONG IN THIS FUNCTION, DO NOT USE IT" << endl;
+  return 0;
+
   if (!Histo_PUAddWeight_ScaleUp) {
     TString fupname("pileup_data_030903p1_golden_true_UPvar.root");
     TFile *fup = new TFile(fupname.Data());
@@ -1318,7 +1321,8 @@ float template_production_class::GetPUAddWeight_ScaleUpDown(int nPU_true_, bool 
 
   float num = (want_scale_up) ? Histo_PUAddWeight_ScaleUp->GetBinContent(nPU_true_) : Histo_PUAddWeight_ScaleDown->GetBinContent(nPU_true_);
   float den = Histo_PUAddWeight_ScaleDef->GetBinContent(nPU_true_);
-  if (den==0) return 0; // not perfect...
+  if (den==0) return 1; // not perfect...
+  if (event_nPUtrue>25) return 1; // even less perfect
   return num/den;
 
 };

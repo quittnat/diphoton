@@ -480,10 +480,11 @@ void template_production_class::Loop(int maxevents)
     }
 
     Float_t weight=event_luminormfactor*event_Kfactor*event_weight;
-    if (mode=="effunf"){
-      if (effunf_dotreeforsyst=="PUup") weight*=GetPUAddWeight_ScaleUpDown(event_nPUtrue,true);
-      if (effunf_dotreeforsyst=="PUdown") weight*=GetPUAddWeight_ScaleUpDown(event_nPUtrue,false);
-    }
+//    if (mode=="effunf"){
+//      if (effunf_dotreeforsyst=="PUup") weight*=GetPUAddWeight_ScaleUpDown(event_nPUtrue,true);
+//      if (effunf_dotreeforsyst=="PUdown") weight*=GetPUAddWeight_ScaleUpDown(event_nPUtrue,false);
+//      //      cout << event_nPUtrue << " " << GetPUAddWeight_ScaleUpDown(event_nPUtrue,true) << " " << GetPUAddWeight_ScaleUpDown(event_nPUtrue,false) << endl;
+//    }
     
     if (mode=="standard_2frag" || mode=="2pgen_2frag" || mode=="1p1fbothgen_2frag" || mode=="1pgen1fside_2frag") {
       if (pholead_PhoMCmatchexitcode==1 && pholead_GenPhotonIsoDR04<5) weight*=2;
