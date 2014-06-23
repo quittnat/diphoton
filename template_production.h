@@ -897,6 +897,14 @@ void template_production_class::WriteOutput(){
 	a.hreco->Write();
 	a.htruth->Write();
 	a.hmatched->Write();
+
+	TString newname = a.hreco->GetName();
+	newname.ReplaceAll("hreco_","efficiency_");
+	TH2F *rtemp2 = (TH2F*)(a.hmatched->Clone(Form("twodim_%s",newname.Data())));
+	TH1D *rtemp = rtemp2->ProjectionX(newname.Data(),0,-1,"E");
+	rtemp->Divide(rtemp,a.htruth,1,1,"B");
+	rtemp->Write();
+
 	histo_zee_yieldtosubtract[get_name_zeehisto(i,*diffvariable)]->Write();
       }
     }
